@@ -44,12 +44,14 @@ export function Camera() {
               autoPlay
               playsInline
               muted
+              webkit-playsinline="true"
               style={{
                 width: '100%',
                 maxWidth: '640px',
                 height: 'auto',
                 borderRadius: '8px',
                 backgroundColor: '#000',
+                filter: 'grayscale(100%)',
               }}
             />
             <Flex justify="center" mt="3">

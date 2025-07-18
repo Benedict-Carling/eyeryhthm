@@ -35,9 +35,29 @@ export function useCamera() {
         hasPermission: true,
       }));
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      // Use requestAnimationFrame to ensure video element is rendered
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          const video = videoRef.current;
+          
+          // Set required attributes for iOS/Safari compatibility
+          video.setAttribute('playsinline', 'true');
+          video.setAttribute('webkit-playsinline', 'true');
+          video.autoplay = true;
+          video.muted = true;
+          
+          // Set up event handler for when metadata is loaded
+          video.onloadedmetadata = () => {
+            // Small delay to ensure video is ready
+            setTimeout(() => {
+              video.play().catch(console.error);
+            }, 100);
+          };
+          
+          // Set the stream
+          video.srcObject = stream;
+        }
+      });
     } catch (err) {
       const error = err as Error;
       setState(prev => ({
@@ -54,6 +74,13 @@ export function useCamera() {
   const stopCamera = useCallback(() => {
     if (state.stream) {
       state.stream.getTracks().forEach(track => track.stop());
+      
+      // Clean up video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+        videoRef.current.onloadedmetadata = null;
+      }
+      
       setState(prev => ({
         ...prev,
         stream: null,

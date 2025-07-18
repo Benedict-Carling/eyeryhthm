@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "playwright test --reporter=line"
+    "test": "playwright test --reporter=line",
+    "test:unit": "vitest",
+    "test:unit:ui": "vitest --ui"
   },
   "dependencies": {
     "@radix-ui/themes": "^3.2.1",
@@ -18,11 +20,17 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.54.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.1",
-    "typescript": "^5"
+    "jsdom": "^26.1.0",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }
