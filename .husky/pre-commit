@@ -1,2 +1,5 @@
 # Run lint-staged for linting
 npx lint-staged
+
+# Run all tests to ensure nothing is broken
+npm run test:unit && npm test
