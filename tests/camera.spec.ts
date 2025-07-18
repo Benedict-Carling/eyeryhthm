@@ -135,7 +135,7 @@ test.describe('Camera Component', () => {
     await expect(page.locator('button:has-text("Start Camera")')).toBeVisible();
   });
 
-  test('should handle camera permission denied', async ({ page, context }) => {
+  test('should handle camera permission denied', async ({ page }) => {
     // Mock getUserMedia to throw permission error
     await page.addInitScript(() => {
       navigator.mediaDevices.getUserMedia = async () => {
@@ -154,7 +154,7 @@ test.describe('Camera Component', () => {
     await expect(page.locator('text=Camera permission denied')).toBeVisible({ timeout: 10000 });
   });
 
-  test('should handle generic camera error', async ({ page, context }) => {
+  test('should handle generic camera error', async ({ page }) => {
     // Mock getUserMedia to throw generic error
     await page.addInitScript(() => {
       navigator.mediaDevices.getUserMedia = async () => {

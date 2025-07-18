@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint && eslint tests/ --ext .ts,.tsx",
     "test": "playwright test --reporter=line",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
@@ -42,6 +42,9 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ],
+    "tests/**/*.{ts,tsx}": [
       "eslint --fix"
     ]
   }
