@@ -54,5 +54,5 @@ class MockMediaStreamTrack {
   }
 }
 
-global.MediaStream = MockMediaStream as any;
-global.MediaStreamTrack = MockMediaStreamTrack as any;
+global.MediaStream = MockMediaStream as unknown as typeof MediaStream;
+global.MediaStreamTrack = MockMediaStreamTrack as unknown as typeof MediaStreamTrack;
