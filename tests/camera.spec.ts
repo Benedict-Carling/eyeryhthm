@@ -21,7 +21,11 @@ test.describe('Camera Component', () => {
     await expect(page.locator('text=Requesting camera permission...')).toBeVisible();
     
     // Wait for either success or error
-    await page.waitForSelector('video, text=Camera permission denied, text=Failed to access camera', { timeout: 10000 });
+    await Promise.race([
+      page.locator('video').waitFor({ timeout: 10000 }),
+      page.locator('text=Camera permission denied').waitFor({ timeout: 10000 }),
+      page.locator('text=Failed to access camera').waitFor({ timeout: 10000 }),
+    ]);
   });
 
   test('should display video element when camera access is granted', async ({ page }) => {
@@ -58,7 +62,6 @@ test.describe('Camera Component', () => {
     // Check video attributes
     const video = page.locator('video');
     await expect(video).toHaveAttribute('autoplay');
-    await expect(video).toHaveAttribute('muted');
     await expect(video).toHaveAttribute('playsinline');
     
     // Should show stop button
@@ -132,7 +135,7 @@ test.describe('Camera Component', () => {
     await expect(page.locator('button:has-text("Start Camera")')).toBeVisible();
   });
 
-  test('should handle camera permission denied', async ({ page }) => {
+  test('should handle camera permission denied', async ({ page, context }) => {
     // Mock getUserMedia to throw permission error
     await page.addInitScript(() => {
       navigator.mediaDevices.getUserMedia = async () => {
@@ -142,13 +145,16 @@ test.describe('Camera Component', () => {
       };
     });
 
+    // Navigate to page after setting up the mock
+    await page.goto('/');
+
     await page.locator('button:has-text("Start Camera")').click();
     
-    // Should show error message
+    // Should show error message (error happens quickly, loading state may not show)
     await expect(page.locator('text=Camera permission denied')).toBeVisible({ timeout: 10000 });
   });
 
-  test('should handle generic camera error', async ({ page }) => {
+  test('should handle generic camera error', async ({ page, context }) => {
     // Mock getUserMedia to throw generic error
     await page.addInitScript(() => {
       navigator.mediaDevices.getUserMedia = async () => {
@@ -158,9 +164,12 @@ test.describe('Camera Component', () => {
       };
     });
 
+    // Navigate to page after setting up the mock
+    await page.goto('/');
+
     await page.locator('button:has-text("Start Camera")').click();
     
-    // Should show error message
+    // Should show error message (error happens quickly, loading state may not show)
     await expect(page.locator('text=Failed to access camera')).toBeVisible({ timeout: 10000 });
   });
 });

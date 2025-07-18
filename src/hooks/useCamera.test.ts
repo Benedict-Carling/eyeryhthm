@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useCamera } from '../useCamera';
+import { useCamera } from './useCamera';
 
 // Mock navigator.mediaDevices
 const mockGetUserMedia = vi.fn();

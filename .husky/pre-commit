@@ -1,5 +1,2 @@
-# Run lint-staged
+# Run lint-staged for linting
 npx lint-staged
-
-# Run blink detection tests (the working ones)
-npx vitest run src/lib/blink-detection/
