@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blink Detection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        video {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+        }
+        .results {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Blink Detection Test</h1>
+    <p>This test will process the 7-blinks video and count the detected blinks.</p>
+    
+    <video id="testVideo" controls>
+        <source src="tests/7-blinks.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    
+    <div class="controls">
+        <button onclick="startBlinkDetection()">Start Blink Detection</button>
+        <button onclick="resetTest()">Reset</button>
+    </div>
+    
+    <div id="results" class="results">
+        <h3>Results:</h3>
+        <div id="status">Click "Start Blink Detection" to begin</div>
+        <div id="blinkCount">Blinks detected: 0</div>
+        <div id="currentEAR">Current EAR: 0</div>
+        <div id="isBlinking">Currently blinking: false</div>
+    </div>
+
+    <script type="module">
+        import { BlinkDetector } from './src/lib/blink-detection/index.js';
+        import { VideoProcessor } from './src/lib/utils/video-processor.js';
+
+        let detector = null;
+        let processor = null;
+        let isProcessing = false;
+
+        window.startBlinkDetection = async function() {
+            if (isProcessing) {
+                updateStatus('Already processing...', 'loading');
+                return;
+            }
+
+            const video = document.getElementById('testVideo');
+            const statusDiv = document.getElementById('status');
+            const blinkCountDiv = document.getElementById('blinkCount');
+            const currentEARDiv = document.getElementById('currentEAR');
+            const isBlinkingDiv = document.getElementById('isBlinking');
+
+            try {
+                isProcessing = true;
+                updateStatus('Initializing blink detection...', 'loading');
+
+                detector = new BlinkDetector({
+                    earThreshold: 0.25,
+                    consecutiveFrames: 2,
+                    debounceTime: 100
+                });
+
+                processor = new VideoProcessor(detector);
+
+                updateStatus('Processing video...', 'loading');
+
+                const blinkCount = await processor.processVideoWithCallback(video, (result) => {
+                    blinkCountDiv.textContent = `Blinks detected: ${result.blinkCount}`;
+                    currentEARDiv.textContent = `Current EAR: ${result.currentEAR.toFixed(3)}`;
+                    isBlinkingDiv.textContent = `Currently blinking: ${result.isBlinking}`;
+                });
+
+                updateStatus(`✓ Detection complete! Found ${blinkCount} blinks (Expected: 7)`, 
+                    blinkCount === 7 ? 'success' : 'error');
+
+            } catch (error) {
+                console.error('Error during blink detection:', error);
+                updateStatus(`✗ Error: ${error.message}`, 'error');
+            } finally {
+                isProcessing = false;
+                if (processor) {
+                    processor.dispose();
+                    processor = null;
+                }
+                if (detector) {
+                    detector.dispose();
+                    detector = null;
+                }
+            }
+        };
+
+        window.resetTest = function() {
+            if (isProcessing) {
+                updateStatus('Cannot reset while processing', 'error');
+                return;
+            }
+
+            document.getElementById('blinkCount').textContent = 'Blinks detected: 0';
+            document.getElementById('currentEAR').textContent = 'Current EAR: 0';
+            document.getElementById('isBlinking').textContent = 'Currently blinking: false';
+            updateStatus('Ready to start', '');
+        };
+
+        function updateStatus(message, type = '') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+        }
+
+        // Make sure video is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('testVideo');
+            video.addEventListener('loadedmetadata', function() {
+                console.log('Video metadata loaded');
+            });
+        });
+    </script>
+</body>
+</html>

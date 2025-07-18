@@ -12,6 +12,9 @@
     "test:unit:ui": "vitest --ui"
   },
   "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/face_mesh": "^0.4.1633559619",
     "@radix-ui/themes": "^3.2.1",
     "next": "15.4.1",
     "react": "19.1.0",
@@ -23,6 +26,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
