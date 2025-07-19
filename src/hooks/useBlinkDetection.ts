@@ -1,125 +1,185 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { BlinkDetector } from '../lib/blink-detection/blink-detector';
-import { VideoProcessor } from '../lib/utils/video-processor';
-import { BlinkDetectionResult, BlinkDetectorConfig } from '../lib/blink-detection/types';
+import { FaceMeshVisualizer } from '../lib/blink-detection/face-mesh-visualizer';
+import { BlinkDetectionResult } from '../lib/blink-detection/types';
+import { useCalibration } from '../contexts/CalibrationContext';
 
-interface UseBlinkDetectionReturn {
-  detector: BlinkDetector | null;
-  processor: VideoProcessor | null;
-  isProcessing: boolean;
+interface BlinkDetectionState {
   blinkCount: number;
   currentEAR: number;
   isBlinking: boolean;
+  isDetectorReady: boolean;
+  showDebugOverlay: boolean;
   error: string | null;
-  startDetection: (videoElement: HTMLVideoElement) => Promise<void>;
-  stopDetection: () => void;
-  processVideo: (videoElement: HTMLVideoElement) => Promise<number>;
-  resetCounter: () => void;
 }
 
-export function useBlinkDetection(config?: Partial<BlinkDetectorConfig>): UseBlinkDetectionReturn {
-  const detectorRef = useRef<BlinkDetector | null>(null);
-  const processorRef = useRef<VideoProcessor | null>(null);
+interface BlinkDetectionOptions {
+  videoElement: HTMLVideoElement | null;
+  canvasElement: HTMLCanvasElement | null;
+  autoStart?: boolean;
+}
+
+export function useBlinkDetection({
+  videoElement,
+  canvasElement,
+  autoStart = false
+}: BlinkDetectionOptions) {
+  const { activeCalibration } = useCalibration();
+  const [state, setState] = useState<BlinkDetectionState>({
+    blinkCount: 0,
+    currentEAR: 0,
+    isBlinking: false,
+    isDetectorReady: false,
+    showDebugOverlay: true,
+    error: null,
+  });
   
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [blinkCount, setBlinkCount] = useState(0);
-  const [currentEAR, setCurrentEAR] = useState(0);
-  const [isBlinking, setIsBlinking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const blinkDetectorRef = useRef<BlinkDetector | null>(null);
+  const visualizerRef = useRef<FaceMeshVisualizer | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const isProcessingRef = useRef(false);
 
-  const initializeDetector = useCallback(() => {
-    if (!detectorRef.current) {
-      detectorRef.current = new BlinkDetector(config);
-      processorRef.current = new VideoProcessor(detectorRef.current);
+  const processFrame = useCallback(async () => {
+    if (!videoElement || !blinkDetectorRef.current || isProcessingRef.current) {
+      return;
     }
-  }, [config]);
 
-  const handleResult = useCallback((result: BlinkDetectionResult) => {
-    setBlinkCount(result.blinkCount);
-    setCurrentEAR(result.currentEAR);
-    setIsBlinking(result.isBlinking);
-  }, []);
-
-  const startDetection = useCallback(async (videoElement: HTMLVideoElement) => {
     try {
-      setError(null);
-      setIsProcessing(true);
+      isProcessingRef.current = true;
+      const result: BlinkDetectionResult = await blinkDetectorRef.current.processFrame(
+        videoElement,
+        (rawResults) => {
+          if (state.showDebugOverlay && visualizerRef.current && videoElement) {
+            visualizerRef.current.drawResults(
+              rawResults,
+              videoElement.videoWidth,
+              videoElement.videoHeight
+            );
+          }
+        }
+      );
       
-      initializeDetector();
-      
-      if (!processorRef.current) {
-        throw new Error('Failed to initialize video processor');
+      setState(prev => ({
+        ...prev,
+        blinkCount: result.blinkCount,
+        currentEAR: result.currentEAR,
+        isBlinking: result.isBlinking,
+        error: null,
+      }));
+    } catch (error) {
+      console.error('Blink detection error:', error);
+      setState(prev => ({
+        ...prev,
+        error: 'Blink detection processing failed',
+      }));
+    } finally {
+      isProcessingRef.current = false;
+    }
+
+    animationFrameRef.current = requestAnimationFrame(processFrame);
+  }, [videoElement, state.showDebugOverlay]);
+
+  const startDetection = useCallback(async () => {
+    if (!videoElement) {
+      setState(prev => ({ ...prev, error: 'Video element not available' }));
+      return;
+    }
+
+    try {
+      if (!blinkDetectorRef.current) {
+        const earThreshold = activeCalibration?.earThreshold || 0.25;
+        blinkDetectorRef.current = new BlinkDetector({
+          earThreshold,
+          consecutiveFrames: 2,
+          debounceTime: 50,
+        });
       }
 
-      await processorRef.current.processVideoWithCallback(videoElement, handleResult);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-    } finally {
-      setIsProcessing(false);
+      if (!visualizerRef.current && canvasElement) {
+        visualizerRef.current = new FaceMeshVisualizer();
+        await visualizerRef.current.initialize(canvasElement);
+      }
+
+      await blinkDetectorRef.current.initialize();
+      setState(prev => ({ 
+        ...prev, 
+        isDetectorReady: true,
+        error: null,
+      }));
+      
+      animationFrameRef.current = requestAnimationFrame(processFrame);
+    } catch (error) {
+      console.error('Failed to initialize blink detector:', error);
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Failed to initialize face detection',
+        isDetectorReady: false 
+      }));
     }
-  }, [initializeDetector, handleResult]);
+  }, [videoElement, canvasElement, processFrame, activeCalibration]);
 
   const stopDetection = useCallback(() => {
-    if (processorRef.current) {
-      processorRef.current.stopProcessing();
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
-    setIsProcessing(false);
+
+    if (blinkDetectorRef.current) {
+      blinkDetectorRef.current.dispose();
+      blinkDetectorRef.current = null;
+    }
+
+    if (visualizerRef.current) {
+      visualizerRef.current.dispose();
+      visualizerRef.current = null;
+    }
+
+    setState(prev => ({
+      ...prev,
+      isDetectorReady: false,
+      blinkCount: 0,
+      currentEAR: 0,
+      isBlinking: false,
+      error: null,
+    }));
   }, []);
 
-  const processVideo = useCallback(async (videoElement: HTMLVideoElement): Promise<number> => {
-    try {
-      setError(null);
-      setIsProcessing(true);
-      
-      initializeDetector();
-      
-      if (!processorRef.current) {
-        throw new Error('Failed to initialize video processor');
-      }
-
-      const result = await processorRef.current.processVideo(videoElement);
-      setBlinkCount(result);
-      return result;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      throw err;
-    } finally {
-      setIsProcessing(false);
+  const resetBlinkCounter = useCallback(() => {
+    if (blinkDetectorRef.current) {
+      blinkDetectorRef.current.resetBlinkCounter();
+      setState(prev => ({
+        ...prev,
+        blinkCount: 0,
+      }));
     }
-  }, [initializeDetector]);
-
-  const resetCounter = useCallback(() => {
-    if (detectorRef.current) {
-      detectorRef.current.resetBlinkCounter();
-    }
-    setBlinkCount(0);
-    setCurrentEAR(0);
-    setIsBlinking(false);
-    setError(null);
   }, []);
 
+  const toggleDebugOverlay = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      showDebugOverlay: !prev.showDebugOverlay,
+    }));
+  }, []);
+
+  // Auto-start detection when video element becomes available
+  useEffect(() => {
+    if (autoStart && videoElement && !state.isDetectorReady) {
+      startDetection();
+    }
+  }, [autoStart, videoElement, state.isDetectorReady, startDetection]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (processorRef.current) {
-        processorRef.current.dispose();
-      }
-      if (detectorRef.current) {
-        detectorRef.current.dispose();
-      }
+      stopDetection();
     };
-  }, []);
+  }, [stopDetection]);
 
   return {
-    detector: detectorRef.current,
-    processor: processorRef.current,
-    isProcessing,
-    blinkCount,
-    currentEAR,
-    isBlinking,
-    error,
+    ...state,
     startDetection,
     stopDetection,
-    processVideo,
-    resetCounter
+    resetBlinkCounter,
+    toggleDebugOverlay,
   };
 }

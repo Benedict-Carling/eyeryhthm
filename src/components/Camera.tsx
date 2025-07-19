@@ -1,11 +1,14 @@
 'use client';
 
 import { Box, Button, Text, Flex, Badge, Card, Callout } from '@radix-ui/themes';
-import { useCameraWithBlinkDetection } from '../hooks/useCameraWithBlinkDetection';
+import { useRef } from 'react';
+import { useCamera } from '../hooks/useCamera';
+import { useBlinkDetection } from '../hooks/useBlinkDetection';
 import { useCalibration } from '../contexts/CalibrationContext';
 
 export function Camera() {
   const { canStartDetection, activeCalibration } = useCalibration();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const { 
     stream, 
@@ -13,17 +16,34 @@ export function Camera() {
     error, 
     hasPermission, 
     videoRef, 
-    canvasRef,
     startCamera, 
-    stopCamera,
+    stopCamera
+  } = useCamera({
+    onVideoReady: () => {
+      if (canStartDetection()) {
+        startDetection();
+      }
+    }
+  });
+
+  const {
     blinkCount,
     currentEAR,
     isBlinking,
     isDetectorReady,
     showDebugOverlay,
     resetBlinkCounter,
-    toggleDebugOverlay
-  } = useCameraWithBlinkDetection();
+    toggleDebugOverlay,
+    startDetection,
+    stopDetection,
+    error: blinkError
+  } = useBlinkDetection({
+    videoElement: videoRef.current,
+    canvasElement: canvasRef.current,
+    autoStart: false
+  });
+
+  const displayError = error || blinkError;
 
   return (
     <Box>
@@ -52,9 +72,9 @@ export function Camera() {
           <Text>Requesting camera permission...</Text>
         )}
 
-        {error && (
+        {displayError && (
           <Text color="red" size="2">
-            {error}
+            {displayError}
           </Text>
         )}
 
@@ -147,7 +167,10 @@ export function Camera() {
                   {showDebugOverlay ? "Hide" : "Show"} Debug
                 </Button>
                 <Button 
-                  onClick={stopCamera}
+                  onClick={() => {
+                    stopDetection();
+                    stopCamera();
+                  }}
                   variant="outline"
                   size="2"
                 >

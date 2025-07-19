@@ -9,7 +9,14 @@ interface CameraState {
   hasPermission: boolean;
 }
 
-export function useCamera() {
+interface CameraOptions {
+  onVideoReady?: () => void;
+  facingMode?: 'user' | 'environment';
+}
+
+export function useCamera(options: CameraOptions = {}) {
+  const { onVideoReady, facingMode = 'user' } = options;
+  
   const [state, setState] = useState<CameraState>({
     stream: null,
     isLoading: false,
@@ -24,7 +31,7 @@ export function useCamera() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode },
         audio: false,
       });
 
@@ -51,6 +58,7 @@ export function useCamera() {
             // Small delay to ensure video is ready
             setTimeout(() => {
               video.play().catch(console.error);
+              onVideoReady?.();
             }, 100);
           };
           
@@ -69,7 +77,7 @@ export function useCamera() {
         hasPermission: false,
       }));
     }
-  }, []);
+  }, [facingMode, onVideoReady]);
 
   const stopCamera = useCallback(() => {
     if (state.stream) {

@@ -13,7 +13,8 @@ import {
   Callout,
 } from '@radix-ui/themes';
 import { useCalibration } from '../contexts/CalibrationContext';
-import { useCameraWithBlinkDetection } from '../hooks/useCameraWithBlinkDetection';
+import { useCamera } from '../hooks/useCamera';
+import { useBlinkDetection } from '../hooks/useBlinkDetection';
 import { CalibrationService } from '../lib/calibration/calibration-service';
 import { BlinkEvent, CalibrationRawData, CalibrationMetadata } from '../lib/blink-detection/types';
 
@@ -30,18 +31,32 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
     stopCalibration,
   } = useCalibration();
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
   const {
     stream,
     videoRef,
-    canvasRef,
     startCamera,
     stopCamera,
+  } = useCamera({
+    onVideoReady: () => {
+      startDetection();
+    }
+  });
+
+  const {
     blinkCount,
     currentEAR,
     isBlinking,
     isDetectorReady,
     resetBlinkCounter,
-  } = useCameraWithBlinkDetection();
+    startDetection,
+    stopDetection,
+  } = useBlinkDetection({
+    videoElement: videoRef.current,
+    canvasElement: canvasRef.current,
+    autoStart: false
+  });
 
   const [phase, setPhase] = useState<'setup' | 'countdown' | 'calibrating' | 'analyzing' | 'complete'>('setup');
   const [countdown, setCountdown] = useState(3);
@@ -237,6 +252,7 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
     if (earCollectionRef.current) clearInterval(earCollectionRef.current);
     
     stopCalibration();
+    stopDetection();
     stopCamera();
     onCancel?.();
   };
