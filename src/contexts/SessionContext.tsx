@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { SessionData, BlinkRatePoint, getSessionQuality } from '../lib/sessions/types';
 import { useCamera } from '../hooks/useCamera';
 import { useBlinkDetection } from '../hooks/useBlinkDetection';
-import { useAnimationFrame } from '../hooks/useAnimationFrame';
+import { useFrameProcessor } from '../hooks/useFrameProcessor';
 import { useCalibration } from './CalibrationContext';
 
 interface SessionContextType {
@@ -160,50 +160,47 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
   }, [stream, videoRef]);
 
-  // Animation frame for continuous detection
-  const handleAnimationFrame = useCallback(() => {
-    if (videoRef.current && isInitialized && isTracking) {
-      // Ensure canvas dimensions match video
-      if (canvasRef.current && videoRef.current.videoWidth > 0) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-      }
-      
-      processFrame(videoRef.current, canvasRef.current);
-      
-      // Check if face is detected based on having valid EAR
-      const faceCurrentlyDetected = currentEAR > 0;
-      
-      // Handle face detection state changes
-      if (faceCurrentlyDetected && !isFaceDetected) {
-        // Face just detected
-        setIsFaceDetected(true);
-        faceDetectionLostTimeRef.current = null;
-      } else if (!faceCurrentlyDetected && isFaceDetected) {
-        // Face just lost - start 10-second timer
-        if (!faceDetectionLostTimeRef.current) {
-          faceDetectionLostTimeRef.current = Date.now();
-        } else {
-          // Check if 10 seconds have passed
-          if (Date.now() - faceDetectionLostTimeRef.current > 10000) {
-            setIsFaceDetected(false);
-          }
+  // Handle frame processing with face detection and blink rate updates
+  const handleFrameProcessing = useCallback(() => {
+    // Check if face is detected based on having valid EAR
+    const faceCurrentlyDetected = currentEAR > 0;
+    
+    // Handle face detection state changes
+    if (faceCurrentlyDetected && !isFaceDetected) {
+      // Face just detected
+      setIsFaceDetected(true);
+      faceDetectionLostTimeRef.current = null;
+    } else if (!faceCurrentlyDetected && isFaceDetected) {
+      // Face just lost - start 10-second timer
+      if (!faceDetectionLostTimeRef.current) {
+        faceDetectionLostTimeRef.current = Date.now();
+      } else {
+        // Check if 10 seconds have passed
+        if (Date.now() - faceDetectionLostTimeRef.current > 10000) {
+          setIsFaceDetected(false);
         }
       }
-      
-      // Update blink rate every 5 seconds
-      if (activeSession && Date.now() - lastBlinkUpdateRef.current > 5000) {
-        const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000 / 60; // in minutes
-        const blinksSinceStart = blinkCount - blinkCountRef.current;
-        const currentBlinkRate = timeElapsed > 0 ? blinksSinceStart / timeElapsed : 0;
-        
-        updateActiveSessionBlinkRate(currentBlinkRate);
-        lastBlinkUpdateRef.current = Date.now();
-      }
     }
-  }, [processFrame, isInitialized, isTracking, currentEAR, isFaceDetected, activeSession, blinkCount]);
+    
+    // Update blink rate every 5 seconds
+    if (activeSession && Date.now() - lastBlinkUpdateRef.current > 5000) {
+      const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000 / 60; // in minutes
+      const blinksSinceStart = blinkCount - blinkCountRef.current;
+      const currentBlinkRate = timeElapsed > 0 ? blinksSinceStart / timeElapsed : 0;
+      
+      updateActiveSessionBlinkRate(currentBlinkRate);
+      lastBlinkUpdateRef.current = Date.now();
+    }
+  }, [currentEAR, isFaceDetected, activeSession, blinkCount]);
 
-  useAnimationFrame(handleAnimationFrame, isInitialized && isTracking);
+  // Use the shared frame processor hook
+  useFrameProcessor({
+    videoRef,
+    canvasRef,
+    processFrame,
+    onFrame: handleFrameProcessing,
+    isEnabled: isInitialized && isTracking,
+  });
 
   const startSession = useCallback(() => {
     if (!isTracking || activeSession || !isFaceDetected) return;

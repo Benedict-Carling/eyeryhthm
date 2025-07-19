@@ -5,7 +5,7 @@ import { Box, Button, Text, Flex, Badge, Card, Callout } from '@radix-ui/themes'
 import { useCalibration } from '../contexts/CalibrationContext';
 import { useCamera } from '../hooks/useCamera';
 import { useBlinkDetection } from '../hooks/useBlinkDetection';
-import { useAnimationFrame } from '../hooks/useAnimationFrame';
+import { useFrameProcessor } from '../hooks/useFrameProcessor';
 import { VideoCanvas } from './VideoCanvas';
 
 export function Camera() {
@@ -84,14 +84,13 @@ export function Camera() {
     };
   }, [stream, canStartDetection, startDetection, isInitialized]);
 
-  // Animation frame for continuous detection
-  const handleAnimationFrame = useCallback(() => {
-    if (videoRef.current && isInitialized) {
-      processFrame(videoRef.current, canvasRef.current);
-    }
-  }, [processFrame, isInitialized]);
-
-  useAnimationFrame(handleAnimationFrame, isInitialized);
+  // Use the shared frame processor hook
+  useFrameProcessor({
+    videoRef,
+    canvasRef,
+    processFrame,
+    isEnabled: isInitialized,
+  });
 
   // Set video stream
   useEffect(() => {

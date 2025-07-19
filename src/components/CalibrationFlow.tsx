@@ -14,7 +14,7 @@ import {
 import { useCalibration } from '../contexts/CalibrationContext';
 import { useCamera } from '../hooks/useCamera';
 import { useBlinkDetection } from '../hooks/useBlinkDetection';
-import { useAnimationFrame } from '../hooks/useAnimationFrame';
+import { useFrameProcessor } from '../hooks/useFrameProcessor';
 import { CalibrationService } from '../lib/calibration/calibration-service';
 import { BlinkAnalyzer } from '../lib/calibration/blink-analyzer';
 import { EARTimeSeriesGraph } from './EARTimeSeriesGraph';
@@ -108,20 +108,22 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
     };
   }, [stream, phase, startDetection, isInitialized]);
 
-  // Animation frame for continuous detection
-  const handleAnimationFrame = useCallback(() => {
-    if (videoRef.current && isInitialized && phase !== 'setup') {
-      processFrame(videoRef.current, canvasRef.current);
-      
-      // Record EAR data if recording
-      if (isRecording && currentEAR > 0) {
-        const currentTime = Date.now() - recordingStartTime;
-        setEarData(prev => [...prev, { time: currentTime, ear: currentEAR }]);
-      }
+  // Handle frame processing with EAR data recording
+  const handleFrameData = useCallback((data: { currentEAR: number }) => {
+    if (isRecording && data.currentEAR > 0) {
+      const currentTime = Date.now() - recordingStartTime;
+      setEarData(prev => [...prev, { time: currentTime, ear: data.currentEAR }]);
     }
-  }, [phase, processFrame, isRecording, currentEAR, recordingStartTime, isInitialized]);
+  }, [isRecording, recordingStartTime]);
 
-  useAnimationFrame(handleAnimationFrame, isInitialized && phase !== 'setup');
+  // Use the shared frame processor hook
+  useFrameProcessor({
+    videoRef,
+    canvasRef,
+    processFrame,
+    onFrame: () => handleFrameData({ currentEAR }),
+    isEnabled: isInitialized && phase !== 'setup',
+  });
 
   const initializeCalibration = useCallback(async () => {
     try {
