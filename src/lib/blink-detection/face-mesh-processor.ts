@@ -25,6 +25,7 @@ export class FaceMeshProcessor {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
           delegate: "GPU"
         },
+        runningMode: "VIDEO",
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false,
         numFaces: 1,
@@ -49,7 +50,7 @@ export class FaceMeshProcessor {
     }
 
     try {
-      const results: FaceLandmarkerResult = this.faceLandmarker.detect(videoElement);
+      const results: FaceLandmarkerResult = this.faceLandmarker.detectForVideo(videoElement, performance.now());
       
       // Convert new format to legacy format for compatibility
       const convertedResults: FaceMeshResults = {
