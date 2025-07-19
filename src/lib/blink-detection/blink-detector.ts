@@ -30,9 +30,17 @@ export class BlinkDetector {
     await this.faceMeshProcessor.initialize();
   }
 
-  async processFrame(videoElement: HTMLVideoElement): Promise<BlinkDetectionResult> {
+  async processFrame(
+    videoElement: HTMLVideoElement, 
+    onRawResults?: (results: FaceMeshResults) => void
+  ): Promise<BlinkDetectionResult> {
     return new Promise((resolve) => {
       this.faceMeshProcessor.processFrame(videoElement, (results: FaceMeshResults) => {
+        // Pass raw results to visualizer if callback provided
+        if (onRawResults) {
+          onRawResults(results);
+        }
+        
         const timestamp = Date.now();
         const result = this.analyzeFrame(results, videoElement.videoWidth, videoElement.videoHeight, timestamp);
         resolve(result);

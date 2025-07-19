@@ -1,5 +1,6 @@
-import { FaceMesh } from '@mediapipe/face_mesh';
 import { FaceMeshResults } from './types';
+
+type FaceMesh = any;
 
 export class FaceMeshProcessor {
   private faceMesh: FaceMesh | null = null;
@@ -9,6 +10,13 @@ export class FaceMeshProcessor {
     if (this.isInitialized) {
       return;
     }
+
+    // Only import MediaPipe when running in the browser
+    if (typeof window === 'undefined') {
+      throw new Error('FaceMeshProcessor can only be used in the browser');
+    }
+
+    const { FaceMesh } = await import('@mediapipe/face_mesh');
 
     this.faceMesh = new FaceMesh({
       locateFile: (file) => {
@@ -34,8 +42,13 @@ export class FaceMeshProcessor {
       throw new Error('FaceMesh not initialized. Call initialize() first.');
     }
 
-    this.faceMesh.onResults(onResults);
-    await this.faceMesh.send({ image: videoElement });
+    return new Promise((resolve) => {
+      this.faceMesh.onResults((results: FaceMeshResults) => {
+        onResults(results);
+        resolve();
+      });
+      this.faceMesh.send({ image: videoElement });
+    });
   }
 
   dispose(): void {

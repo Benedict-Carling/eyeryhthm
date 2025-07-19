@@ -1,7 +1,7 @@
 import { EyeLandmarks, FaceMeshResults } from './types';
 
-const RIGHT_EYE_INDICES = [33, 7, 163, 144, 145, 153];
-const LEFT_EYE_INDICES = [362, 382, 381, 380, 374, 373];
+const RIGHT_EYE_INDICES = [33, 159, 158, 133, 153, 145];
+const LEFT_EYE_INDICES = [362, 380, 374, 263, 386, 385];
 
 export function extractEyeLandmarks(
   landmarks: Array<{ x: number; y: number; z: number }>,
