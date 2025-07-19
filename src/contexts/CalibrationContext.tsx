@@ -44,6 +44,8 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
 
   // Load calibrations on mount
   useEffect(() => {
+    // Fix any existing data with multiple active calibrations
+    CalibrationService.fixMultipleActiveCalibrations();
     loadCalibrations();
   }, []);
 
@@ -68,6 +70,16 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
         updatedAt: new Date(),
       };
 
+      // If the new calibration is marked as active, deactivate all others first
+      if (newCalibration.isActive) {
+        const allCalibrations = CalibrationService.getAllCalibrations();
+        allCalibrations.forEach(cal => {
+          cal.isActive = false;
+          cal.updatedAt = new Date();
+        });
+        localStorage.setItem('blinktrack_calibrations', JSON.stringify(allCalibrations));
+      }
+
       CalibrationService.saveCalibration(newCalibration);
       loadCalibrations();
     } catch (error) {
@@ -78,7 +90,25 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
 
   const deleteCalibration = (id: string) => {
     try {
+      // Check if we're deleting the active calibration
+      const calibrationToDelete = calibrations.find(cal => cal.id === id);
+      const wasActive = calibrationToDelete?.isActive;
+      
       CalibrationService.deleteCalibration(id);
+      
+      // If we deleted the active calibration and there are others, make the most recent one active
+      if (wasActive) {
+        const remainingCalibrations = CalibrationService.getAllCalibrations();
+        if (remainingCalibrations.length > 0) {
+          // Sort by createdAt date (most recent first)
+          remainingCalibrations.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          // Set the most recent as active
+          CalibrationService.setActiveCalibration(remainingCalibrations[0].id);
+        }
+      }
+      
       loadCalibrations();
     } catch (error) {
       console.error('Error deleting calibration:', error);
@@ -128,15 +158,31 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
 
   const completeCalibration = (calibrationData: Omit<Calibration, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      // If this is the first calibration, make it active
-      const shouldBeActive = calibrations.length === 0 || calibrationData.isActive;
-      
-      const finalCalibrationData = {
+      // New calibrations should always be active by default
+      const newCalibration: Calibration = {
         ...calibrationData,
-        isActive: shouldBeActive,
+        id: CalibrationService.generateCalibrationId(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true, // Always set new calibrations as active
       };
 
-      createCalibration(finalCalibrationData);
+      // If there are existing calibrations, deactivate them first
+      if (calibrations.length > 0) {
+        // Deactivate all existing calibrations
+        const allCalibrations = CalibrationService.getAllCalibrations();
+        allCalibrations.forEach(cal => {
+          cal.isActive = false;
+          cal.updatedAt = new Date();
+        });
+        
+        // Save the deactivated calibrations
+        localStorage.setItem('blinktrack_calibrations', JSON.stringify(allCalibrations));
+      }
+
+      // Save the new active calibration
+      CalibrationService.saveCalibration(newCalibration);
+      loadCalibrations();
       stopCalibration();
     } catch (error) {
       console.error('Error completing calibration:', error);

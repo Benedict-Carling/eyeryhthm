@@ -156,7 +156,16 @@ export function CalibrationList() {
                 </Flex>
 
                 {editingId !== calibration.id && (
-                  <Flex align="center" gap="1">
+                  <Flex align="center" gap="2">
+                    {!calibration.isActive && (
+                      <Button
+                        size="1"
+                        variant="ghost"
+                        onClick={() => setActiveCalibration(calibration.id)}
+                      >
+                        Set as Active
+                      </Button>
+                    )}
                     <IconButton
                       size="1"
                       variant="ghost"
@@ -203,19 +212,6 @@ export function CalibrationList() {
                   </Text>
                 </Flex>
               </Flex>
-
-              {/* Actions */}
-              {!calibration.isActive && (
-                <Flex justify="end">
-                  <Button
-                    size="2"
-                    variant="soft"
-                    onClick={() => setActiveCalibration(calibration.id)}
-                  >
-                    Set as Active
-                  </Button>
-                </Flex>
-              )}
             </Flex>
           </Card>
         ))}

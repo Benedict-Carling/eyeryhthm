@@ -159,4 +159,33 @@ export class CalibrationService {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(CALIBRATIONS_STORAGE_KEY);
   }
+
+  static fixMultipleActiveCalibrations(): void {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const calibrations = this.getAllCalibrations();
+      const activeCalibrations = calibrations.filter(cal => cal.isActive);
+      
+      // If there are multiple active calibrations, keep only the most recent one active
+      if (activeCalibrations.length > 1) {
+        // Sort by createdAt date (most recent first)
+        activeCalibrations.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        // Deactivate all except the most recent
+        calibrations.forEach(cal => {
+          if (cal.id !== activeCalibrations[0].id) {
+            cal.isActive = false;
+            cal.updatedAt = new Date();
+          }
+        });
+        
+        localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(calibrations));
+      }
+    } catch (error) {
+      console.error('Error fixing multiple active calibrations:', error);
+    }
+  }
 }
