@@ -18,6 +18,7 @@ import { useAnimationFrame } from '../hooks/useAnimationFrame';
 import { CalibrationService } from '../lib/calibration/calibration-service';
 import { BlinkAnalyzer } from '../lib/calibration/blink-analyzer';
 import { EARTimeSeriesGraph } from './EARTimeSeriesGraph';
+import { VideoCanvas } from './VideoCanvas';
 import { BlinkEvent, CalibrationRawData, CalibrationMetadata } from '../lib/blink-detection/types';
 
 interface CalibrationFlowProps {
@@ -42,6 +43,7 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
   const [isRecording, setIsRecording] = useState(false);
   const [earData, setEarData] = useState<EARDataPoint[]>([]);
   const [recordingStartTime, setRecordingStartTime] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -59,9 +61,56 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
     processFrame,
   } = useBlinkDetection();
 
+  // Unified initialization effect that matches Camera component
+  useEffect(() => {
+    let mounted = true;
+
+    const initializeEverything = async () => {
+      if (!stream || !videoRef.current || !canvasRef.current || isInitialized) {
+        return;
+      }
+
+      const video = videoRef.current;
+      
+      // Wait for video to be ready
+      if (video.readyState < 2) {
+        await new Promise<void>((resolve) => {
+          const handleCanPlay = () => {
+            video.removeEventListener('canplay', handleCanPlay);
+            resolve();
+          };
+          video.addEventListener('canplay', handleCanPlay);
+        });
+      }
+
+      // Small delay to ensure stable video feed
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      if (!mounted) return;
+
+      // Initialize detection
+      try {
+        await startDetection(canvasRef.current);
+        if (mounted) {
+          setIsInitialized(true);
+        }
+      } catch (err) {
+        console.error('Failed to start detection:', err);
+      }
+    };
+
+    if (phase !== 'setup') {
+      initializeEverything();
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [stream, phase, startDetection, isInitialized]);
+
   // Animation frame for continuous detection
   const handleAnimationFrame = useCallback(() => {
-    if (videoRef.current && phase !== 'setup') {
+    if (videoRef.current && isInitialized && phase !== 'setup') {
       processFrame(videoRef.current, canvasRef.current);
       
       // Record EAR data if recording
@@ -70,31 +119,20 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
         setEarData(prev => [...prev, { time: currentTime, ear: currentEAR }]);
       }
     }
-  }, [phase, processFrame, isRecording, currentEAR, recordingStartTime]);
+  }, [phase, processFrame, isRecording, currentEAR, recordingStartTime, isInitialized]);
 
-  const { start: startAnimation, stop: stopAnimation } = useAnimationFrame(
-    handleAnimationFrame,
-    false
-  );
+  useAnimationFrame(handleAnimationFrame, isInitialized && phase !== 'setup');
 
   const initializeCalibration = useCallback(async () => {
     try {
       if (!stream) {
         await startCamera();
       }
-      
-      setTimeout(async () => {
-        if (canvasRef.current) {
-          await startDetection(canvasRef.current);
-          startAnimation();
-        }
-      }, 500);
-      
       setPhase('recording');
     } catch (error) {
       console.error('Failed to initialize calibration:', error);
     }
-  }, [stream, startCamera, startDetection, startAnimation]);
+  }, [stream, startCamera]);
 
   const startRecording = useCallback(() => {
     setEarData([]);
@@ -169,12 +207,12 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
 
   const handleCancel = useCallback(() => {
     setIsRecording(false);
-    stopAnimation();
+    setIsInitialized(false);
     stopCalibration();
     stopDetection();
     stopCamera();
     onCancel?.();
-  }, [stopAnimation, stopCalibration, stopDetection, stopCamera, onCancel]);
+  }, [stopCalibration, stopDetection, stopCamera, onCancel]);
 
   const retryCalibration = useCallback(() => {
     setPhase('recording');
@@ -182,24 +220,10 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
     setIsRecording(false);
   }, []);
 
-  // Set up canvas when video is ready
+  // Set video stream
   useEffect(() => {
-    if (videoRef.current && canvasRef.current && stream) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      
-      // Set canvas size to match video once it's loaded
-      const handleLoadedMetadata = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-      };
-      
-      if (video.videoWidth && video.videoHeight) {
-        handleLoadedMetadata();
-      } else {
-        video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        return () => video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      }
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
     }
   }, [stream, videoRef]);
 
@@ -348,35 +372,12 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
           </Heading>
 
           {stream && phase !== 'setup' && (
-            <Box style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{
-                  width: '100%',
-                  maxWidth: '480px',
-                  height: 'auto',
-                  borderRadius: '8px',
-                  backgroundColor: '#000',
-                  filter: 'grayscale(100%)',
-                }}
-              />
-              <canvas
-                ref={canvasRef}
-                width={480}
-                height={360}
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  borderRadius: '8px',
-                  pointerEvents: 'none',
-                }}
+            <Box style={{ display: 'flex', justifyContent: 'center' }}>
+              <VideoCanvas 
+                videoRef={videoRef}
+                canvasRef={canvasRef}
+                showCanvas={true}
+                maxWidth="480px"
               />
             </Box>
           )}

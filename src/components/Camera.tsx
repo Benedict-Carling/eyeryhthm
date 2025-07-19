@@ -1,45 +1,43 @@
 'use client';
 
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Button, Text, Flex, Badge, Card, Callout } from '@radix-ui/themes';
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useCalibration } from '../contexts/CalibrationContext';
 import { useCamera } from '../hooks/useCamera';
 import { useBlinkDetection } from '../hooks/useBlinkDetection';
-import { useCalibration } from '../contexts/CalibrationContext';
 import { useAnimationFrame } from '../hooks/useAnimationFrame';
+import { VideoCanvas } from './VideoCanvas';
 
 export function Camera() {
   const { canStartDetection, activeCalibration } = useCalibration();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  const { 
-    stream, 
-    isLoading, 
-    error, 
-    hasPermission, 
-    videoRef, 
-    startCamera, 
-    stopCamera
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  const {
+    stream,
+    videoRef,
+    startCamera,
+    stopCamera,
+    error,
+    hasPermission,
+    isLoading: isCameraLoading,
   } = useCamera();
-
+  
   const {
     blinkCount,
     currentEAR,
     isBlinking,
     isReady: isDetectorReady,
-    resetBlinkCounter,
     start: startDetection,
     stop: stopDetection,
     processFrame,
-    error: blinkError
-  } = useBlinkDetection();
+    resetBlinkCounter,
+  } = useBlinkDetection({
+    earThreshold: activeCalibration?.earThreshold || 0.25,
+  });
 
-  const showDebugOverlay = true;
-  const toggleDebugOverlay = () => {}; // Placeholder since we removed this functionality
-
-  const displayError = error || blinkError;
-
-  // Single initialization effect that handles everything in order
+  // Unified initialization effect that matches CalibrationFlow component
   useEffect(() => {
     let mounted = true;
 
@@ -48,10 +46,9 @@ export function Camera() {
         return;
       }
 
-      // Wait for video to be truly ready
       const video = videoRef.current;
       
-      // Ensure video is playing
+      // Wait for video to be ready
       if (video.readyState < 2) {
         await new Promise<void>((resolve) => {
           const handleCanPlay = () => {
@@ -67,7 +64,7 @@ export function Camera() {
 
       if (!mounted) return;
 
-      // Initialize detection if allowed
+      // Initialize detection if calibration is complete
       if (canStartDetection()) {
         try {
           await startDetection(canvasRef.current);
@@ -85,24 +82,31 @@ export function Camera() {
     return () => {
       mounted = false;
     };
-  }, [stream, canStartDetection, startDetection]);
+  }, [stream, canStartDetection, startDetection, isInitialized]);
 
   // Animation frame for continuous detection
   const handleAnimationFrame = useCallback(() => {
-    if (videoRef.current && isDetectorReady && isInitialized) {
+    if (videoRef.current && isInitialized) {
       processFrame(videoRef.current, canvasRef.current);
     }
-  }, [isDetectorReady, isInitialized, processFrame]);
+  }, [processFrame, isInitialized]);
 
-  useAnimationFrame(handleAnimationFrame, isDetectorReady && isInitialized);
+  useAnimationFrame(handleAnimationFrame, isInitialized);
 
-  // Clean up on unmount
+  // Set video stream
   useEffect(() => {
-    return () => {
-      setIsInitialized(false);
-      stopDetection();
-    };
-  }, [stopDetection]);
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream, videoRef]);
+
+  const handleStartCamera = useCallback(async () => {
+    try {
+      await startCamera();
+    } catch (error) {
+      console.error('Failed to start camera:', error);
+    }
+  }, [startCamera]);
 
   const handleStopCamera = useCallback(() => {
     setIsInitialized(false);
@@ -110,12 +114,8 @@ export function Camera() {
     stopCamera();
   }, [stopDetection, stopCamera]);
 
-  // Set video stream without extra callbacks
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
-  }, [stream, videoRef]);
+  const showDebugOverlay = true;
+  const toggleDebugOverlay = () => {}; // Placeholder
 
   return (
     <Box>
@@ -130,23 +130,23 @@ export function Camera() {
           </Callout.Root>
         )}
 
-        {!hasPermission && !isLoading && (
+        {!hasPermission && !isCameraLoading && (
           <Button 
-            onClick={startCamera} 
+            onClick={handleStartCamera} 
             size="3"
-            disabled={isLoading || !canStartDetection()}
+            disabled={isCameraLoading || !canStartDetection()}
           >
             Start Camera
           </Button>
         )}
 
-        {isLoading && (
+        {isCameraLoading && (
           <Text>Requesting camera permission...</Text>
         )}
 
-        {displayError && (
+        {error && (
           <Text color="red" size="2">
-            {displayError}
+            {error}
           </Text>
         )}
 
@@ -188,37 +188,11 @@ export function Camera() {
                 </Flex>
               </Card>
 
-              <Box style={{ position: 'relative', display: 'inline-block' }}>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{
-                    width: '100%',
-                    maxWidth: '640px',
-                    height: 'auto',
-                    borderRadius: '8px',
-                    backgroundColor: '#000',
-                    filter: 'grayscale(100%)',
-                    display: 'block',
-                  }}
-                />
-                {showDebugOverlay && (
-                  <canvas
-                    ref={canvasRef}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '8px',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </Box>
+              <VideoCanvas 
+                videoRef={videoRef}
+                canvasRef={canvasRef}
+                showCanvas={showDebugOverlay}
+              />
 
               <Flex gap="2" justify="center" wrap="wrap">
                 {stream && (
