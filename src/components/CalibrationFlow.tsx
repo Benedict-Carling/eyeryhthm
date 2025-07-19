@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   Box,
   Card,
   Flex,
   Text,
   Button,
-  Progress,
   Badge,
   Heading,
   Callout,
@@ -15,7 +14,10 @@ import {
 import { useCalibration } from '../contexts/CalibrationContext';
 import { useCamera } from '../hooks/useCamera';
 import { useBlinkDetection } from '../hooks/useBlinkDetection';
+import { useAnimationFrame } from '../hooks/useAnimationFrame';
 import { CalibrationService } from '../lib/calibration/calibration-service';
+import { BlinkAnalyzer } from '../lib/calibration/blink-analyzer';
+import { EARTimeSeriesGraph } from './EARTimeSeriesGraph';
 import { BlinkEvent, CalibrationRawData, CalibrationMetadata } from '../lib/blink-detection/types';
 
 interface CalibrationFlowProps {
@@ -23,263 +25,210 @@ interface CalibrationFlowProps {
   onCancel?: () => void;
 }
 
+type CalibrationPhase = 'setup' | 'recording' | 'analyzing' | 'complete' | 'failed';
+
+interface EARDataPoint {
+  time: number;
+  ear: number;
+}
+
 export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) {
   const {
-    calibrationProgress,
-    updateCalibrationProgress,
     completeCalibration,
     stopCalibration,
   } = useCalibration();
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [phase, setPhase] = useState<CalibrationPhase>('setup');
+  const [isRecording, setIsRecording] = useState(false);
+  const [earData, setEarData] = useState<EARDataPoint[]>([]);
+  const [recordingStartTime, setRecordingStartTime] = useState(0);
   
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const {
     stream,
-    videoRef,
     startCamera,
     stopCamera,
   } = useCamera({
-    onVideoReady: () => {
-      startDetection();
-    }
+    onVideoReady: useCallback(() => {
+      if (canvasRef.current && videoRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+    }, []),
   });
 
   const {
-    blinkCount,
     currentEAR,
-    isBlinking,
-    isDetectorReady,
-    resetBlinkCounter,
-    startDetection,
-    stopDetection,
-  } = useBlinkDetection({
-    videoElement: videoRef.current,
-    canvasElement: canvasRef.current,
-    autoStart: false
-  });
+    start: startDetection,
+    stop: stopDetection,
+    processFrame,
+  } = useBlinkDetection();
 
-  const [phase, setPhase] = useState<'setup' | 'countdown' | 'calibrating' | 'analyzing' | 'complete'>('setup');
-  const [countdown, setCountdown] = useState(3);
-  const [calibrationData, setCalibrationData] = useState<{
-    blinkEvents: BlinkEvent[];
-    earValues: number[];
-    timestamps: number[];
-  }>({
-    blinkEvents: [],
-    earValues: [],
-    timestamps: [],
-  });
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const blinkTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const earCollectionRef = useRef<NodeJS.Timeout | null>(null);
-  const lastBlinkCountRef = useRef(0);
-  const calibrationStartTime = useRef<number>(0);
-  const targetBlinks = 10;
-  const blinkInterval = 2000; // 2 seconds between blinks
-
-  // Start EAR value collection when calibrating
-  useEffect(() => {
-    if (phase === 'calibrating' && isDetectorReady) {
-      earCollectionRef.current = setInterval(() => {
-        const timestamp = Date.now() - calibrationStartTime.current;
-        setCalibrationData(prev => ({
-          ...prev,
-          earValues: [...prev.earValues, currentEAR],
-          timestamps: [...prev.timestamps, timestamp],
-        }));
-      }, 100); // Collect EAR every 100ms
-
-      return () => {
-        if (earCollectionRef.current) {
-          clearInterval(earCollectionRef.current);
-        }
-      };
-    }
-  }, [phase, isDetectorReady, currentEAR]);
-
-  // Monitor blink detection
-  useEffect(() => {
-    if (phase === 'calibrating' && blinkCount > lastBlinkCountRef.current) {
-      const newBlinks = blinkCount - lastBlinkCountRef.current;
+  // Animation frame for continuous detection
+  const handleAnimationFrame = useCallback(() => {
+    if (videoRef.current && phase !== 'setup') {
+      processFrame(videoRef.current, canvasRef.current);
       
-      for (let i = 0; i < newBlinks; i++) {
-        const blinkEvent: BlinkEvent = {
-          timestamp: Date.now() - calibrationStartTime.current,
-          earValue: currentEAR,
-          duration: 150, // Estimated blink duration
-        };
-
-        setCalibrationData(prev => ({
-          ...prev,
-          blinkEvents: [...prev.blinkEvents, blinkEvent],
-        }));
-      }
-
-      lastBlinkCountRef.current = blinkCount;
-
-      // Update progress
-      updateCalibrationProgress({
-        currentBlink: Math.min(blinkCount, targetBlinks),
-        lastDetectedBlink: Date.now(),
-      });
-
-      // Check if calibration is complete
-      if (blinkCount >= targetBlinks) {
-        setPhase('analyzing');
+      // Record EAR data if recording
+      if (isRecording && currentEAR > 0) {
+        const currentTime = Date.now() - recordingStartTime;
+        setEarData(prev => [...prev, { time: currentTime, ear: currentEAR }]);
       }
     }
-  }, [blinkCount, phase, currentEAR, updateCalibrationProgress]);
+  }, [phase, processFrame, isRecording, currentEAR, recordingStartTime]);
 
-  const startCalibrationProcess = async () => {
-    if (!stream) {
-      await startCamera();
-    }
-    setPhase('countdown');
-    
-    // Countdown before starting
-    let count = 3;
-    setCountdown(count);
-    
-    const countdownInterval = setInterval(() => {
-      count--;
-      setCountdown(count);
-      
-      if (count <= 0) {
-        clearInterval(countdownInterval);
-        beginCalibration();
-      }
-    }, 1000);
-  };
+  const { start: startAnimation, stop: stopAnimation } = useAnimationFrame(
+    handleAnimationFrame,
+    false
+  );
 
-  const beginCalibration = () => {
-    setPhase('calibrating');
-    calibrationStartTime.current = Date.now();
-    resetBlinkCounter();
-    lastBlinkCountRef.current = 0;
-
-    updateCalibrationProgress({
-      currentBlink: 0,
-      totalBlinks: targetBlinks,
-      isActive: true,
-      timeRemaining: blinkInterval,
-      showBlinkPrompt: true,
-    });
-
-    // Start blink prompts
-    let currentPrompt = 0;
-    const showNextPrompt = () => {
-      if (currentPrompt < targetBlinks) {
-        updateCalibrationProgress({
-          showBlinkPrompt: true,
-          timeRemaining: blinkInterval,
-        });
-
-        // Hide prompt after 500ms
-        setTimeout(() => {
-          updateCalibrationProgress({
-            showBlinkPrompt: false,
-          });
-        }, 500);
-
-        currentPrompt++;
-        
-        if (currentPrompt < targetBlinks) {
-          blinkTimerRef.current = setTimeout(showNextPrompt, blinkInterval);
-        }
-      }
-    };
-
-    showNextPrompt();
-  };
-
-  const analyzeCalibration = useCallback(async () => {
-    // Calculate metadata
-    const totalBlinksDetected = calibrationData.blinkEvents.length;
-    const accuracy = Math.min(totalBlinksDetected / targetBlinks, 1.0);
-    
-    const earValues = calibrationData.earValues.filter(val => val > 0);
-    const minEarValue = Math.min(...earValues);
-    const maxEarValue = Math.max(...earValues);
-    
-    const blinkTimestamps = calibrationData.blinkEvents.map(event => event.timestamp);
-    const intervals = blinkTimestamps.slice(1).map((timestamp, i) => timestamp - blinkTimestamps[i]);
-    const averageBlinkInterval = intervals.length > 0 
-      ? intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length 
-      : 0;
-
-    const rawData: CalibrationRawData = {
-      timestamps: calibrationData.timestamps,
-      earValues: calibrationData.earValues,
-      blinkEvents: calibrationData.blinkEvents,
-    };
-
-    const metadata: CalibrationMetadata = {
-      totalBlinksRequested: targetBlinks,
-      totalBlinksDetected,
-      accuracy,
-      averageBlinkInterval,
-      minEarValue,
-      maxEarValue,
-    };
-
-    const earThreshold = CalibrationService.calculateEarThreshold(rawData);
-
-    const calibration = {
-      name: CalibrationService.generateDefaultName(),
-      isActive: true, // Make new calibrations active by default
-      earThreshold,
-      metadata,
-      rawData,
-    };
-
+  const initializeCalibration = useCallback(async () => {
     try {
-      completeCalibration(calibration);
-      setPhase('complete');
+      if (!stream) {
+        await startCamera();
+      }
       
-      setTimeout(() => {
-        onComplete?.();
-      }, 2000);
+      setTimeout(async () => {
+        if (canvasRef.current) {
+          await startDetection(canvasRef.current);
+          startAnimation();
+        }
+      }, 500);
+      
+      setPhase('recording');
     } catch (error) {
-      console.error('Error saving calibration:', error);
+      console.error('Failed to initialize calibration:', error);
     }
-  }, [calibrationData, targetBlinks, completeCalibration, onComplete]);
+  }, [stream, startCamera, startDetection, startAnimation]);
 
-  const handleCancel = () => {
-    // Clean up timers
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
-    if (earCollectionRef.current) clearInterval(earCollectionRef.current);
-    
+  const startRecording = useCallback(() => {
+    setEarData([]);
+    setRecordingStartTime(Date.now());
+    setIsRecording(true);
+  }, []);
+
+  const restartRecording = useCallback(() => {
+    setIsRecording(false);
+    setEarData([]);
+    setTimeout(() => {
+      startRecording();
+    }, 100);
+  }, [startRecording]);
+
+  const confirmCalibration = useCallback(() => {
+    setIsRecording(false);
+    setPhase('analyzing');
+
+    // Analyze the data to find optimal threshold
+    const analysisResult = BlinkAnalyzer.analyzeBlinkData(earData, 10, 0.2, 0.3);
+
+    if (analysisResult.detectedBlinks === 10) {
+      // Create calibration data
+      const blinkEvents: BlinkEvent[] = analysisResult.blinkTimestamps.map(timestamp => ({
+        timestamp,
+        earValue: analysisResult.calibratedThreshold,
+        duration: 150,
+      }));
+
+      const rawData: CalibrationRawData = {
+        timestamps: earData.map(d => d.time),
+        earValues: earData.map(d => d.ear),
+        blinkEvents,
+      };
+
+      const metadata: CalibrationMetadata = {
+        totalBlinksRequested: 10,
+        totalBlinksDetected: 10,
+        accuracy: 1.0,
+        averageBlinkInterval: analysisResult.blinkTimestamps.length > 1 
+          ? (analysisResult.blinkTimestamps[analysisResult.blinkTimestamps.length - 1] - analysisResult.blinkTimestamps[0]) / 9
+          : 0,
+        minEarValue: Math.min(...earData.map(d => d.ear)),
+        maxEarValue: Math.max(...earData.map(d => d.ear)),
+      };
+
+      const calibration = {
+        name: CalibrationService.generateDefaultName(),
+        isActive: true,
+        earThreshold: analysisResult.calibratedThreshold,
+        metadata,
+        rawData,
+      };
+
+      try {
+        completeCalibration(calibration);
+        setPhase('complete');
+        
+        setTimeout(() => {
+          onComplete?.();
+        }, 2000);
+      } catch (error) {
+        console.error('Error saving calibration:', error);
+        setPhase('failed');
+      }
+    } else {
+      // Not exactly 10 blinks found
+      setPhase('failed');
+    }
+  }, [earData, completeCalibration, onComplete]);
+
+  const handleCancel = useCallback(() => {
+    setIsRecording(false);
+    stopAnimation();
     stopCalibration();
     stopDetection();
     stopCamera();
     onCancel?.();
-  };
+  }, [stopAnimation, stopCalibration, stopDetection, stopCamera, onCancel]);
 
-  // Auto-analyze when we have enough data
-  useEffect(() => {
-    if (phase === 'analyzing') {
-      const timer = setTimeout(analyzeCalibration, 1000);
-      return () => clearTimeout(timer);
+  const retryCalibration = useCallback(() => {
+    setPhase('recording');
+    setEarData([]);
+    setIsRecording(false);
+  }, []);
+
+  // Set video stream when it changes
+  const setVideoStream = useCallback((video: HTMLVideoElement | null) => {
+    if (video && stream) {
+      video.srcObject = stream;
     }
-  }, [phase, analyzeCalibration]);
+  }, [stream]);
 
-  const renderCurrentPhase = () => {
+  const videoRefCallback = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    setVideoStream(video);
+  }, [setVideoStream]);
+
+  const renderPhase = () => {
     switch (phase) {
       case 'setup':
         return (
           <Box>
-            <Callout.Root>
-              <Callout.Icon>👁️</Callout.Icon>
+            <Callout.Root mb="4">
+              <Callout.Icon>📋</Callout.Icon>
               <Callout.Text>
-                You&apos;ll be asked to blink exactly 10 times at 2-second intervals. 
-                Make sure you&apos;re in good lighting and looking directly at the camera.
+                <strong>Calibration Instructions:</strong>
+                <br />
+                1. Click &quot;Start Calibration&quot; to begin
+                <br />
+                2. Click &quot;Start Recording&quot; when ready
+                <br />
+                3. Blink exactly 10 times at your own pace
+                <br />
+                4. Watch the graph to see your blinks as dips in the EAR value
+                <br />
+                5. Click &quot;Confirm 10 Blinks&quot; when done
+                <br />
+                6. If you lose count, click &quot;Restart&quot; to try again
               </Callout.Text>
             </Callout.Root>
             
-            <Flex mt="4" gap="3" justify="center">
-              <Button size="3" onClick={startCalibrationProcess}>
+            <Flex gap="3" justify="center">
+              <Button size="3" onClick={initializeCalibration}>
                 Start Calibration
               </Button>
               <Button size="3" variant="soft" onClick={handleCancel}>
@@ -289,49 +238,46 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
           </Box>
         );
 
-      case 'countdown':
-        return (
-          <Box>
-            <Flex direction="column" align="center" gap="4">
-              <Text size="8" weight="bold" align="center">
-                {countdown}
-              </Text>
-              <Text size="4" align="center">
-                Get ready to start blinking...
-              </Text>
-            </Flex>
-          </Box>
-        );
-
-      case 'calibrating':
+      case 'recording':
         return (
           <Box>
             <Flex direction="column" gap="4">
-              <Progress 
-                value={(calibrationProgress?.currentBlink || 0) / targetBlinks * 100} 
-                size="3"
-              />
-              
+              <Box>
+                <EARTimeSeriesGraph 
+                  data={earData} 
+                  width={480} 
+                  height={150}
+                  minEAR={0}
+                  maxEAR={0.5}
+                />
+              </Box>
+
               <Flex justify="between" align="center">
                 <Text size="3">
-                  Blink {calibrationProgress?.currentBlink || 0} / {targetBlinks}
+                  {isRecording ? 'Recording... Blink 10 times' : 'Click Start to begin recording'}
                 </Text>
-                <Badge color={isBlinking ? "green" : "gray"}>
+                <Badge size="2" color={currentEAR < 0.25 ? "red" : "green"}>
                   EAR: {currentEAR.toFixed(3)}
                 </Badge>
               </Flex>
 
-              {calibrationProgress?.showBlinkPrompt && (
-                <Card style={{ padding: '20px', backgroundColor: 'var(--accent-3)' }}>
-                  <Text size="6" weight="bold" align="center">
-                    BLINK NOW!
-                  </Text>
-                </Card>
-              )}
-
-              <Flex justify="center">
-                <Button variant="soft" onClick={handleCancel}>
-                  Cancel Calibration
+              <Flex gap="3" justify="center">
+                {!isRecording ? (
+                  <Button size="3" onClick={startRecording}>
+                    Start Recording
+                  </Button>
+                ) : (
+                  <>
+                    <Button size="3" variant="soft" onClick={restartRecording}>
+                      Restart
+                    </Button>
+                    <Button size="3" onClick={confirmCalibration}>
+                      Confirm 10 Blinks
+                    </Button>
+                  </>
+                )}
+                <Button size="3" variant="ghost" onClick={handleCancel}>
+                  Cancel
                 </Button>
               </Flex>
             </Flex>
@@ -342,8 +288,10 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
         return (
           <Box>
             <Flex direction="column" align="center" gap="4">
-              <Text size="5">Analyzing calibration data...</Text>
-              <Progress value={undefined} size="3" />
+              <Text size="5">Analyzing blink data...</Text>
+              <Text size="3" color="gray">
+                Searching for the optimal EAR threshold between 0.2 and 0.3
+              </Text>
             </Flex>
           </Box>
         );
@@ -356,8 +304,32 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
                 ✅ Calibration Complete!
               </Text>
               <Text size="3" align="center">
-                Your blink detection is now calibrated and ready to use.
+                Successfully detected 10 blinks and calculated your optimal EAR threshold.
               </Text>
+            </Flex>
+          </Box>
+        );
+
+      case 'failed':
+        return (
+          <Box>
+            <Flex direction="column" align="center" gap="4">
+              <Text size="5" color="red">
+                ❌ Calibration Failed
+              </Text>
+              <Text size="3" align="center" color="gray">
+                Could not detect exactly 10 blinks in the EAR range of 0.2 to 0.3.
+                <br />
+                Please try again with more deliberate blinks.
+              </Text>
+              <Flex gap="3" mt="2">
+                <Button size="3" onClick={retryCalibration}>
+                  Retry Calibration
+                </Button>
+                <Button size="3" variant="soft" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </Flex>
             </Flex>
           </Box>
         );
@@ -375,10 +347,10 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
             Blink Detection Calibration
           </Heading>
 
-          {stream && (phase === 'calibrating' || phase === 'countdown') && (
+          {stream && phase !== 'setup' && (
             <Box style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
               <video
-                ref={videoRef}
+                ref={videoRefCallback}
                 autoPlay
                 playsInline
                 muted
@@ -393,12 +365,15 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
               />
               <canvas
                 ref={canvasRef}
+                width={480}
+                height={360}
                 style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
                   borderRadius: '8px',
                   pointerEvents: 'none',
                 }}
@@ -406,7 +381,7 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
             </Box>
           )}
 
-          {renderCurrentPhase()}
+          {renderPhase()}
         </Flex>
       </Card>
     </Box>

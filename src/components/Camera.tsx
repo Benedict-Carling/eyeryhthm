@@ -1,14 +1,16 @@
 'use client';
 
 import { Box, Button, Text, Flex, Badge, Card, Callout } from '@radix-ui/themes';
-import { useRef } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useCamera } from '../hooks/useCamera';
 import { useBlinkDetection } from '../hooks/useBlinkDetection';
 import { useCalibration } from '../contexts/CalibrationContext';
+import { useAnimationFrame } from '../hooks/useAnimationFrame';
 
 export function Camera() {
   const { canStartDetection, activeCalibration } = useCalibration();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hasStartedDetection = useRef(false);
   
   const { 
     stream, 
@@ -18,32 +20,76 @@ export function Camera() {
     videoRef, 
     startCamera, 
     stopCamera
-  } = useCamera({
-    onVideoReady: () => {
-      if (canStartDetection()) {
-        startDetection();
-      }
-    }
-  });
+  } = useCamera();
 
   const {
     blinkCount,
     currentEAR,
     isBlinking,
-    isDetectorReady,
-    showDebugOverlay,
+    isReady: isDetectorReady,
     resetBlinkCounter,
-    toggleDebugOverlay,
-    startDetection,
-    stopDetection,
+    start: startDetection,
+    stop: stopDetection,
+    processFrame,
     error: blinkError
-  } = useBlinkDetection({
-    videoElement: videoRef.current,
-    canvasElement: canvasRef.current,
-    autoStart: false
-  });
+  } = useBlinkDetection();
+
+  const showDebugOverlay = true;
+  const toggleDebugOverlay = () => {}; // Placeholder since we removed this functionality
 
   const displayError = error || blinkError;
+
+  // Handle detection initialization
+  const initializeDetection = useCallback(async () => {
+    if (canStartDetection() && canvasRef.current && !hasStartedDetection.current) {
+      hasStartedDetection.current = true;
+      await startDetection(canvasRef.current);
+    }
+  }, [canStartDetection, startDetection]);
+
+  // Set up video stream
+  const setVideoStream = useCallback((video: HTMLVideoElement | null) => {
+    if (video && stream) {
+      video.srcObject = stream;
+      // Initialize detection when video is ready
+      video.onloadedmetadata = () => {
+        setTimeout(initializeDetection, 100);
+      };
+    }
+  }, [stream, initializeDetection]);
+
+  const videoRefCallback = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    setVideoStream(video);
+  }, [videoRef, setVideoStream]);
+
+  // Animation frame for continuous detection
+  const handleAnimationFrame = useCallback(() => {
+    if (videoRef.current && isDetectorReady && stream) {
+      processFrame(videoRef.current, canvasRef.current);
+    }
+  }, [isDetectorReady, stream, processFrame]);
+
+  const { start: startAnimation, stop: stopAnimation } = useAnimationFrame(
+    handleAnimationFrame,
+    isDetectorReady && !!stream
+  );
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      hasStartedDetection.current = false;
+      stopAnimation();
+      stopDetection();
+    };
+  }, [stopAnimation, stopDetection]);
+
+  const handleStopCamera = useCallback(() => {
+    hasStartedDetection.current = false;
+    stopAnimation();
+    stopDetection();
+    stopCamera();
+  }, [stopAnimation, stopDetection, stopCamera]);
 
   return (
     <Box>
@@ -118,11 +164,10 @@ export function Camera() {
 
               <Box style={{ position: 'relative', display: 'inline-block' }}>
                 <video
-                  ref={videoRef}
+                  ref={videoRefCallback}
                   autoPlay
                   playsInline
                   muted
-                  webkit-playsinline="true"
                   style={{
                     width: '100%',
                     maxWidth: '640px',
@@ -150,31 +195,33 @@ export function Camera() {
               </Box>
 
               <Flex gap="2" justify="center" wrap="wrap">
+                {stream && (
+                  <Button 
+                    onClick={handleStopCamera} 
+                    size="3" 
+                    variant="soft" 
+                    color="red"
+                  >
+                    Stop Camera
+                  </Button>
+                )}
+                
                 <Button 
-                  onClick={resetBlinkCounter}
+                  onClick={resetBlinkCounter} 
+                  size="2" 
                   variant="soft"
-                  size="2"
                   disabled={!isDetectorReady}
                 >
                   Reset Counter
                 </Button>
+
                 <Button 
-                  onClick={toggleDebugOverlay}
-                  variant={showDebugOverlay ? "solid" : "soft"}
-                  size="2"
+                  onClick={toggleDebugOverlay} 
+                  size="2" 
+                  variant="soft"
                   disabled={!isDetectorReady}
                 >
-                  {showDebugOverlay ? "Hide" : "Show"} Debug
-                </Button>
-                <Button 
-                  onClick={() => {
-                    stopDetection();
-                    stopCamera();
-                  }}
-                  variant="outline"
-                  size="2"
-                >
-                  Stop Camera
+                  Toggle Debug: {showDebugOverlay ? 'ON' : 'OFF'}
                 </Button>
               </Flex>
             </Flex>
