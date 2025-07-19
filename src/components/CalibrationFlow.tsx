@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -44,22 +44,13 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
   const [recordingStartTime, setRecordingStartTime] = useState(0);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const {
     stream,
+    videoRef,
     startCamera,
     stopCamera,
-  } = useCamera({
-    onVideoReady: useCallback(() => {
-      if (canvasRef.current && videoRef.current) {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-      }
-    }, []),
-  });
+  } = useCamera();
 
   const {
     currentEAR,
@@ -191,17 +182,26 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
     setIsRecording(false);
   }, []);
 
-  // Set video stream when it changes
-  const setVideoStream = useCallback((video: HTMLVideoElement | null) => {
-    if (video && stream) {
-      video.srcObject = stream;
+  // Set up canvas when video is ready
+  useEffect(() => {
+    if (videoRef.current && canvasRef.current && stream) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      // Set canvas size to match video once it's loaded
+      const handleLoadedMetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      };
+      
+      if (video.videoWidth && video.videoHeight) {
+        handleLoadedMetadata();
+      } else {
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        return () => video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      }
     }
-  }, [stream]);
-
-  const videoRefCallback = useCallback((video: HTMLVideoElement | null) => {
-    videoRef.current = video;
-    setVideoStream(video);
-  }, [setVideoStream]);
+  }, [stream, videoRef]);
 
   const renderPhase = () => {
     switch (phase) {
@@ -350,7 +350,7 @@ export function CalibrationFlow({ onComplete, onCancel }: CalibrationFlowProps) 
           {stream && phase !== 'setup' && (
             <Box style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
               <video
-                ref={videoRefCallback}
+                ref={videoRef}
                 autoPlay
                 playsInline
                 muted

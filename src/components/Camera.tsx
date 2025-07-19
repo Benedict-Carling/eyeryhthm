@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Button, Text, Flex, Badge, Card, Callout } from '@radix-ui/themes';
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { useCamera } from '../hooks/useCamera';
 import { useBlinkDetection } from '../hooks/useBlinkDetection';
 import { useCalibration } from '../contexts/CalibrationContext';
@@ -10,7 +10,7 @@ import { useAnimationFrame } from '../hooks/useAnimationFrame';
 export function Camera() {
   const { canStartDetection, activeCalibration } = useCalibration();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hasStartedDetection = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const { 
     stream, 
@@ -39,57 +39,83 @@ export function Camera() {
 
   const displayError = error || blinkError;
 
-  // Handle detection initialization
-  const initializeDetection = useCallback(async () => {
-    if (canStartDetection() && canvasRef.current && !hasStartedDetection.current) {
-      hasStartedDetection.current = true;
-      await startDetection(canvasRef.current);
-    }
-  }, [canStartDetection, startDetection]);
+  // Single initialization effect that handles everything in order
+  useEffect(() => {
+    let mounted = true;
 
-  // Set up video stream
-  const setVideoStream = useCallback((video: HTMLVideoElement | null) => {
-    if (video && stream) {
-      video.srcObject = stream;
-      // Initialize detection when video is ready
-      video.onloadedmetadata = () => {
-        setTimeout(initializeDetection, 100);
-      };
-    }
-  }, [stream, initializeDetection]);
+    const initializeEverything = async () => {
+      if (!stream || !videoRef.current || !canvasRef.current || isInitialized) {
+        return;
+      }
 
-  const videoRefCallback = useCallback((video: HTMLVideoElement | null) => {
-    videoRef.current = video;
-    setVideoStream(video);
-  }, [videoRef, setVideoStream]);
+      // Wait for video to be truly ready
+      const video = videoRef.current;
+      
+      // Ensure video is playing
+      if (video.readyState < 2) {
+        await new Promise<void>((resolve) => {
+          const handleCanPlay = () => {
+            video.removeEventListener('canplay', handleCanPlay);
+            resolve();
+          };
+          video.addEventListener('canplay', handleCanPlay);
+        });
+      }
+
+      // Small delay to ensure stable video feed
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      if (!mounted) return;
+
+      // Initialize detection if allowed
+      if (canStartDetection()) {
+        try {
+          await startDetection(canvasRef.current);
+          if (mounted) {
+            setIsInitialized(true);
+          }
+        } catch (err) {
+          console.error('Failed to start detection:', err);
+        }
+      }
+    };
+
+    initializeEverything();
+
+    return () => {
+      mounted = false;
+    };
+  }, [stream, canStartDetection, startDetection]);
 
   // Animation frame for continuous detection
   const handleAnimationFrame = useCallback(() => {
-    if (videoRef.current && isDetectorReady && stream) {
+    if (videoRef.current && isDetectorReady && isInitialized) {
       processFrame(videoRef.current, canvasRef.current);
     }
-  }, [isDetectorReady, stream, processFrame]);
+  }, [isDetectorReady, isInitialized, processFrame]);
 
-  const { start: startAnimation, stop: stopAnimation } = useAnimationFrame(
-    handleAnimationFrame,
-    isDetectorReady && !!stream
-  );
+  useAnimationFrame(handleAnimationFrame, isDetectorReady && isInitialized);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      hasStartedDetection.current = false;
-      stopAnimation();
+      setIsInitialized(false);
       stopDetection();
     };
-  }, [stopAnimation, stopDetection]);
+  }, [stopDetection]);
 
   const handleStopCamera = useCallback(() => {
-    hasStartedDetection.current = false;
-    stopAnimation();
+    setIsInitialized(false);
     stopDetection();
     stopCamera();
-  }, [stopAnimation, stopDetection, stopCamera]);
+  }, [stopDetection, stopCamera]);
+
+  // Set video stream without extra callbacks
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream, videoRef]);
 
   return (
     <Box>
@@ -164,7 +190,7 @@ export function Camera() {
 
               <Box style={{ position: 'relative', display: 'inline-block' }}>
                 <video
-                  ref={videoRefCallback}
+                  ref={videoRef}
                   autoPlay
                   playsInline
                   muted

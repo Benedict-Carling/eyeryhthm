@@ -10,12 +10,11 @@ interface CameraState {
 }
 
 interface CameraOptions {
-  onVideoReady?: () => void;
   facingMode?: 'user' | 'environment';
 }
 
 export function useCamera(options: CameraOptions = {}) {
-  const { onVideoReady, facingMode = 'user' } = options;
+  const { facingMode = 'user' } = options;
   
   const [state, setState] = useState<CameraState>({
     stream: null,
@@ -42,30 +41,15 @@ export function useCamera(options: CameraOptions = {}) {
         hasPermission: true,
       }));
 
-      // Use requestAnimationFrame to ensure video element is rendered
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          const video = videoRef.current;
-          
-          // Set required attributes for iOS/Safari compatibility
-          video.setAttribute('playsinline', 'true');
-          video.setAttribute('webkit-playsinline', 'true');
-          video.autoplay = true;
-          video.muted = true;
-          
-          // Set up event handler for when metadata is loaded
-          video.onloadedmetadata = () => {
-            // Small delay to ensure video is ready
-            setTimeout(() => {
-              video.play().catch(console.error);
-              onVideoReady?.();
-            }, 100);
-          };
-          
-          // Set the stream
-          video.srcObject = stream;
-        }
-      });
+      // Set video attributes for compatibility
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.autoplay = true;
+        video.muted = true;
+        video.srcObject = stream;
+      }
     } catch (err) {
       const error = err as Error;
       setState(prev => ({
@@ -77,7 +61,7 @@ export function useCamera(options: CameraOptions = {}) {
         hasPermission: false,
       }));
     }
-  }, [facingMode, onVideoReady]);
+  }, [facingMode]);
 
   const stopCamera = useCallback(() => {
     if (state.stream) {
@@ -86,7 +70,6 @@ export function useCamera(options: CameraOptions = {}) {
       // Clean up video element
       if (videoRef.current) {
         videoRef.current.srcObject = null;
-        videoRef.current.onloadedmetadata = null;
       }
       
       setState(prev => ({
