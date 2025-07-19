@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Container, Flex, Box, Text, Heading, Tabs } from "@radix-ui/themes";
 import { Camera } from "../components/Camera";
 import { CalibrationManager } from "../components/CalibrationManager";
+import { SessionsView } from "../components/SessionsView";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("detection");
@@ -35,6 +36,9 @@ export default function Home() {
               <Tabs.Trigger value="calibration" style={{ flex: 1 }}>
                 Calibration
               </Tabs.Trigger>
+              <Tabs.Trigger value="sessions" style={{ flex: 1 }}>
+                Sessions
+              </Tabs.Trigger>
             </Tabs.List>
 
             <Box pt="6">
@@ -44,6 +48,10 @@ export default function Home() {
 
               <Tabs.Content value="calibration">
                 <CalibrationManager />
+              </Tabs.Content>
+
+              <Tabs.Content value="sessions">
+                <SessionsView />
               </Tabs.Content>
             </Box>
           </Tabs.Root>
