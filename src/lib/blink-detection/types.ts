@@ -26,7 +26,7 @@ export interface BlinkDetectorConfig {
 }
 
 export interface FaceMeshResults {
-  multiFaceLandmarks: Array<{
+  faceLandmarks: Array<{
     x: number;
     y: number;
     z: number;

@@ -29,11 +29,11 @@ export function extractBothEyeLandmarks(
   videoWidth: number,
   videoHeight: number
 ): { leftEye: EyeLandmarks; rightEye: EyeLandmarks } | null {
-  if (!faceMeshResults.multiFaceLandmarks || faceMeshResults.multiFaceLandmarks.length === 0) {
+  if (!faceMeshResults.faceLandmarks || faceMeshResults.faceLandmarks.length === 0) {
     return null;
   }
 
-  const landmarks = faceMeshResults.multiFaceLandmarks[0];
+  const landmarks = faceMeshResults.faceLandmarks[0];
   
   if (landmarks.length < 468) {
     return null;

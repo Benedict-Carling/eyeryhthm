@@ -1,19 +1,8 @@
 import { FaceMeshResults } from "./types";
-
-interface FaceMesh {
-  setOptions: (options: {
-    maxNumFaces: number;
-    refineLandmarks: boolean;
-    minDetectionConfidence: number;
-    minTrackingConfidence: number;
-  }) => void;
-  onResults: (callback: (results: FaceMeshResults) => void) => void;
-  send: (input: { image: HTMLVideoElement }) => void;
-  close: () => void;
-}
+import { FaceLandmarker, FaceLandmarkerResult, FilesetResolver } from "@mediapipe/tasks-vision";
 
 export class FaceMeshProcessor {
-  private faceMesh: FaceMesh | null = null;
+  private faceLandmarker: FaceLandmarker | null = null;
   private isInitialized = false;
 
   async initialize(): Promise<void> {
@@ -26,45 +15,58 @@ export class FaceMeshProcessor {
       throw new Error("FaceMeshProcessor can only be used in the browser");
     }
 
-    const { FaceMesh } = await import("@mediapipe/face_mesh");
+    try {
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
+      );
 
-    this.faceMesh = new FaceMesh({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-      },
-    });
+      this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+          delegate: "GPU"
+        },
+        outputFaceBlendshapes: false,
+        outputFacialTransformationMatrixes: false,
+        numFaces: 1,
+        minFaceDetectionConfidence: 0.5,
+        minFacePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
 
-    this.faceMesh.setOptions({
-      maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
-
-    this.isInitialized = true;
+      this.isInitialized = true;
+    } catch (error) {
+      console.error("Failed to initialize FaceLandmarker:", error);
+      throw error;
+    }
   }
 
   async processFrame(
     videoElement: HTMLVideoElement,
     onResults: (results: FaceMeshResults) => void
   ): Promise<void> {
-    if (!this.faceMesh || !this.isInitialized) {
-      throw new Error("FaceMesh not initialized. Call initialize() first.");
+    if (!this.faceLandmarker || !this.isInitialized) {
+      throw new Error("FaceLandmarker not initialized. Call initialize() first.");
     }
 
-    return new Promise((resolve) => {
-      this.faceMesh!.onResults((results: FaceMeshResults) => {
-        onResults(results);
-        resolve();
-      });
-      this.faceMesh!.send({ image: videoElement });
-    });
+    try {
+      const results: FaceLandmarkerResult = this.faceLandmarker.detect(videoElement);
+      
+      // Convert new format to legacy format for compatibility
+      const convertedResults: FaceMeshResults = {
+        faceLandmarks: results.faceLandmarks || []
+      };
+      
+      onResults(convertedResults);
+    } catch (error) {
+      console.error("Face detection error:", error);
+      throw error;
+    }
   }
 
   dispose(): void {
-    if (this.faceMesh) {
-      this.faceMesh.close();
-      this.faceMesh = null;
+    if (this.faceLandmarker) {
+      this.faceLandmarker.close();
+      this.faceLandmarker = null;
     }
     this.isInitialized = false;
   }
