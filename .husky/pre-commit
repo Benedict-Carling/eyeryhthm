@@ -1,5 +1,8 @@
-# Run lint-staged for linting
-npx lint-staged
+# Run for linting
+npm run lint
 
 # Run all tests to ensure nothing is broken
 npm run test:unit && npm test
+
+# Build the project to ensure everything compiles correctly
+npm run build

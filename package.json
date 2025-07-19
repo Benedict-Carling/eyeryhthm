@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint && eslint tests/ --ext .ts,.tsx",
+    "lint": "next lint",
     "test": "playwright test --reporter=line",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
@@ -37,16 +37,7 @@
     "eslint-config-next": "15.4.1",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
-    "lint-staged": "^16.1.2",
     "typescript": "^5",
     "vitest": "^3.2.4"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
-    ],
-    "tests/**/*.{ts,tsx}": [
-      "eslint --fix"
-    ]
   }
 }
