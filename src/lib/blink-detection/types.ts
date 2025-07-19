@@ -39,3 +39,44 @@ export interface BlinkDetectionState {
   totalBlinks: number;
   isCurrentlyBlinking: boolean;
 }
+
+export interface CalibrationMetadata {
+  totalBlinksRequested: number;
+  totalBlinksDetected: number;
+  accuracy: number;
+  averageBlinkInterval: number;
+  minEarValue: number;
+  maxEarValue: number;
+}
+
+export interface BlinkEvent {
+  timestamp: number;
+  earValue: number;
+  duration: number;
+}
+
+export interface CalibrationRawData {
+  timestamps: number[];
+  earValues: number[];
+  blinkEvents: BlinkEvent[];
+}
+
+export interface Calibration {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
+  earThreshold: number;
+  metadata: CalibrationMetadata;
+  rawData: CalibrationRawData;
+}
+
+export interface CalibrationProgress {
+  currentBlink: number;
+  totalBlinks: number;
+  isActive: boolean;
+  timeRemaining: number;
+  showBlinkPrompt: boolean;
+  lastDetectedBlink?: number;
+}

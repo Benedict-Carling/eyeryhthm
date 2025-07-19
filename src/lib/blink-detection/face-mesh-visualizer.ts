@@ -1,7 +1,23 @@
-import { FaceMeshResults } from './types';
+import { FaceMeshResults } from "./types";
 
-type DrawingUtils = any;
-type FaceMeshConnections = any;
+interface DrawingUtils {
+  drawConnectors: (
+    ctx: CanvasRenderingContext2D,
+    landmarks?: Array<{ x: number; y: number; z: number }>,
+    connections?: unknown,
+    style?: { color: string; lineWidth: number }
+  ) => void;
+}
+
+interface FaceMeshConnections {
+  FACE_OVAL: unknown;
+  LEFT_EYE: unknown;
+  RIGHT_EYE: unknown;
+  LEFT_EYEBROW: unknown;
+  RIGHT_EYEBROW: unknown;
+  LIPS: unknown;
+  TESSELATION: unknown;
+}
 
 export class FaceMeshVisualizer {
   private canvas: HTMLCanvasElement | null = null;
@@ -11,19 +27,19 @@ export class FaceMeshVisualizer {
 
   async initialize(canvas: HTMLCanvasElement): Promise<void> {
     this.canvas = canvas;
-    this.canvasCtx = canvas.getContext('2d');
+    this.canvasCtx = canvas.getContext("2d");
 
-    if (typeof window === 'undefined') {
-      throw new Error('FaceMeshVisualizer can only be used in the browser');
+    if (typeof window === "undefined") {
+      throw new Error("FaceMeshVisualizer can only be used in the browser");
     }
 
     // Import drawing utilities and face mesh connections
     const [drawingUtils, faceMesh] = await Promise.all([
-      import('@mediapipe/drawing_utils'),
-      import('@mediapipe/face_mesh')
+      import("@mediapipe/drawing_utils"),
+      import("@mediapipe/face_mesh"),
     ]);
 
-    this.drawingUtils = drawingUtils;
+    this.drawingUtils = drawingUtils as unknown as DrawingUtils;
     this.faceMeshConnections = {
       FACE_OVAL: faceMesh.FACEMESH_FACE_OVAL,
       LEFT_EYE: faceMesh.FACEMESH_LEFT_EYE,
@@ -31,11 +47,15 @@ export class FaceMeshVisualizer {
       LEFT_EYEBROW: faceMesh.FACEMESH_LEFT_EYEBROW,
       RIGHT_EYEBROW: faceMesh.FACEMESH_RIGHT_EYEBROW,
       LIPS: faceMesh.FACEMESH_LIPS,
-      TESSELATION: faceMesh.FACEMESH_TESSELATION
+      TESSELATION: faceMesh.FACEMESH_TESSELATION,
     };
   }
 
-  drawResults(results: FaceMeshResults, videoWidth: number, videoHeight: number): void {
+  drawResults(
+    results: FaceMeshResults,
+    videoWidth: number,
+    videoHeight: number
+  ): void {
     if (!this.canvas || !this.canvasCtx || !this.drawingUtils) {
       return;
     }
@@ -54,52 +74,52 @@ export class FaceMeshVisualizer {
       this.drawingUtils.drawConnectors(
         this.canvasCtx,
         landmarks,
-        this.faceMeshConnections.TESSELATION,
-        { color: '#C0C0C070', lineWidth: 1 }
+        this.faceMeshConnections!.TESSELATION,
+        { color: "#C0C0C070", lineWidth: 1 }
       );
 
       // Draw face oval (blue)
       this.drawingUtils.drawConnectors(
         this.canvasCtx,
         landmarks,
-        this.faceMeshConnections.FACE_OVAL,
-        { color: '#0000FF', lineWidth: 2 }
+        this.faceMeshConnections!.FACE_OVAL,
+        { color: "#0000FF", lineWidth: 2 }
       );
 
       // Draw eyes (green)
       this.drawingUtils.drawConnectors(
         this.canvasCtx,
         landmarks,
-        this.faceMeshConnections.LEFT_EYE,
-        { color: '#00FF00', lineWidth: 2 }
+        this.faceMeshConnections!.LEFT_EYE,
+        { color: "#00FF00", lineWidth: 2 }
       );
       this.drawingUtils.drawConnectors(
         this.canvasCtx,
         landmarks,
-        this.faceMeshConnections.RIGHT_EYE,
-        { color: '#00FF00', lineWidth: 2 }
+        this.faceMeshConnections!.RIGHT_EYE,
+        { color: "#00FF00", lineWidth: 2 }
       );
 
       // Draw eyebrows (yellow)
       this.drawingUtils.drawConnectors(
         this.canvasCtx,
         landmarks,
-        this.faceMeshConnections.LEFT_EYEBROW,
-        { color: '#FFFF00', lineWidth: 2 }
+        this.faceMeshConnections!.LEFT_EYEBROW,
+        { color: "#FFFF00", lineWidth: 2 }
       );
       this.drawingUtils.drawConnectors(
         this.canvasCtx,
         landmarks,
-        this.faceMeshConnections.RIGHT_EYEBROW,
-        { color: '#FFFF00', lineWidth: 2 }
+        this.faceMeshConnections!.RIGHT_EYEBROW,
+        { color: "#FFFF00", lineWidth: 2 }
       );
 
       // Draw lips (red)
       this.drawingUtils.drawConnectors(
         this.canvasCtx,
         landmarks,
-        this.faceMeshConnections.LIPS,
-        { color: '#FF0000', lineWidth: 2 }
+        this.faceMeshConnections!.LIPS,
+        { color: "#FF0000", lineWidth: 2 }
       );
 
       // Highlight specific eye landmarks for EAR calculation
@@ -107,7 +127,9 @@ export class FaceMeshVisualizer {
     }
   }
 
-  private highlightEyeLandmarks(landmarks: Array<{ x: number; y: number; z: number }>): void {
+  private highlightEyeLandmarks(
+    landmarks: Array<{ x: number; y: number; z: number }>
+  ): void {
     if (!this.canvasCtx || !this.canvas) {
       return;
     }
@@ -118,7 +140,7 @@ export class FaceMeshVisualizer {
 
     const drawEyePoint = (index: number, color: string, label: string) => {
       if (!this.canvasCtx || !this.canvas) return;
-      
+
       const landmark = landmarks[index];
       if (!landmark) return;
 
@@ -130,24 +152,24 @@ export class FaceMeshVisualizer {
       this.canvasCtx.arc(x, y, 4, 0, 2 * Math.PI);
       this.canvasCtx.fillStyle = color;
       this.canvasCtx.fill();
-      this.canvasCtx.strokeStyle = '#FFFFFF';
+      this.canvasCtx.strokeStyle = "#FFFFFF";
       this.canvasCtx.lineWidth = 1;
       this.canvasCtx.stroke();
 
       // Draw label
-      this.canvasCtx.fillStyle = '#FFFFFF';
-      this.canvasCtx.font = '10px Arial';
+      this.canvasCtx.fillStyle = "#FFFFFF";
+      this.canvasCtx.font = "10px Arial";
       this.canvasCtx.fillText(label, x + 6, y - 6);
     };
 
     // Draw right eye landmarks
     rightEyeIndices.forEach((index, i) => {
-      drawEyePoint(index, '#FF00FF', `R${i + 1}`);
+      drawEyePoint(index, "#FF00FF", `R${i + 1}`);
     });
 
     // Draw left eye landmarks
     leftEyeIndices.forEach((index, i) => {
-      drawEyePoint(index, '#00FFFF', `L${i + 1}`);
+      drawEyePoint(index, "#00FFFF", `L${i + 1}`);
     });
   }
 

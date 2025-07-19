@@ -1,9 +1,12 @@
 'use client';
 
-import { Box, Button, Text, Flex, Badge, Card } from '@radix-ui/themes';
+import { Box, Button, Text, Flex, Badge, Card, Callout } from '@radix-ui/themes';
 import { useCameraWithBlinkDetection } from '../hooks/useCameraWithBlinkDetection';
+import { useCalibration } from '../contexts/CalibrationContext';
 
 export function Camera() {
+  const { canStartDetection, activeCalibration } = useCalibration();
+  
   const { 
     stream, 
     isLoading, 
@@ -25,11 +28,21 @@ export function Camera() {
   return (
     <Box>
       <Flex direction="column" align="center" gap="4">
+        {/* Calibration Required Warning */}
+        {!canStartDetection() && (
+          <Callout.Root color="orange">
+            <Callout.Icon>⚠️</Callout.Icon>
+            <Callout.Text>
+              Please complete calibration before starting blink detection.
+            </Callout.Text>
+          </Callout.Root>
+        )}
+
         {!hasPermission && !isLoading && (
           <Button 
             onClick={startCamera} 
             size="3"
-            disabled={isLoading}
+            disabled={isLoading || !canStartDetection()}
           >
             Start Camera
           </Button>
@@ -59,10 +72,18 @@ export function Camera() {
                   </Flex>
                   <Flex justify="between" align="center">
                     <Text size="2" weight="medium">EAR Score:</Text>
-                    <Badge color={currentEAR < 0.25 ? "orange" : "blue"} size="2">
+                    <Badge color={currentEAR < (activeCalibration?.earThreshold || 0.25) ? "orange" : "blue"} size="2">
                       {currentEAR.toFixed(3)}
                     </Badge>
                   </Flex>
+                  {activeCalibration && (
+                    <Flex justify="between" align="center">
+                      <Text size="2" weight="medium">Threshold:</Text>
+                      <Badge color="gray" size="2">
+                        {activeCalibration.earThreshold.toFixed(3)}
+                      </Badge>
+                    </Flex>
+                  )}
                   <Flex justify="between" align="center">
                     <Text size="2" weight="medium">Status:</Text>
                     <Badge 

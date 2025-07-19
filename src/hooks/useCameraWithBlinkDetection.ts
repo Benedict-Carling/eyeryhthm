@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { BlinkDetector } from '../lib/blink-detection/blink-detector';
 import { BlinkDetectionResult } from '../lib/blink-detection/types';
 import { FaceMeshVisualizer } from '../lib/blink-detection/face-mesh-visualizer';
+import { useCalibration } from '../contexts/CalibrationContext';
 
 interface CameraBlinkState {
   stream: MediaStream | null;
@@ -18,6 +19,8 @@ interface CameraBlinkState {
 }
 
 export function useCameraWithBlinkDetection() {
+  const { activeCalibration } = useCalibration();
+  
   const [state, setState] = useState<CameraBlinkState>({
     stream: null,
     isLoading: false,
@@ -76,8 +79,9 @@ export function useCameraWithBlinkDetection() {
 
   const startBlinkDetection = useCallback(async () => {
     if (!blinkDetectorRef.current) {
+      const earThreshold = activeCalibration?.earThreshold || 0.25;
       blinkDetectorRef.current = new BlinkDetector({
-        earThreshold: 0.25,
+        earThreshold,
         consecutiveFrames: 2,
         debounceTime: 50,
       });
@@ -102,7 +106,7 @@ export function useCameraWithBlinkDetection() {
         isDetectorReady: false 
       }));
     }
-  }, [processFrame]);
+  }, [processFrame, activeCalibration]);
 
   const stopBlinkDetection = useCallback(() => {
     if (animationFrameRef.current) {
