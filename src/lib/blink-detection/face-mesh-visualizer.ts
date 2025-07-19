@@ -1,7 +1,7 @@
 import { FaceMeshResults } from "./types";
 import { DrawingUtils } from "@mediapipe/tasks-vision";
 
-// Face mesh connection indices - recreated from MediaPipe legacy constants
+// Face mesh connection indices - only face oval and eyes
 const FACE_MESH_CONNECTIONS = {
   FACE_OVAL: [
     [10, 338], [338, 297], [297, 332], [332, 284], [284, 251], [251, 389], [389, 356], [356, 454], [454, 323], [323, 361],
@@ -16,18 +16,6 @@ const FACE_MESH_CONNECTIONS = {
   RIGHT_EYE: [
     [362, 382], [382, 381], [381, 380], [380, 374], [374, 373], [373, 390], [390, 249], [249, 263], [263, 466], [466, 388],
     [388, 387], [387, 386], [386, 385], [385, 384], [384, 398], [398, 362]
-  ],
-  LEFT_EYEBROW: [
-    [46, 53], [53, 52], [52, 51], [51, 48], [48, 115], [115, 131], [131, 134], [134, 102], [102, 48], [48, 64]
-  ],
-  RIGHT_EYEBROW: [
-    [276, 283], [283, 282], [282, 295], [295, 285], [285, 336], [336, 296], [296, 334], [334, 293], [293, 300], [300, 276]
-  ],
-  LIPS: [
-    [61, 84], [84, 17], [17, 314], [314, 405], [405, 320], [320, 307], [307, 375], [375, 321], [321, 308], [308, 324],
-    [324, 318], [318, 402], [402, 317], [317, 14], [14, 87], [87, 178], [178, 88], [88, 95], [95, 78], [78, 191],
-    [191, 80], [80, 81], [81, 82], [82, 13], [13, 312], [312, 311], [311, 310], [310, 415], [415, 308], [308, 324],
-    [324, 318], [318, 402], [402, 317], [317, 14], [14, 87], [87, 178], [178, 88], [88, 95]
   ]
 };
 
@@ -73,13 +61,6 @@ export class FaceMeshVisualizer {
       // Draw eyes (green)
       this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.LEFT_EYE, "#00FF00", 2);
       this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.RIGHT_EYE, "#00FF00", 2);
-
-      // Draw eyebrows (yellow)
-      this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.LEFT_EYEBROW, "#FFFF00", 2);
-      this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.RIGHT_EYEBROW, "#FFFF00", 2);
-
-      // Draw lips (red)
-      this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.LIPS, "#FF0000", 2);
 
       // Highlight specific eye landmarks for EAR calculation
       this.highlightEyeLandmarks(landmarks);
