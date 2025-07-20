@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Theme } from "@radix-ui/themes";
 import { CalibrationProvider } from "../contexts/CalibrationContext";
 import { SessionProvider } from "../contexts/SessionContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
+import { ClientLayout } from "./client-layout";
 import "@radix-ui/themes/styles.css";
 
 export const metadata: Metadata = {
@@ -17,11 +18,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Theme appearance="dark" accentColor="indigo" grayColor="mauve">
+        <ThemeProvider>
           <CalibrationProvider>
-            <SessionProvider>{children}</SessionProvider>
+            <SessionProvider>
+              <ClientLayout>{children}</ClientLayout>
+            </SessionProvider>
           </CalibrationProvider>
-        </Theme>
+        </ThemeProvider>
       </body>
     </html>
   );
