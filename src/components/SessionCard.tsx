@@ -6,6 +6,7 @@ import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 import { SessionData, formatSessionDuration } from "../lib/sessions/types";
 import { ClockIcon } from "@radix-ui/react-icons";
 import { Bell, BellOff } from "lucide-react";
+import Link from "next/link";
 
 interface SessionCardProps {
   session: SessionData;
@@ -37,14 +38,25 @@ export function SessionCard({ session }: SessionCardProps) {
   }));
 
   return (
-    <Card
-      style={{
-        padding: "20px",
-        border: session.isActive ? "2px solid #10b981" : "none",
-        position: "relative",
-      }}
-    >
-      <Flex direction="column" gap="3">
+    <Link href={`/sessions/${session.id}`} style={{ textDecoration: "none" }}>
+      <Card
+        style={{
+          padding: "20px",
+          border: session.isActive ? "2px solid #10b981" : "none",
+          position: "relative",
+          cursor: "pointer",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
+        <Flex direction="column" gap="3">
         {/* Header */}
         <Flex justify="between" align="center">
           <Flex align="center" gap="3">
@@ -129,5 +141,6 @@ export function SessionCard({ session }: SessionCardProps) {
         </Flex>
       </Flex>
     </Card>
+    </Link>
   );
 }
