@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Flex,
@@ -10,30 +10,31 @@ import {
   Tabs,
   Card,
   Callout,
-} from '@radix-ui/themes';
-import { PlusIcon, EyeOpenIcon } from '@radix-ui/react-icons';
-import { useCalibration } from '../contexts/CalibrationContext';
-import { CalibrationList } from './CalibrationList';
-import { CalibrationFlow } from './CalibrationFlow';
+} from "@radix-ui/themes";
+import { PlusIcon, EyeOpenIcon } from "@radix-ui/react-icons";
+import { useCalibration } from "../contexts/CalibrationContext";
+import { CalibrationList } from "./CalibrationList";
+import { CalibrationFlow } from "./CalibrationFlow";
 
 export function CalibrationManager() {
-  const { calibrations, hasActiveCalibration, isCalibrating } = useCalibration();
+  const { calibrations, hasActiveCalibration, isCalibrating } =
+    useCalibration();
   const [showCalibrationFlow, setShowCalibrationFlow] = useState(false);
-  const [activeTab, setActiveTab] = useState('list');
+  const [activeTab, setActiveTab] = useState("list");
 
   const handleStartNewCalibration = () => {
     setShowCalibrationFlow(true);
-    setActiveTab('calibrate');
+    setActiveTab("calibrate");
   };
 
   const handleCalibrationComplete = () => {
     setShowCalibrationFlow(false);
-    setActiveTab('list');
+    setActiveTab("list");
   };
 
   const handleCalibrationCancel = () => {
     setShowCalibrationFlow(false);
-    setActiveTab('list');
+    setActiveTab("list");
   };
 
   if (showCalibrationFlow || isCalibrating) {
@@ -52,9 +53,7 @@ export function CalibrationManager() {
         <Flex justify="between" align="center">
           <Box>
             <Heading size="6">Calibration Management</Heading>
-            <Text size="3" color="gray">
-              Manage your blink detection calibrations
-            </Text>
+            <Text size="3">Manage your blink detection calibrations</Text>
           </Box>
           <Button size="3" onClick={handleStartNewCalibration}>
             <PlusIcon />
@@ -74,11 +73,10 @@ export function CalibrationManager() {
           </Callout.Root>
         ) : (
           <Callout.Root color="orange">
-            <Callout.Icon>
-              ⚠️
-            </Callout.Icon>
+            <Callout.Icon>⚠️</Callout.Icon>
             <Callout.Text>
-              No active calibration. Create a calibration to start using blink detection.
+              No active calibration. Create a calibration to start using blink
+              detection.
             </Callout.Text>
           </Callout.Root>
         )}
@@ -89,9 +87,7 @@ export function CalibrationManager() {
             <Tabs.Trigger value="list">
               Calibrations ({calibrations.length})
             </Tabs.Trigger>
-            <Tabs.Trigger value="info">
-              About Calibration
-            </Tabs.Trigger>
+            <Tabs.Trigger value="info">About Calibration</Tabs.Trigger>
           </Tabs.List>
 
           <Box pt="4">
@@ -100,43 +96,65 @@ export function CalibrationManager() {
             </Tabs.Content>
 
             <Tabs.Content value="info">
-              <Card style={{ padding: '20px' }}>
+              <Card style={{ padding: "20px" }}>
                 <Flex direction="column" gap="4">
                   <Heading size="4">How Calibration Works</Heading>
-                  
+
                   <Box>
-                    <Text size="3" weight="medium">What is EAR?</Text>
-                    <Text size="2" color="gray">
-                      Eye Aspect Ratio (EAR) measures the ratio between the height and width of your eye. 
-                      When you blink, this ratio drops significantly, allowing us to detect blinks reliably.
+                    <Text size="3" weight="medium">
+                      What is EAR?
+                    </Text>
+                    <Text size="2">
+                      Eye Aspect Ratio (EAR) measures the ratio between the
+                      height and width of your eye. When you blink, this ratio
+                      drops significantly, allowing us to detect blinks
+                      reliably.
                     </Text>
                   </Box>
 
                   <Box>
-                    <Text size="3" weight="medium">Calibration Process</Text>
-                    <Text size="2" color="gray">
-                      During calibration, you&apos;ll blink 10 times at 2-second intervals. 
-                      The system analyzes your blink patterns to determine the optimal EAR threshold 
-                      for your eyes, lighting conditions, and camera setup.
+                    <Text size="3" weight="medium">
+                      Calibration Process
+                    </Text>
+                    <Text size="2">
+                      During calibration, you&apos;ll blink 10 times at 2-second
+                      intervals. The system analyzes your blink patterns to
+                      determine the optimal EAR threshold for your eyes,
+                      lighting conditions, and camera setup.
                     </Text>
                   </Box>
 
                   <Box>
-                    <Text size="3" weight="medium">Why Calibrate?</Text>
-                    <Text size="2" color="gray">
-                      Everyone&apos;s eyes are different, and lighting conditions vary. 
-                      Calibration ensures the blink detection works accurately for your specific setup, 
-                      reducing false positives and missed blinks.
+                    <Text size="3" weight="medium">
+                      Why Calibrate?
+                    </Text>
+                    <Text size="2">
+                      Everyone&apos;s eyes are different, and lighting
+                      conditions vary. Calibration ensures the blink detection
+                      works accurately for your specific setup, reducing false
+                      positives and missed blinks.
                     </Text>
                   </Box>
 
                   <Box>
-                    <Text size="3" weight="medium">Best Practices</Text>
-                    <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                      <li><Text size="2" color="gray">Use good, consistent lighting</Text></li>
-                      <li><Text size="2" color="gray">Look directly at the camera</Text></li>
-                      <li><Text size="2" color="gray">Blink naturally when prompted</Text></li>
-                      <li><Text size="2" color="gray">Recalibrate if you change your setup</Text></li>
+                    <Text size="3" weight="medium">
+                      Best Practices
+                    </Text>
+                    <ul style={{ margin: "8px 0", paddingLeft: "20px" }}>
+                      <li>
+                        <Text size="2">Use good, consistent lighting</Text>
+                      </li>
+                      <li>
+                        <Text size="2">Look directly at the camera</Text>
+                      </li>
+                      <li>
+                        <Text size="2">Blink naturally when prompted</Text>
+                      </li>
+                      <li>
+                        <Text size="2">
+                          Recalibrate if you change your setup
+                        </Text>
+                      </li>
                     </ul>
                   </Box>
                 </Flex>

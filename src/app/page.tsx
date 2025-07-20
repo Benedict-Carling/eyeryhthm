@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { Container, Flex, Box, Text, Heading, Tabs } from "@radix-ui/themes";
@@ -22,7 +22,7 @@ export default function Home() {
           <Heading size="8" align="center" mb="4">
             BlinkTrack
           </Heading>
-          <Text size="4" align="center" color="gray">
+          <Text size="4" align="center">
             Eye movement tracking with camera
           </Text>
         </Box>

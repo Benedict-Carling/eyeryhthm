@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Card,
@@ -12,10 +12,16 @@ import {
   TextField,
   Callout,
   AlertDialog,
-} from '@radix-ui/themes';
-import { TrashIcon, Pencil1Icon, CheckIcon, Cross2Icon, DownloadIcon } from '@radix-ui/react-icons';
-import { useCalibration } from '../contexts/CalibrationContext';
-import { Calibration } from '../lib/blink-detection/types';
+} from "@radix-ui/themes";
+import {
+  TrashIcon,
+  Pencil1Icon,
+  CheckIcon,
+  Cross2Icon,
+  DownloadIcon,
+} from "@radix-ui/react-icons";
+import { useCalibration } from "../contexts/CalibrationContext";
+import { Calibration } from "../lib/blink-detection/types";
 
 export function CalibrationList() {
   const {
@@ -27,7 +33,7 @@ export function CalibrationList() {
   } = useCalibration();
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
+  const [editingName, setEditingName] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const handleStartEdit = (calibration: Calibration) => {
@@ -40,16 +46,16 @@ export function CalibrationList() {
       try {
         updateCalibrationName(editingId, editingName.trim());
         setEditingId(null);
-        setEditingName('');
+        setEditingName("");
       } catch (error) {
-        console.error('Error updating calibration name:', error);
+        console.error("Error updating calibration name:", error);
       }
     }
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setEditingName('');
+    setEditingName("");
   };
 
   const handleDelete = async (id: string) => {
@@ -57,16 +63,16 @@ export function CalibrationList() {
       deleteCalibration(id);
       setDeleteConfirmId(null);
     } catch (error) {
-      console.error('Error deleting calibration:', error);
+      console.error("Error deleting calibration:", error);
     }
   };
 
   const handleExport = (id: string) => {
     try {
       const exportData = exportCalibration(id);
-      const blob = new Blob([exportData], { type: 'application/json' });
+      const blob = new Blob([exportData], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `calibration-${id}.json`;
       document.body.appendChild(a);
@@ -74,17 +80,17 @@ export function CalibrationList() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error exporting calibration:', error);
+      console.error("Error exporting calibration:", error);
     }
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
   };
@@ -93,11 +99,10 @@ export function CalibrationList() {
     return (
       <Box>
         <Callout.Root>
-          <Callout.Icon>
-            👁️
-          </Callout.Icon>
+          <Callout.Icon>👁️</Callout.Icon>
           <Callout.Text>
-            No calibrations found. Create your first calibration to start using blink detection.
+            No calibrations found. Create your first calibration to start using
+            blink detection.
           </Callout.Text>
         </Callout.Root>
       </Box>
@@ -108,7 +113,7 @@ export function CalibrationList() {
     <Box>
       <Flex direction="column" gap="3">
         {calibrations.map((calibration) => (
-          <Card key={calibration.id} style={{ padding: '16px' }}>
+          <Card key={calibration.id} style={{ padding: "16px" }}>
             <Flex direction="column" gap="3">
               {/* Header with name and actions */}
               <Flex justify="between" align="center">
@@ -120,8 +125,8 @@ export function CalibrationList() {
                         onChange={(e) => setEditingName(e.target.value)}
                         style={{ flex: 1 }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveEdit();
-                          if (e.key === 'Escape') handleCancelEdit();
+                          if (e.key === "Enter") handleSaveEdit();
+                          if (e.key === "Escape") handleCancelEdit();
                         }}
                       />
                       <IconButton
@@ -195,20 +200,22 @@ export function CalibrationList() {
               {/* Calibration details */}
               <Flex direction="column" gap="2">
                 <Flex justify="between" align="center">
-                  <Text size="2" color="gray">
+                  <Text size="2">
                     Created: {formatDate(calibration.createdAt)}
                   </Text>
-                  <Text size="2" color="gray">
+                  <Text size="2">
                     EAR Threshold: {calibration.earThreshold.toFixed(3)}
                   </Text>
                 </Flex>
 
                 <Flex justify="between" align="center">
-                  <Text size="2" color="gray">
-                    Accuracy: {(calibration.metadata.accuracy * 100).toFixed(1)}%
+                  <Text size="2">
+                    Accuracy: {(calibration.metadata.accuracy * 100).toFixed(1)}
+                    %
                   </Text>
-                  <Text size="2" color="gray">
-                    Blinks: {calibration.metadata.totalBlinksDetected}/{calibration.metadata.totalBlinksRequested}
+                  <Text size="2">
+                    Blinks: {calibration.metadata.totalBlinksDetected}/
+                    {calibration.metadata.totalBlinksRequested}
                   </Text>
                 </Flex>
               </Flex>
@@ -225,14 +232,13 @@ export function CalibrationList() {
         <AlertDialog.Content style={{ maxWidth: 450 }}>
           <AlertDialog.Title>Delete Calibration</AlertDialog.Title>
           <AlertDialog.Description>
-            Are you sure you want to delete this calibration? This action cannot be undone.
+            Are you sure you want to delete this calibration? This action cannot
+            be undone.
           </AlertDialog.Description>
 
           <Flex gap="3" mt="4" justify="end">
             <AlertDialog.Cancel>
-              <Button variant="soft" color="gray">
-                Cancel
-              </Button>
+              <Button variant="soft">Cancel</Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action>
               <Button
