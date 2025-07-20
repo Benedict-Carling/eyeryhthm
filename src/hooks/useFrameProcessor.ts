@@ -5,8 +5,8 @@ import { useAnimationFrame } from './useAnimationFrame';
 
 interface UseFrameProcessorOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  processFrame: (video: HTMLVideoElement, canvas: HTMLCanvasElement | null) => void;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>; // Optional - only needed for visualization
+  processFrame: (video: HTMLVideoElement, canvas: HTMLCanvasElement | null | undefined) => void;
   onFrame?: (data: FrameData) => void;
   isEnabled?: boolean;
 }
@@ -29,9 +29,9 @@ export function useFrameProcessor({
     if (!videoRef.current || !isEnabled) return;
 
     const video = videoRef.current;
-    const canvas = canvasRef.current;
+    const canvas = canvasRef?.current;
 
-    // Update canvas dimensions if video dimensions changed
+    // Update canvas dimensions if video dimensions changed (only if canvas exists)
     if (canvas && video.videoWidth > 0 && video.videoHeight > 0) {
       if (
         video.videoWidth !== lastDimensionUpdate.current.width ||
@@ -46,8 +46,8 @@ export function useFrameProcessor({
       }
     }
 
-    // Process the frame
-    processFrame(video, canvas);
+    // Process the frame - canvas is optional
+    processFrame(video, canvas || undefined);
 
     // Call the optional frame callback
     if (onFrame) {

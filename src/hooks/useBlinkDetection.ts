@@ -86,6 +86,15 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
       const results = await detectForVideo(video, timestamp);
       
       if (!results || !results.faceLandmarks || results.faceLandmarks.length === 0) {
+        // Log only occasionally to avoid spam
+        if (Math.random() < 0.01) {
+          console.log('No face landmarks detected', {
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+            videoReady: video.readyState,
+            results: results ? 'empty' : 'null'
+          });
+        }
         setState(prev => ({
           ...prev,
           currentEAR: 0,

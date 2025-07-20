@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Heading, Text, Flex, Button, Badge, Callout } from '@radix-ui/themes';
 import { useSession } from '../contexts/SessionContext';
 import { SessionCard } from './SessionCard';
+import { VideoCanvas } from './VideoCanvas';
 import { FaceIcon, EyeOpenIcon } from '@radix-ui/react-icons';
 
 export function SessionsView() {
@@ -53,38 +54,17 @@ export function SessionsView() {
         </Flex>
       </Flex>
 
-      {/* Hidden Video Elements - Required for face detection but not displayed */}
-      <Box 
-        style={{ 
-          position: 'fixed',
-          top: '-9999px',
-          left: '-9999px',
-          width: '640px',
-          height: '480px',
-          pointerEvents: 'none',
-          visibility: 'hidden'
-        }}
-      >
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{
-            width: '640px',
-            height: '480px',
-          }}
-        />
-        <canvas
-          ref={canvasRef}
-          width={640}
-          height={480}
-          style={{
-            width: '640px',
-            height: '480px',
-          }}
-        />
-      </Box>
+      {/* Video Display - Shows camera feed when tracking is enabled */}
+      {isTracking && (
+        <Box mb="6" style={{ display: 'flex', justifyContent: 'center' }}>
+          <VideoCanvas 
+            videoRef={videoRef}
+            canvasRef={canvasRef}
+            showCanvas={false} // No canvas overlay needed for sessions
+            maxWidth="480px"
+          />
+        </Box>
+      )}
 
       {/* Active Session */}
       {activeSession && (
