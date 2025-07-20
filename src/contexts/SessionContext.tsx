@@ -299,6 +299,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       blinkRateHistory: [],
       quality: "good",
       fatigueAlertCount: 0,
+      calibrationId: activeCalibration?.id,
       totalBlinks: 0,
     };
 
@@ -306,11 +307,12 @@ export function SessionProvider({ children }: SessionProviderProps) {
     setSessions((prev) => [newSession, ...prev]);
     blinkCountRef.current = blinkCount;
     sessionStartTimeRef.current = Date.now();
-  }, [isTracking, activeSession, isFaceDetected, blinkCount]);
+  }, [isTracking, activeSession, isFaceDetected, blinkCount, activeCalibration]);
 
   const stopSession = useCallback(() => {
     if (!activeSession) return;
 
+    const totalBlinks = blinkCount - blinkCountRef.current;
     const updatedSession: SessionData = {
       ...activeSession,
       endTime: new Date(),
@@ -318,6 +320,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       duration: Math.floor(
         (new Date().getTime() - activeSession.startTime.getTime()) / 1000
       ),
+      totalBlinks,
     };
 
     setActiveSession(null);
@@ -326,7 +329,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         session.id === updatedSession.id ? updatedSession : session
       )
     );
-  }, [activeSession]);
+  }, [activeSession, blinkCount]);
 
   const toggleTracking = useCallback(async () => {
     const newTrackingState = !isTracking;

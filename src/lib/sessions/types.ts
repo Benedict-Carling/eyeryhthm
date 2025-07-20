@@ -8,6 +8,7 @@ export interface SessionData {
   quality: 'good' | 'fair' | 'poor';
   fatigueAlertCount: number;
   duration?: number; // in seconds
+  calibrationId?: string;
   totalBlinks: number;
 }
 
