@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Box, Card, Flex, Text, Badge } from '@radix-ui/themes';
-import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
-import { SessionData, formatSessionDuration } from '../lib/sessions/types';
-import { ClockIcon } from '@radix-ui/react-icons';
-import { Bell, BellOff } from 'lucide-react';
+import React from "react";
+import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
+import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
+import { SessionData, formatSessionDuration } from "../lib/sessions/types";
+import { ClockIcon } from "@radix-ui/react-icons";
+import { Bell, BellOff } from "lucide-react";
+import Link from "next/link";
 
 interface SessionCardProps {
   session: SessionData;
@@ -13,38 +14,41 @@ interface SessionCardProps {
 
 export function SessionCard({ session }: SessionCardProps) {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
   };
 
-  const getQualityColor = (quality: 'good' | 'fair' | 'poor') => {
+  const getQualityColor = (quality: "good" | "fair" | "poor") => {
     switch (quality) {
-      case 'good':
-        return 'green';
-      case 'fair':
-        return 'amber';
-      case 'poor':
-        return 'red';
+      case "good":
+        return "green";
+      case "fair":
+        return "amber";
+      case "poor":
+        return "red";
     }
   };
 
-
   // Prepare chart data
-  const chartData = session.blinkRateHistory.map(point => ({
+  const chartData = session.blinkRateHistory.map((point) => ({
     rate: point.rate,
   }));
 
   return (
-    <Card
-      style={{
-        padding: '20px',
-        border: session.isActive ? '2px solid #10b981' : 'none',
-        position: 'relative',
-      }}
-    >
+    <Link href={`/session/${session.id}`} style={{ textDecoration: "none" }}>
+      <Card
+        style={{
+          padding: "20px",
+          border: session.isActive ? "2px solid #10b981" : "none",
+          position: "relative",
+          cursor: "pointer",
+          transition: "transform 0.2s, box-shadow 0.2s",
+        }}
+        className="session-card"
+      >
       <Flex direction="column" gap="3">
         {/* Header */}
         <Flex justify="between" align="center">
@@ -58,15 +62,18 @@ export function SessionCard({ session }: SessionCardProps) {
               </Badge>
             )}
           </Flex>
-          
+
           {/* Quality badges */}
           <Flex gap="2" align="center">
             <Badge color={getQualityColor(session.quality)} variant="soft">
-              {session.quality.charAt(0).toUpperCase() + session.quality.slice(1)} quality
+              {session.quality.charAt(0).toUpperCase() +
+                session.quality.slice(1)}{" "}
+              quality
             </Badge>
             {session.fatigueAlertCount > 0 ? (
               <Badge color="orange" variant="soft">
-                <Bell size={14} /> {session.fatigueAlertCount} fatigue alert{session.fatigueAlertCount > 1 ? 's' : ''}
+                <Bell size={14} /> {session.fatigueAlertCount} fatigue alert
+                {session.fatigueAlertCount > 1 ? "s" : ""}
               </Badge>
             ) : (
               <Badge color="green" variant="soft">
@@ -80,19 +87,20 @@ export function SessionCard({ session }: SessionCardProps) {
         {!session.isActive && session.duration && (
           <Flex align="center" gap="2">
             <ClockIcon />
-            <Text size="2" color="gray">
-              {formatSessionDuration(session.duration)}
-            </Text>
+            <Text size="2">{formatSessionDuration(session.duration)}</Text>
           </Flex>
         )}
 
         {/* Main content area */}
         <Flex justify="between" align="center" gap="4">
           {/* Mini chart */}
-          <Box style={{ width: '200px', height: '60px' }}>
+          <Box style={{ width: "200px", height: "60px" }}>
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+                >
                   <YAxis hide domain={[0, 20]} />
                   <Line
                     type="monotone"
@@ -104,9 +112,9 @@ export function SessionCard({ session }: SessionCardProps) {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <Flex align="center" justify="center" style={{ height: '100%' }}>
-                <Text size="2" color="gray">
-                  {session.isActive ? 'Collecting data...' : 'No data'}
+              <Flex align="center" justify="center" style={{ height: "100%" }}>
+                <Text size="2">
+                  {session.isActive ? "Collecting data..." : "No data"}
                 </Text>
               </Flex>
             )}
@@ -116,16 +124,22 @@ export function SessionCard({ session }: SessionCardProps) {
           <Text
             size="6"
             weight="bold"
-            color="gray"
-            style={{ 
-              minWidth: '120px',
-              textAlign: 'right',
+            style={{
+              minWidth: "120px",
+              textAlign: "right",
             }}
           >
             {Math.round(session.averageBlinkRate)} blinks/min
           </Text>
         </Flex>
       </Flex>
-    </Card>
+      </Card>
+      <style jsx>{`
+        :global(.session-card:hover) {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+      `}</style>
+    </Link>
   );
 }
