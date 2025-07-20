@@ -9,7 +9,7 @@ export interface SessionData {
   fatigueAlertCount: number;
   duration?: number; // in seconds
   calibrationId?: string;
-  totalBlinks?: number;
+  totalBlinks: number;
 }
 
 export interface BlinkRatePoint {
