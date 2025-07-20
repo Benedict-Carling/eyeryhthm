@@ -19,9 +19,7 @@ export default function RootLayout({
       <body>
         <Theme appearance="dark" accentColor="indigo" grayColor="mauve">
           <CalibrationProvider>
-            <SessionProvider>
-              {children}
-            </SessionProvider>
+            <SessionProvider>{children}</SessionProvider>
           </CalibrationProvider>
         </Theme>
       </body>

@@ -4,7 +4,8 @@ import React from 'react';
 import { Box, Card, Flex, Text, Badge } from '@radix-ui/themes';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import { SessionData, formatSessionDuration } from '../lib/sessions/types';
-import { ClockIcon, ActivityLogIcon } from '@radix-ui/react-icons';
+import { ClockIcon } from '@radix-ui/react-icons';
+import { Bell, BellOff } from 'lucide-react';
 
 interface SessionCardProps {
   session: SessionData;
@@ -30,11 +31,6 @@ export function SessionCard({ session }: SessionCardProps) {
     }
   };
 
-  const getBlinkRateColor = (rate: number) => {
-    if (rate >= 12) return '#10b981'; // green
-    if (rate >= 8) return '#f59e0b'; // amber
-    return '#ef4444'; // red
-  };
 
   // Prepare chart data
   const chartData = session.blinkRateHistory.map(point => ({
@@ -70,11 +66,11 @@ export function SessionCard({ session }: SessionCardProps) {
             </Badge>
             {session.fatigueAlertCount > 0 ? (
               <Badge color="orange" variant="soft">
-                <ActivityLogIcon /> {session.fatigueAlertCount} fatigue alert{session.fatigueAlertCount > 1 ? 's' : ''}
+                <Bell size={14} /> {session.fatigueAlertCount} fatigue alert{session.fatigueAlertCount > 1 ? 's' : ''}
               </Badge>
             ) : (
               <Badge color="green" variant="soft">
-                <ActivityLogIcon /> No fatigue alerts
+                <BellOff size={14} /> No fatigue alerts
               </Badge>
             )}
           </Flex>
@@ -120,8 +116,8 @@ export function SessionCard({ session }: SessionCardProps) {
           <Text
             size="6"
             weight="bold"
+            color="gray"
             style={{ 
-              color: getBlinkRateColor(session.averageBlinkRate),
               minWidth: '120px',
               textAlign: 'right',
             }}

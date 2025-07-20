@@ -1,11 +1,20 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Box, Heading, Text, Flex, Button, Badge, Callout } from '@radix-ui/themes';
-import { useSession } from '../contexts/SessionContext';
-import { SessionCard } from './SessionCard';
-import { VideoCanvas } from './VideoCanvas';
-import { FaceIcon, EyeOpenIcon } from '@radix-ui/react-icons';
+import React from "react";
+import {
+  Box,
+  Heading,
+  Text,
+  Flex,
+  Switch,
+  Badge,
+  Callout,
+} from "@radix-ui/themes";
+import { useSession } from "../contexts/SessionContext";
+import { SessionCard } from "./SessionCard";
+import { VideoCanvas } from "./VideoCanvas";
+import { FaceIcon } from "@radix-ui/react-icons";
+import { Eye, EyeOff } from "lucide-react";
 
 export function SessionsView() {
   const {
@@ -23,41 +32,45 @@ export function SessionsView() {
       {/* Header */}
       <Flex justify="between" align="center" mb="6">
         <Box>
-          <Heading size="6" mb="2">Screen Session Tracking</Heading>
+          <Heading size="6" mb="2">
+            Screen Session Tracking
+          </Heading>
           <Text size="3" color="gray">
             Monitor your screen time and eye fatigue patterns
           </Text>
         </Box>
-        
+
         {/* Controls */}
         <Flex gap="3" align="center">
           {/* Face detection status */}
-          <Badge 
-            size="2" 
-            color={isFaceDetected ? 'green' : 'gray'}
+          <Badge
+            // size="2"
+            color={isFaceDetected ? "green" : "gray"}
             variant="soft"
           >
             <FaceIcon />
-            {isFaceDetected ? 'Face Detected' : 'No Face Detected'}
+            {isFaceDetected ? "Face Detected" : "No Face Detected"}
           </Badge>
-          
+
           {/* Tracking toggle */}
-          <Button
-            size="3"
-            variant={isTracking ? 'solid' : 'soft'}
-            color={isTracking ? 'green' : 'gray'}
-            onClick={toggleTracking}
-          >
-            <EyeOpenIcon />
-            {isTracking ? 'Tracking Enabled' : 'Tracking Disabled'}
-          </Button>
+          <Flex align="center" gap="2">
+            {isTracking ? <Eye size={16} /> : <EyeOff size={16} />}
+            <Switch
+              checked={isTracking}
+              onCheckedChange={toggleTracking}
+              size="2"
+            />
+            <Text size="2" weight="medium">
+              {isTracking ? "Tracking Enabled" : "Tracking Disabled"}
+            </Text>
+          </Flex>
         </Flex>
       </Flex>
 
       {/* Video Display - Shows camera feed when tracking is enabled */}
       {isTracking && (
-        <Box mb="6" style={{ display: 'flex', justifyContent: 'center' }}>
-          <VideoCanvas 
+        <Box mb="6" style={{ display: "flex", justifyContent: "center" }}>
+          <VideoCanvas
             videoRef={videoRef}
             canvasRef={canvasRef}
             showCanvas={false} // No canvas overlay needed for sessions
@@ -69,18 +82,22 @@ export function SessionsView() {
       {/* Active Session */}
       {activeSession && (
         <Box mb="6">
-          <Text size="3" weight="medium" mb="3">Current Session</Text>
+          <Text size="3" weight="medium" mb="3">
+            Current Session
+          </Text>
           <SessionCard session={activeSession} />
         </Box>
       )}
 
       {/* Recent Sessions */}
-      <Box>
-        <Text size="3" weight="medium" mb="3">Recent Screen Sessions</Text>
-        <Flex direction="column" gap="3">
+      <Box mt="6">
+        <Text size="3" weight="medium" mb="4">
+          Recent Screen Sessions
+        </Text>
+        <Flex direction="column" gap="4">
           {sessions
-            .filter(session => !session.isActive)
-            .map(session => (
+            .filter((session) => !session.isActive)
+            .map((session) => (
               <SessionCard key={session.id} session={session} />
             ))}
         </Flex>
@@ -90,18 +107,32 @@ export function SessionsView() {
       <Box mt="6">
         <Callout.Root>
           <Callout.Icon>
-            <EyeOpenIcon />
+            <Eye size={16} />
           </Callout.Icon>
           <Callout.Text>
-            <strong>Session Requirements:</strong>
-            <br />
-            • Minimum session length: 2 minutes
-            <br />
-            • Sessions continue through interruptions up to 10 seconds
-            <br />
-            • Blink rate targets: Good (12+), Fair (8-11), Poor (&lt;8)
-            <br />
-            • No camera footage is displayed or stored
+            <Flex direction="column" gap="3">
+              <Text weight="bold">Session Requirements:</Text>
+              <Box>
+                <Flex direction="column" gap="2">
+                  <Flex gap="2" align="center">
+                    <Text size="2">•</Text>
+                    <Text size="2">Minimum session length: 2 minutes</Text>
+                  </Flex>
+                  <Flex gap="2" align="center">
+                    <Text size="2">•</Text>
+                    <Text size="2">Sessions continue through interruptions up to 10 seconds</Text>
+                  </Flex>
+                  <Flex gap="2" align="center">
+                    <Text size="2">•</Text>
+                    <Text size="2">Blink rate targets: Good (12+), Fair (8-11), Poor (&lt;8)</Text>
+                  </Flex>
+                  <Flex gap="2" align="center">
+                    <Text size="2">•</Text>
+                    <Text size="2">No camera footage is displayed or stored</Text>
+                  </Flex>
+                </Flex>
+              </Box>
+            </Flex>
           </Callout.Text>
         </Callout.Root>
       </Box>
