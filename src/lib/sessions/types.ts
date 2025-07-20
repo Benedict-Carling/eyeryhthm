@@ -8,6 +8,8 @@ export interface SessionData {
   quality: 'good' | 'fair' | 'poor';
   fatigueAlertCount: number;
   duration?: number; // in seconds
+  calibrationId?: string; // ID of the calibration used for this session
+  totalBlinks?: number; // Total number of blinks in the session
 }
 
 export interface BlinkRatePoint {

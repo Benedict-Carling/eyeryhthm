@@ -50,6 +50,7 @@ const generateMockSessions = (): SessionData[] => {
       quality: "poor",
       fatigueAlertCount: 2,
       duration: 5400, // 1h 30m
+      calibrationId: "default-calibration-1",
     },
     {
       id: "session-2",
@@ -61,6 +62,7 @@ const generateMockSessions = (): SessionData[] => {
       quality: "fair",
       fatigueAlertCount: 0,
       duration: 5400, // 1h 30m
+      calibrationId: "default-calibration-1",
     },
   ];
 };
@@ -99,13 +101,12 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const { activeCalibration } = useCalibration();
 
   // Camera and blink detection hooks
-  const { stream, videoRef, startCamera, stopCamera, hasPermission } =
+  const { stream, videoRef, startCamera, stopCamera } =
     useCamera();
 
   const {
     blinkCount,
     currentEAR,
-    isReady: isDetectorReady,
     start: startDetection,
     stop: stopDetection,
     processFrame,
@@ -175,7 +176,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return () => {
       mounted = false;
     };
-  }, [stream, isTracking, startDetection, isInitialized]);
+  }, [stream, isTracking, startDetection, isInitialized, videoRef]);
 
   // Set video stream
   useEffect(() => {
@@ -272,13 +273,14 @@ export function SessionProvider({ children }: SessionProviderProps) {
       blinkRateHistory: [],
       quality: "good",
       fatigueAlertCount: 0,
+      calibrationId: activeCalibration?.id,
     };
 
     setActiveSession(newSession);
     setSessions((prev) => [newSession, ...prev]);
     blinkCountRef.current = blinkCount;
     sessionStartTimeRef.current = Date.now();
-  }, [isTracking, activeSession, isFaceDetected, blinkCount]);
+  }, [isTracking, activeSession, isFaceDetected, blinkCount, activeCalibration]);
 
   const stopSession = useCallback(() => {
     if (!activeSession) return;
