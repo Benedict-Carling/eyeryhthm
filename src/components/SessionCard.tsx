@@ -1,18 +1,22 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
+import * as d3 from "d3";
 import { SessionData, formatSessionDuration } from "../lib/sessions/types";
 import { ClockIcon } from "@radix-ui/react-icons";
-import { Bell, BellOff } from "lucide-react";
-import Link from "next/link";
-import { MiniBlinkChart } from "./MiniBlinkChart";
+import { Bell, BellOff, Eye } from "lucide-react";
+import { useCalibration } from "../contexts/CalibrationContext";
+import "./SessionCard.css";
 
 interface SessionCardProps {
   session: SessionData;
 }
 
 export function SessionCard({ session }: SessionCardProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const { calibrations } = useCalibration();
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -32,29 +36,112 @@ export function SessionCard({ session }: SessionCardProps) {
     }
   };
 
-  // Chart data is already in the correct format
-  const chartData = session.blinkRateHistory;
+  const getCalibrationName = (calibrationId: string | undefined) => {
+    if (!calibrationId) return null;
+    const calibration = calibrations.find(c => c.id === calibrationId);
+    return calibration?.name || 'Unknown calibration';
+  };
+
+  // D3 Mini Chart
+  useEffect(() => {
+    if (!svgRef.current || session.blinkRateHistory.length === 0) return;
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+
+    const margin = { top: 5, right: 5, bottom: 5, left: 5 };
+    const width = 200 - margin.left - margin.right;
+    const height = 60 - margin.top - margin.bottom;
+
+    const g = svg
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Scales
+    const xScale = d3
+      .scaleLinear()
+      .domain([0, session.blinkRateHistory.length - 1])
+      .range([0, width]);
+
+    const yScale = d3
+      .scaleLinear()
+      .domain([0, d3.max(session.blinkRateHistory, (d) => d.rate) || 20])
+      .range([height, 0]);
+
+    // Line generator
+    const line = d3
+      .line<{ rate: number }>()
+      .x((d, i) => xScale(i))
+      .y((d) => yScale(d.rate))
+      .curve(d3.curveMonotoneX);
+
+    // Add gradient
+    const gradient = svg
+      .append("defs")
+      .append("linearGradient")
+      .attr("id", `mini-gradient-${session.id}`)
+      .attr("gradientUnits", "userSpaceOnUse")
+      .attr("x1", 0)
+      .attr("y1", yScale(0))
+      .attr("x2", 0)
+      .attr("y2", yScale(20));
+
+    gradient
+      .append("stop")
+      .attr("offset", "0%")
+      .attr("stop-color", "#3B82F6")
+      .attr("stop-opacity", 0.8);
+
+    gradient
+      .append("stop")
+      .attr("offset", "100%")
+      .attr("stop-color", "#8B5CF6")
+      .attr("stop-opacity", 0.8);
+
+    // Add area
+    const area = d3
+      .area<{ rate: number }>()
+      .x((d, i) => xScale(i))
+      .y0(height)
+      .y1((d) => yScale(d.rate))
+      .curve(d3.curveMonotoneX);
+
+    g.append("path")
+      .datum(session.blinkRateHistory)
+      .attr("fill", `url(#mini-gradient-${session.id})`)
+      .attr("fill-opacity", 0.1)
+      .attr("d", area);
+
+    // Add line
+    const path = g.append("path")
+      .datum(session.blinkRateHistory)
+      .attr("fill", "none")
+      .attr("stroke", `url(#mini-gradient-${session.id})`)
+      .attr("stroke-width", 2)
+      .attr("d", line);
+
+    // Animate line drawing
+    const totalLength = path.node()?.getTotalLength() || 0;
+    path
+      .attr("stroke-dasharray", totalLength + " " + totalLength)
+      .attr("stroke-dashoffset", totalLength)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeLinear)
+      .attr("stroke-dashoffset", 0);
+
+  }, [session.blinkRateHistory, session.id]);
 
   return (
-    <Link href={`/sessions/${session.id}`} style={{ textDecoration: "none" }}>
-      <Card
-        style={{
-          padding: "20px",
-          border: session.isActive ? "2px solid #10b981" : "none",
-          position: "relative",
-          cursor: "pointer",
-          transition: "transform 0.2s ease, box-shadow 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-      >
-        <Flex direction="column" gap="3">
+    <Card
+      className={session.isActive ? "session-card active" : "session-card"}
+      style={{
+        padding: "20px",
+        border: session.isActive ? "2px solid #10b981" : "none",
+        position: "relative",
+      }}
+    >
+      <Flex direction="column" gap="3">
         {/* Header */}
         <Flex justify="between" align="center">
           <Flex align="center" gap="3">
@@ -62,7 +149,7 @@ export function SessionCard({ session }: SessionCardProps) {
               {formatTime(session.startTime)}
             </Text>
             {session.isActive && (
-              <Badge color="green" size="2">
+              <Badge color="green" size="2" className="pulse">
                 • Active
               </Badge>
             )}
@@ -88,20 +175,42 @@ export function SessionCard({ session }: SessionCardProps) {
           </Flex>
         </Flex>
 
-        {/* Duration */}
-        {!session.isActive && session.duration && (
-          <Flex align="center" gap="2">
-            <ClockIcon />
-            <Text size="2">{formatSessionDuration(session.duration)}</Text>
-          </Flex>
-        )}
+        {/* Session info */}
+        <Flex gap="4" wrap="wrap">
+          {!session.isActive && session.duration && (
+            <Flex align="center" gap="2">
+              <ClockIcon />
+              <Text size="2">{formatSessionDuration(session.duration)}</Text>
+            </Flex>
+          )}
+          
+          {session.totalBlinks !== undefined && (
+            <Flex align="center" gap="2">
+              <Eye size={14} />
+              <Text size="2">{session.totalBlinks} total blinks</Text>
+            </Flex>
+          )}
+
+          {session.calibrationId && (
+            <Flex align="center" gap="2">
+              <Text size="2" color="gray">
+                Calibration: {getCalibrationName(session.calibrationId)}
+              </Text>
+            </Flex>
+          )}
+        </Flex>
 
         {/* Main content area */}
         <Flex justify="between" align="center" gap="4">
           {/* Mini chart */}
           <Box style={{ width: "200px", height: "60px" }}>
-            {chartData.length > 0 ? (
-              <MiniBlinkChart data={chartData} width={200} height={60} />
+            {session.blinkRateHistory.length > 0 ? (
+              <svg
+                ref={svgRef}
+                width="200"
+                height="60"
+                style={{ display: "block" }}
+              />
             ) : (
               <Flex align="center" justify="center" style={{ height: "100%" }}>
                 <Text size="2">
@@ -125,6 +234,5 @@ export function SessionCard({ session }: SessionCardProps) {
         </Flex>
       </Flex>
     </Card>
-    </Link>
   );
 }
