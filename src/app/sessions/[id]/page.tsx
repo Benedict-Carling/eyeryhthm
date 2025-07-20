@@ -97,6 +97,15 @@ export default function SessionDetailPage() {
 
           <Card>
             <Flex direction="column" gap="2">
+              <Text size="2" color="gray">Total Blinks</Text>
+              <Text size="5" weight="medium">
+                {session.totalBlinks} blinks
+              </Text>
+            </Flex>
+          </Card>
+
+          <Card>
+            <Flex direction="column" gap="2">
               <Text size="2" color="gray">Average Blink Rate</Text>
               <Text size="5" weight="medium">
                 {Math.round(session.averageBlinkRate)} blinks/min

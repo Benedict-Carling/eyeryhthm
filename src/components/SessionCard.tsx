@@ -2,11 +2,11 @@
 
 import React from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
-import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 import { SessionData, formatSessionDuration } from "../lib/sessions/types";
 import { ClockIcon } from "@radix-ui/react-icons";
 import { Bell, BellOff } from "lucide-react";
 import Link from "next/link";
+import { MiniBlinkChart } from "./MiniBlinkChart";
 
 interface SessionCardProps {
   session: SessionData;
@@ -32,10 +32,8 @@ export function SessionCard({ session }: SessionCardProps) {
     }
   };
 
-  // Prepare chart data
-  const chartData = session.blinkRateHistory.map((point) => ({
-    rate: point.rate,
-  }));
+  // Chart data is already in the correct format
+  const chartData = session.blinkRateHistory;
 
   return (
     <Link href={`/sessions/${session.id}`} style={{ textDecoration: "none" }}>
@@ -103,21 +101,7 @@ export function SessionCard({ session }: SessionCardProps) {
           {/* Mini chart */}
           <Box style={{ width: "200px", height: "60px" }}>
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
-                >
-                  <YAxis hide domain={[0, 20]} />
-                  <Line
-                    type="monotone"
-                    dataKey="rate"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <MiniBlinkChart data={chartData} width={200} height={60} />
             ) : (
               <Flex align="center" justify="center" style={{ height: "100%" }}>
                 <Text size="2">
@@ -127,17 +111,28 @@ export function SessionCard({ session }: SessionCardProps) {
             )}
           </Box>
 
-          {/* Average blink rate */}
-          <Text
-            size="6"
-            weight="bold"
-            style={{
-              minWidth: "120px",
-              textAlign: "right",
-            }}
-          >
-            {Math.round(session.averageBlinkRate)} blinks/min
-          </Text>
+          {/* Total blinks */}
+          <Flex direction="column" align="end" gap="1">
+            <Text
+              size="6"
+              weight="bold"
+              style={{
+                minWidth: "120px",
+                textAlign: "right",
+              }}
+            >
+              {session.totalBlinks} blinks
+            </Text>
+            <Text
+              size="2"
+              color="gray"
+              style={{
+                textAlign: "right",
+              }}
+            >
+              {Math.round(session.averageBlinkRate)}/min avg
+            </Text>
+          </Flex>
         </Flex>
       </Flex>
     </Card>

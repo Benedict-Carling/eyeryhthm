@@ -51,6 +51,7 @@ const generateMockSessions = (): SessionData[] => {
       quality: "poor",
       fatigueAlertCount: 2,
       duration: 5400, // 1h 30m
+      totalBlinks: 630, // ~90 minutes * 7 blinks/min
     },
     {
       id: "session-2",
@@ -62,6 +63,7 @@ const generateMockSessions = (): SessionData[] => {
       quality: "fair",
       fatigueAlertCount: 0,
       duration: 5400, // 1h 30m
+      totalBlinks: 990, // ~90 minutes * 11 blinks/min
     },
   ];
 };
@@ -192,7 +194,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
   }, [stream, videoRef]);
 
   const updateActiveSessionBlinkRate = useCallback(
-    (rate: number) => {
+    (rate: number, totalBlinks: number) => {
       if (!activeSession) return;
 
       const newPoint: BlinkRatePoint = {
@@ -211,6 +213,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         blinkRateHistory: updatedHistory,
         averageBlinkRate: avgRate,
         quality,
+        totalBlinks,
       };
 
       setActiveSession(updatedSession);
@@ -271,7 +274,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       const currentBlinkRate =
         timeElapsed > 0 ? blinksSinceStart / timeElapsed : 0;
 
-      updateActiveSessionBlinkRate(currentBlinkRate);
+      updateActiveSessionBlinkRate(currentBlinkRate, blinksSinceStart);
       lastBlinkUpdateRef.current = Date.now();
     }
   }, [currentEAR, isFaceDetected, activeSession, blinkCount, updateActiveSessionBlinkRate]);
@@ -296,6 +299,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       blinkRateHistory: [],
       quality: "good",
       fatigueAlertCount: 0,
+      totalBlinks: 0,
     };
 
     setActiveSession(newSession);
