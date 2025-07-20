@@ -18,6 +18,7 @@ import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
 import { useFrameProcessor } from "../hooks/useFrameProcessor";
 import { useCalibration } from "./CalibrationContext";
+import { AlertService } from "../lib/alert-service";
 
 interface SessionContextType {
   sessions: SessionData[];
@@ -95,17 +96,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const blinkCountRef = useRef<number>(0);
   const sessionStartTimeRef = useRef<number>(Date.now());
   const faceDetectionLostTimeRef = useRef<number | null>(null);
+  const alertServiceRef = useRef<AlertService>(new AlertService());
 
   const { activeCalibration } = useCalibration();
 
   // Camera and blink detection hooks
-  const { stream, videoRef, startCamera, stopCamera, hasPermission } =
+  const { stream, videoRef, startCamera, stopCamera } =
     useCamera();
 
   const {
     blinkCount,
     currentEAR,
-    isReady: isDetectorReady,
     start: startDetection,
     stop: stopDetection,
     processFrame,
@@ -114,9 +115,15 @@ export function SessionProvider({ children }: SessionProviderProps) {
     showDebugOverlay: false, // No visualization needed for background tracking
   });
 
-  // Load mock sessions on mount
+  // Load mock sessions on mount and cleanup on unmount
   useEffect(() => {
     setSessions(generateMockSessions());
+    const alertService = alertServiceRef.current;
+
+    // Cleanup on unmount
+    return () => {
+      alertService.stopMonitoring();
+    };
   }, []);
 
   // Initialize detection when stream is ready
@@ -175,7 +182,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return () => {
       mounted = false;
     };
-  }, [stream, isTracking, startDetection, isInitialized]);
+  }, [stream, isTracking, startDetection, isInitialized, videoRef]);
 
   // Set video stream
   useEffect(() => {
@@ -215,6 +222,23 @@ export function SessionProvider({ children }: SessionProviderProps) {
     },
     [activeSession]
   );
+
+  const handleFatigueAlert = useCallback(() => {
+    if (!activeSession) return;
+
+    // Increment fatigue alert count
+    const updatedSession: SessionData = {
+      ...activeSession,
+      fatigueAlertCount: activeSession.fatigueAlertCount + 1,
+    };
+
+    setActiveSession(updatedSession);
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === updatedSession.id ? updatedSession : session
+      )
+    );
+  }, [activeSession]);
 
   // Handle frame processing with face detection and blink rate updates
   const handleFrameProcessing = useCallback(() => {
@@ -308,6 +332,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
       // Start camera when enabling tracking
       try {
         await startCamera();
+        // Start alert monitoring
+        alertServiceRef.current.startMonitoring(
+          () => activeSession,
+          handleFatigueAlert
+        );
       } catch (error) {
         console.error("Failed to start camera:", error);
         setIsTracking(false);
@@ -321,6 +350,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
       stopDetection();
       stopCamera();
       setIsFaceDetected(false);
+      // Stop alert monitoring
+      alertServiceRef.current.stopMonitoring();
     }
   }, [
     isTracking,
@@ -329,6 +360,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     stopCamera,
     stopDetection,
     stopSession,
+    handleFatigueAlert,
   ]);
 
   // Start session when tracking is enabled and face is detected

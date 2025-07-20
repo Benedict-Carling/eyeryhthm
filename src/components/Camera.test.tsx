@@ -1,11 +1,47 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { Theme } from "@radix-ui/themes";
 import { Camera } from "./Camera";
+import { vi } from "vitest";
 
-// Mock the useCameraWithBlinkDetection hook
-const mockUseCameraWithBlinkDetection = vi.fn();
-vi.mock("../hooks/useCameraWithBlinkDetection", () => ({
-  useCameraWithBlinkDetection: () => mockUseCameraWithBlinkDetection(),
+// Mock the hooks
+const mockStartCamera = vi.fn();
+const mockStopCamera = vi.fn();
+const mockStartDetection = vi.fn();
+const mockStopDetection = vi.fn();
+const mockResetBlinkCounter = vi.fn();
+const mockProcessFrame = vi.fn();
+
+const mockUseCamera = vi.fn(() => ({
+  stream: null,
+  videoRef: { current: null },
+  startCamera: mockStartCamera,
+  stopCamera: mockStopCamera,
+  error: null,
+  hasPermission: false,
+  isLoading: false,
+}));
+
+const mockUseBlinkDetection = vi.fn(() => ({
+  blinkCount: 0,
+  currentEAR: 0,
+  isBlinking: false,
+  isReady: false,
+  start: mockStartDetection,
+  stop: mockStopDetection,
+  processFrame: mockProcessFrame,
+  resetBlinkCounter: mockResetBlinkCounter,
+}));
+
+vi.mock("../hooks/useCamera", () => ({
+  useCamera: mockUseCamera,
+}));
+
+vi.mock("../hooks/useBlinkDetection", () => ({
+  useBlinkDetection: mockUseBlinkDetection,
+}));
+
+vi.mock("../hooks/useFrameProcessor", () => ({
+  useFrameProcessor: vi.fn(),
 }));
 
 // Mock the CalibrationContext
@@ -13,6 +49,16 @@ const mockUseCalibration = vi.fn();
 vi.mock("../contexts/CalibrationContext", () => ({
   useCalibration: () => mockUseCalibration(),
   CalibrationProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock the VideoCanvas component
+vi.mock("./VideoCanvas", () => ({
+  VideoCanvas: ({ videoRef, canvasRef }: { videoRef: React.RefObject<HTMLVideoElement | null>, canvasRef: React.RefObject<HTMLCanvasElement | null> }) => (
+    <div>
+      <video ref={videoRef} autoPlay muted playsInline style={{ filter: "grayscale(100%)", backgroundColor: "#000" }} />
+      <canvas ref={canvasRef} />
+    </div>
+  ),
 }));
 
 const renderCamera = () => {
@@ -35,46 +81,19 @@ describe("Camera Component", () => {
   });
 
   test("renders start camera button when no permission", () => {
-    mockUseCameraWithBlinkDetection.mockReturnValue({
-      stream: null,
-      isLoading: false,
-      error: null,
-      hasPermission: false,
-      videoRef: { current: null },
-      canvasRef: { current: null },
-      startCamera: vi.fn(),
-      stopCamera: vi.fn(),
-      blinkCount: 0,
-      currentEAR: 0,
-      isBlinking: false,
-      isDetectorReady: false,
-      showDebugOverlay: false,
-      resetBlinkCounter: vi.fn(),
-      toggleDebugOverlay: vi.fn(),
-    });
-
     renderCamera();
-
     expect(screen.getByText("Start Camera")).toBeInTheDocument();
   });
 
   test("shows loading state when requesting permission", () => {
-    mockUseCameraWithBlinkDetection.mockReturnValue({
+    mockUseCamera.mockReturnValue({
       stream: null,
-      isLoading: true,
+      videoRef: { current: null },
+      startCamera: mockStartCamera,
+      stopCamera: mockStopCamera,
       error: null,
       hasPermission: false,
-      videoRef: { current: null },
-      canvasRef: { current: null },
-      startCamera: vi.fn(),
-      stopCamera: vi.fn(),
-      blinkCount: 0,
-      currentEAR: 0,
-      isBlinking: false,
-      isDetectorReady: false,
-      showDebugOverlay: false,
-      resetBlinkCounter: vi.fn(),
-      toggleDebugOverlay: vi.fn(),
+      isLoading: true,
     });
 
     renderCamera();
@@ -85,22 +104,14 @@ describe("Camera Component", () => {
   });
 
   test("displays error message when there is an error", () => {
-    mockUseCameraWithBlinkDetection.mockReturnValue({
+    mockUseCamera.mockReturnValue({
       stream: null,
-      isLoading: false,
+      videoRef: { current: null },
+      startCamera: mockStartCamera,
+      stopCamera: mockStopCamera,
       error: "Camera permission denied",
       hasPermission: false,
-      videoRef: { current: null },
-      canvasRef: { current: null },
-      startCamera: vi.fn(),
-      stopCamera: vi.fn(),
-      blinkCount: 0,
-      currentEAR: 0,
-      isBlinking: false,
-      isDetectorReady: false,
-      showDebugOverlay: false,
-      resetBlinkCounter: vi.fn(),
-      toggleDebugOverlay: vi.fn(),
+      isLoading: false,
     });
 
     renderCamera();
@@ -112,22 +123,14 @@ describe("Camera Component", () => {
     const mockStream = new MediaStream();
     const mockVideoRef = { current: document.createElement("video") };
 
-    mockUseCameraWithBlinkDetection.mockReturnValue({
+    mockUseCamera.mockReturnValue({
       stream: mockStream,
-      isLoading: false,
+      videoRef: mockVideoRef,
+      startCamera: mockStartCamera,
+      stopCamera: mockStopCamera,
       error: null,
       hasPermission: true,
-      videoRef: mockVideoRef,
-      canvasRef: { current: null },
-      startCamera: vi.fn(),
-      stopCamera: vi.fn(),
-      blinkCount: 0,
-      currentEAR: 0,
-      isBlinking: false,
-      isDetectorReady: false,
-      showDebugOverlay: false,
-      resetBlinkCounter: vi.fn(),
-      toggleDebugOverlay: vi.fn(),
+      isLoading: false,
     });
 
     renderCamera();
@@ -144,22 +147,14 @@ describe("Camera Component", () => {
     const mockStream = new MediaStream();
     const mockVideoRef = { current: document.createElement("video") };
 
-    mockUseCameraWithBlinkDetection.mockReturnValue({
+    mockUseCamera.mockReturnValue({
       stream: mockStream,
-      isLoading: false,
+      videoRef: mockVideoRef,
+      startCamera: mockStartCamera,
+      stopCamera: mockStopCamera,
       error: null,
       hasPermission: true,
-      videoRef: mockVideoRef,
-      canvasRef: { current: null },
-      startCamera: vi.fn(),
-      stopCamera: vi.fn(),
-      blinkCount: 0,
-      currentEAR: 0,
-      isBlinking: false,
-      isDetectorReady: false,
-      showDebugOverlay: false,
-      resetBlinkCounter: vi.fn(),
-      toggleDebugOverlay: vi.fn(),
+      isLoading: false,
     });
 
     renderCamera();
@@ -170,61 +165,49 @@ describe("Camera Component", () => {
   });
 
   test("calls startCamera when start button is clicked", async () => {
-    const mockStartCamera = vi.fn();
-
-    mockUseCameraWithBlinkDetection.mockReturnValue({
-      stream: null,
-      isLoading: false,
-      error: null,
-      hasPermission: false,
-      videoRef: { current: null },
-      canvasRef: { current: null },
-      startCamera: mockStartCamera,
-      stopCamera: vi.fn(),
-      blinkCount: 0,
-      currentEAR: 0,
-      isBlinking: false,
-      isDetectorReady: false,
-      showDebugOverlay: false,
-      resetBlinkCounter: vi.fn(),
-      toggleDebugOverlay: vi.fn(),
-    });
-
     renderCamera();
 
     const startButton = screen.getByText("Start Camera");
-    fireEvent.click(startButton);
+    
+    await act(async () => {
+      fireEvent.click(startButton);
+    });
 
     expect(mockStartCamera).toHaveBeenCalledOnce();
   });
 
   test("calls stopCamera when stop button is clicked", async () => {
-    const mockStopCamera = vi.fn();
     const mockStream = new MediaStream();
     const mockVideoRef = { current: document.createElement("video") };
 
-    mockUseCameraWithBlinkDetection.mockReturnValue({
+    mockUseCamera.mockReturnValue({
       stream: mockStream,
-      isLoading: false,
+      videoRef: mockVideoRef,
+      startCamera: mockStartCamera,
+      stopCamera: mockStopCamera,
       error: null,
       hasPermission: true,
-      videoRef: mockVideoRef,
-      canvasRef: { current: null },
-      startCamera: vi.fn(),
-      stopCamera: mockStopCamera,
+      isLoading: false,
+    });
+
+    mockUseBlinkDetection.mockReturnValue({
       blinkCount: 0,
       currentEAR: 0,
       isBlinking: false,
-      isDetectorReady: false,
-      showDebugOverlay: false,
-      resetBlinkCounter: vi.fn(),
-      toggleDebugOverlay: vi.fn(),
+      isReady: true,
+      start: mockStartDetection,
+      stop: mockStopDetection,
+      processFrame: mockProcessFrame,
+      resetBlinkCounter: mockResetBlinkCounter,
     });
 
     renderCamera();
 
     const stopButton = screen.getByText("Stop Camera");
-    fireEvent.click(stopButton);
+    
+    await act(async () => {
+      fireEvent.click(stopButton);
+    });
 
     expect(mockStopCamera).toHaveBeenCalledOnce();
   });
