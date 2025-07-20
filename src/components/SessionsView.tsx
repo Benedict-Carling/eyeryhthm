@@ -35,7 +35,7 @@ export function SessionsView() {
           <Heading size="6" mb="2">
             Screen Session Tracking
           </Heading>
-          <Text size="3" color="gray">
+          <Text size="3">
             Monitor your screen time and eye fatigue patterns
           </Text>
         </Box>
@@ -120,15 +120,21 @@ export function SessionsView() {
                   </Flex>
                   <Flex gap="2" align="center">
                     <Text size="2">•</Text>
-                    <Text size="2">Sessions continue through interruptions up to 10 seconds</Text>
+                    <Text size="2">
+                      Sessions continue through interruptions up to 10 seconds
+                    </Text>
                   </Flex>
                   <Flex gap="2" align="center">
                     <Text size="2">•</Text>
-                    <Text size="2">Blink rate targets: Good (12+), Fair (8-11), Poor (&lt;8)</Text>
+                    <Text size="2">
+                      Blink rate targets: Good (12+), Fair (8-11), Poor (&lt;8)
+                    </Text>
                   </Flex>
                   <Flex gap="2" align="center">
                     <Text size="2">•</Text>
-                    <Text size="2">No camera footage is displayed or stored</Text>
+                    <Text size="2">
+                      No camera footage is displayed or stored
+                    </Text>
                   </Flex>
                 </Flex>
               </Box>

@@ -50,6 +50,7 @@ const generateMockSessions = (): SessionData[] => {
       quality: "poor",
       fatigueAlertCount: 2,
       duration: 5400, // 1h 30m
+      totalBlinks: 630,
     },
     {
       id: "session-2",
@@ -61,6 +62,7 @@ const generateMockSessions = (): SessionData[] => {
       quality: "fair",
       fatigueAlertCount: 0,
       duration: 5400, // 1h 30m
+      totalBlinks: 990,
     },
   ];
 };
@@ -283,22 +285,34 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const stopSession = useCallback(() => {
     if (!activeSession) return;
 
-    const updatedSession: SessionData = {
-      ...activeSession,
-      endTime: new Date(),
-      isActive: false,
-      duration: Math.floor(
-        (new Date().getTime() - activeSession.startTime.getTime()) / 1000
-      ),
-    };
+    const duration = Math.floor(
+      (new Date().getTime() - activeSession.startTime.getTime()) / 1000
+    );
+
+    // Only store sessions that are greater than 2 minutes (120 seconds)
+    if (duration > 120) {
+      const updatedSession: SessionData = {
+        ...activeSession,
+        endTime: new Date(),
+        isActive: false,
+        duration,
+        totalBlinks: blinkCount - blinkCountRef.current,
+      };
+
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === updatedSession.id ? updatedSession : session
+        )
+      );
+    } else {
+      // Remove short sessions from the list
+      setSessions((prev) =>
+        prev.filter((session) => session.id !== activeSession.id)
+      );
+    }
 
     setActiveSession(null);
-    setSessions((prev) =>
-      prev.map((session) =>
-        session.id === updatedSession.id ? updatedSession : session
-      )
-    );
-  }, [activeSession]);
+  }, [activeSession, blinkCount]);
 
   const toggleTracking = useCallback(async () => {
     const newTrackingState = !isTracking;

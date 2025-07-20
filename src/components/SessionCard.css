@@ -1,0 +1,21 @@
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pulse-dot {
+  display: inline-block;
+  animation: pulse 2s ease-in-out infinite;
+  font-size: 1.2em;
+  line-height: 0;
+}

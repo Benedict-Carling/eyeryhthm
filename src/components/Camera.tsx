@@ -1,19 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Button, Text, Flex, Badge, Card, Callout } from '@radix-ui/themes';
-import { useCalibration } from '../contexts/CalibrationContext';
-import { useCamera } from '../hooks/useCamera';
-import { useBlinkDetection } from '../hooks/useBlinkDetection';
-import { useFrameProcessor } from '../hooks/useFrameProcessor';
-import { VideoCanvas } from './VideoCanvas';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import {
+  Box,
+  Button,
+  Text,
+  Flex,
+  Badge,
+  Card,
+  Callout,
+} from "@radix-ui/themes";
+import { useCalibration } from "../contexts/CalibrationContext";
+import { useCamera } from "../hooks/useCamera";
+import { useBlinkDetection } from "../hooks/useBlinkDetection";
+import { useFrameProcessor } from "../hooks/useFrameProcessor";
+import { VideoCanvas } from "./VideoCanvas";
 
 export function Camera() {
   const { canStartDetection, activeCalibration } = useCalibration();
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   const {
     stream,
     videoRef,
@@ -23,7 +31,7 @@ export function Camera() {
     hasPermission,
     isLoading: isCameraLoading,
   } = useCamera();
-  
+
   const {
     blinkCount,
     currentEAR,
@@ -47,20 +55,20 @@ export function Camera() {
       }
 
       const video = videoRef.current;
-      
+
       // Wait for video to be ready
       if (video.readyState < 2) {
         await new Promise<void>((resolve) => {
           const handleCanPlay = () => {
-            video.removeEventListener('canplay', handleCanPlay);
+            video.removeEventListener("canplay", handleCanPlay);
             resolve();
           };
-          video.addEventListener('canplay', handleCanPlay);
+          video.addEventListener("canplay", handleCanPlay);
         });
       }
 
       // Small delay to ensure stable video feed
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       if (!mounted) return;
 
@@ -72,7 +80,7 @@ export function Camera() {
             setIsInitialized(true);
           }
         } catch (err) {
-          console.error('Failed to start detection:', err);
+          console.error("Failed to start detection:", err);
         }
       }
     };
@@ -103,7 +111,7 @@ export function Camera() {
     try {
       await startCamera();
     } catch (error) {
-      console.error('Failed to start camera:', error);
+      console.error("Failed to start camera:", error);
     }
   }, [startCamera]);
 
@@ -130,8 +138,8 @@ export function Camera() {
         )}
 
         {!hasPermission && !isCameraLoading && (
-          <Button 
-            onClick={handleStartCamera} 
+          <Button
+            onClick={handleStartCamera}
             size="3"
             disabled={isCameraLoading || !canStartDetection()}
           >
@@ -139,9 +147,7 @@ export function Camera() {
           </Button>
         )}
 
-        {isCameraLoading && (
-          <Text>Requesting camera permission...</Text>
-        )}
+        {isCameraLoading && <Text>Requesting camera permission...</Text>}
 
         {error && (
           <Text color="red" size="2">
@@ -153,41 +159,62 @@ export function Camera() {
           <Box>
             <Flex direction="column" align="center" gap="3">
               {/* Live Metrics Display */}
-              <Card style={{ padding: '16px', minWidth: '300px' }}>
+              <Card style={{ padding: "16px", minWidth: "300px" }}>
                 <Flex direction="column" gap="2">
                   <Flex justify="between" align="center">
-                    <Text size="2" weight="medium">Blink Count:</Text>
+                    <Text size="2" weight="medium">
+                      Blink Count:
+                    </Text>
                     <Badge color={isBlinking ? "green" : "gray"} size="2">
                       {blinkCount}
                     </Badge>
                   </Flex>
                   <Flex justify="between" align="center">
-                    <Text size="2" weight="medium">EAR Score:</Text>
-                    <Badge color={currentEAR < (activeCalibration?.earThreshold || 0.25) ? "orange" : "blue"} size="2">
+                    <Text size="2" weight="medium">
+                      EAR Score:
+                    </Text>
+                    <Badge
+                      color={
+                        currentEAR < (activeCalibration?.earThreshold || 0.25)
+                          ? "orange"
+                          : "blue"
+                      }
+                      size="2"
+                    >
                       {currentEAR.toFixed(3)}
                     </Badge>
                   </Flex>
                   {activeCalibration && (
                     <Flex justify="between" align="center">
-                      <Text size="2" weight="medium">Threshold:</Text>
-                      <Badge color="gray" size="2">
+                      <Text size="2" weight="medium">
+                        Threshold:
+                      </Text>
+                      <Badge size="2">
                         {activeCalibration.earThreshold.toFixed(3)}
                       </Badge>
                     </Flex>
                   )}
                   <Flex justify="between" align="center">
-                    <Text size="2" weight="medium">Status:</Text>
-                    <Badge 
-                      color={!isDetectorReady ? "gray" : isBlinking ? "red" : "green"} 
+                    <Text size="2" weight="medium">
+                      Status:
+                    </Text>
+                    <Badge
+                      color={
+                        !isDetectorReady ? "gray" : isBlinking ? "red" : "green"
+                      }
                       size="2"
                     >
-                      {!isDetectorReady ? "Initializing..." : isBlinking ? "Blinking" : "Eyes Open"}
+                      {!isDetectorReady
+                        ? "Initializing..."
+                        : isBlinking
+                        ? "Blinking"
+                        : "Eyes Open"}
                     </Badge>
                   </Flex>
                 </Flex>
               </Card>
 
-              <VideoCanvas 
+              <VideoCanvas
                 videoRef={videoRef}
                 canvasRef={canvasRef}
                 showCanvas={showDebugOverlay}
@@ -195,32 +222,32 @@ export function Camera() {
 
               <Flex gap="2" justify="center" wrap="wrap">
                 {stream && (
-                  <Button 
-                    onClick={handleStopCamera} 
-                    size="3" 
-                    variant="soft" 
+                  <Button
+                    onClick={handleStopCamera}
+                    size="3"
+                    variant="soft"
                     color="red"
                   >
                     Stop Camera
                   </Button>
                 )}
-                
-                <Button 
-                  onClick={resetBlinkCounter} 
-                  size="2" 
+
+                <Button
+                  onClick={resetBlinkCounter}
+                  size="2"
                   variant="soft"
                   disabled={!isDetectorReady}
                 >
                   Reset Counter
                 </Button>
 
-                <Button 
-                  onClick={toggleDebugOverlay} 
-                  size="2" 
+                <Button
+                  onClick={toggleDebugOverlay}
+                  size="2"
                   variant="soft"
                   disabled={!isDetectorReady}
                 >
-                  Toggle Debug: {showDebugOverlay ? 'ON' : 'OFF'}
+                  Toggle Debug: {showDebugOverlay ? "ON" : "OFF"}
                 </Button>
               </Flex>
             </Flex>
