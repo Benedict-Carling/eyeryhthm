@@ -2,7 +2,15 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Container, Flex, Box, Text, Heading, Button, Card } from "@radix-ui/themes";
+import {
+  Container,
+  Flex,
+  Box,
+  Text,
+  Heading,
+  Button,
+  Card,
+} from "@radix-ui/themes";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useSession } from "../../../contexts/SessionContext";
 import { SessionData } from "../../../lib/sessions/types";
@@ -16,7 +24,7 @@ export default function SessionDetailPage() {
 
   useEffect(() => {
     const sessionId = params.id as string;
-    const foundSession = sessions.find(s => s.id === sessionId);
+    const foundSession = sessions.find((s) => s.id === sessionId);
     setSession(foundSession || null);
   }, [params.id, sessions]);
 
@@ -74,30 +82,36 @@ export default function SessionDetailPage() {
   return (
     <Container size="3">
       <Flex direction="column" gap="6" style={{ padding: "40px 0" }}>
-        <Button onClick={() => router.back()} variant="ghost" style={{ width: "fit-content" }}>
+        <Button
+          onClick={() => router.back()}
+          variant="ghost"
+          style={{ width: "fit-content" }}
+        >
           <ArrowLeftIcon /> Back to Sessions
         </Button>
 
         <Box>
-          <Heading size="8" mb="2">Session Details</Heading>
-          <Text size="4" color="gray">
-            {formatDate(session.startTime)}
-          </Text>
+          <Heading size="8" mb="2">
+            Session Details
+          </Heading>
+          <Text size="4">{formatDate(session.startTime)}</Text>
         </Box>
 
         <Flex gap="4" wrap="wrap">
           <Card>
             <Flex direction="column" gap="2">
-              <Text size="2" color="gray">Duration</Text>
+              <Text size="2">Duration</Text>
               <Text size="5" weight="medium">
-                {session.duration ? formatDuration(session.duration) : "In progress"}
+                {session.duration
+                  ? formatDuration(session.duration)
+                  : "In progress"}
               </Text>
             </Flex>
           </Card>
 
           <Card>
             <Flex direction="column" gap="2">
-              <Text size="2" color="gray">Total Blinks</Text>
+              <Text size="2">Total Blinks</Text>
               <Text size="5" weight="medium">
                 {session.totalBlinks} blinks
               </Text>
@@ -106,7 +120,7 @@ export default function SessionDetailPage() {
 
           <Card>
             <Flex direction="column" gap="2">
-              <Text size="2" color="gray">Average Blink Rate</Text>
+              <Text size="2">Average Blink Rate</Text>
               <Text size="5" weight="medium">
                 {Math.round(session.averageBlinkRate)} blinks/min
               </Text>
@@ -115,16 +129,21 @@ export default function SessionDetailPage() {
 
           <Card>
             <Flex direction="column" gap="2">
-              <Text size="2" color="gray">Quality</Text>
-              <Text size="5" weight="medium" color={getQualityColor(session.quality)}>
-                {session.quality.charAt(0).toUpperCase() + session.quality.slice(1)}
+              <Text size="2">Quality</Text>
+              <Text
+                size="5"
+                weight="medium"
+                color={getQualityColor(session.quality)}
+              >
+                {session.quality.charAt(0).toUpperCase() +
+                  session.quality.slice(1)}
               </Text>
             </Flex>
           </Card>
 
           <Card>
             <Flex direction="column" gap="2">
-              <Text size="2" color="gray">Fatigue Alerts</Text>
+              <Text size="2">Fatigue Alerts</Text>
               <Text size="5" weight="medium">
                 {session.fatigueAlertCount}
               </Text>
@@ -133,7 +152,9 @@ export default function SessionDetailPage() {
         </Flex>
 
         <Card size="3">
-          <Heading size="4" mb="4">Blink Rate Over Time</Heading>
+          <Heading size="4" mb="4">
+            Blink Rate Over Time
+          </Heading>
           <Box style={{ height: "400px" }}>
             <BlinkRateChart data={session.blinkRateHistory} />
           </Box>

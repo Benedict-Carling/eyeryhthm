@@ -39,8 +39,8 @@ export function SessionCard({ session }: SessionCardProps) {
 
   const getCalibrationName = (calibrationId: string | undefined) => {
     if (!calibrationId) return null;
-    const calibration = calibrations.find(c => c.id === calibrationId);
-    return calibration?.name || 'Unknown calibration';
+    const calibration = calibrations.find((c) => c.id === calibrationId);
+    return calibration?.name || "Unknown calibration";
   };
 
   // D3 Mini Chart
@@ -114,7 +114,8 @@ export function SessionCard({ session }: SessionCardProps) {
       .attr("d", area);
 
     // Add line
-    const path = g.append("path")
+    const path = g
+      .append("path")
       .datum(session.blinkRateHistory)
       .attr("fill", "none")
       .attr("stroke", `url(#mini-gradient-${session.id})`)
@@ -130,7 +131,6 @@ export function SessionCard({ session }: SessionCardProps) {
       .duration(1000)
       .ease(d3.easeLinear)
       .attr("stroke-dashoffset", 0);
-
   }, [session.blinkRateHistory, session.id]);
 
   return (
@@ -153,110 +153,113 @@ export function SessionCard({ session }: SessionCardProps) {
           e.currentTarget.style.boxShadow = "none";
         }}
       >
-      <Flex direction="column" gap="3">
-        {/* Header */}
-        <Flex justify="between" align="center">
-          <Flex align="center" gap="3">
-            <Text size="5" weight="medium">
-              {formatTime(session.startTime)}
-            </Text>
-            {session.isActive && (
-              <Badge color="green" size="2" className="pulse">
-                • Active
-              </Badge>
-            )}
-          </Flex>
-
-          {/* Quality badges */}
-          <Flex gap="2" align="center">
-            <Badge color={getQualityColor(session.quality)} variant="soft">
-              {session.quality.charAt(0).toUpperCase() +
-                session.quality.slice(1)}{" "}
-              quality
-            </Badge>
-            {session.fatigueAlertCount > 0 ? (
-              <Badge color="orange" variant="soft">
-                <Bell size={14} /> {session.fatigueAlertCount} fatigue alert
-                {session.fatigueAlertCount > 1 ? "s" : ""}
-              </Badge>
-            ) : (
-              <Badge color="green" variant="soft">
-                <BellOff size={14} /> No fatigue alerts
-              </Badge>
-            )}
-          </Flex>
-        </Flex>
-
-        {/* Session info */}
-        <Flex gap="4" wrap="wrap">
-          {!session.isActive && session.duration && (
-            <Flex align="center" gap="2">
-              <ClockIcon />
-              <Text size="2">{formatSessionDuration(session.duration)}</Text>
-            </Flex>
-          )}
-          
-          {session.totalBlinks !== undefined && (
-            <Flex align="center" gap="2">
-              <Eye size={14} />
-              <Text size="2">{session.totalBlinks} total blinks</Text>
-            </Flex>
-          )}
-
-          {session.calibrationId && (
-            <Flex align="center" gap="2">
-              <Text size="2" color="gray">
-                Calibration: {getCalibrationName(session.calibrationId)}
+        <Flex direction="column" gap="3">
+          {/* Header */}
+          <Flex justify="between" align="center">
+            <Flex align="center" gap="3">
+              <Text size="5" weight="medium">
+                {formatTime(session.startTime)}
               </Text>
+              {session.isActive && (
+                <Badge color="green" size="2" className="pulse">
+                  • Active
+                </Badge>
+              )}
             </Flex>
-          )}
-        </Flex>
 
-        {/* Main content area */}
-        <Flex justify="between" align="center" gap="4">
-          {/* Mini chart */}
-          <Box style={{ width: "200px", height: "60px" }}>
-            {session.blinkRateHistory.length > 0 ? (
-              <svg
-                ref={svgRef}
-                width="200"
-                height="60"
-                style={{ display: "block" }}
-              />
-            ) : (
-              <Flex align="center" justify="center" style={{ height: "100%" }}>
+            {/* Quality badges */}
+            <Flex gap="2" align="center">
+              <Badge color={getQualityColor(session.quality)} variant="soft">
+                {session.quality.charAt(0).toUpperCase() +
+                  session.quality.slice(1)}{" "}
+                quality
+              </Badge>
+              {session.fatigueAlertCount > 0 ? (
+                <Badge color="orange" variant="soft">
+                  <Bell size={14} /> {session.fatigueAlertCount} fatigue alert
+                  {session.fatigueAlertCount > 1 ? "s" : ""}
+                </Badge>
+              ) : (
+                <Badge color="green" variant="soft">
+                  <BellOff size={14} /> No fatigue alerts
+                </Badge>
+              )}
+            </Flex>
+          </Flex>
+
+          {/* Session info */}
+          <Flex gap="4" wrap="wrap">
+            {!session.isActive && session.duration && (
+              <Flex align="center" gap="2">
+                <ClockIcon />
+                <Text size="2">{formatSessionDuration(session.duration)}</Text>
+              </Flex>
+            )}
+
+            {session.totalBlinks !== undefined && (
+              <Flex align="center" gap="2">
+                <Eye size={14} />
+                <Text size="2">{session.totalBlinks} total blinks</Text>
+              </Flex>
+            )}
+
+            {session.calibrationId && (
+              <Flex align="center" gap="2">
                 <Text size="2">
-                  {session.isActive ? "Collecting data..." : "No data"}
+                  Calibration: {getCalibrationName(session.calibrationId)}
                 </Text>
               </Flex>
             )}
-          </Box>
+          </Flex>
 
-          {/* Total blinks */}
-          <Flex direction="column" align="end" gap="1">
-            <Text
-              size="6"
-              weight="bold"
-              style={{
-                minWidth: "120px",
-                textAlign: "right",
-              }}
-            >
-              {session.totalBlinks} blinks
-            </Text>
-            <Text
-              size="2"
-              color="gray"
-              style={{
-                textAlign: "right",
-              }}
-            >
-              {Math.round(session.averageBlinkRate)}/min avg
-            </Text>
+          {/* Main content area */}
+          <Flex justify="between" align="center" gap="4">
+            {/* Mini chart */}
+            <Box style={{ width: "200px", height: "60px" }}>
+              {session.blinkRateHistory.length > 0 ? (
+                <svg
+                  ref={svgRef}
+                  width="200"
+                  height="60"
+                  style={{ display: "block" }}
+                />
+              ) : (
+                <Flex
+                  align="center"
+                  justify="center"
+                  style={{ height: "100%" }}
+                >
+                  <Text size="2">
+                    {session.isActive ? "Collecting data..." : "No data"}
+                  </Text>
+                </Flex>
+              )}
+            </Box>
+
+            {/* Total blinks */}
+            <Flex direction="column" align="end" gap="1">
+              <Text
+                size="6"
+                weight="bold"
+                style={{
+                  minWidth: "120px",
+                  textAlign: "right",
+                }}
+              >
+                {session.totalBlinks} blinks
+              </Text>
+              <Text
+                size="2"
+                style={{
+                  textAlign: "right",
+                }}
+              >
+                {Math.round(session.averageBlinkRate)}/min avg
+              </Text>
+            </Flex>
           </Flex>
         </Flex>
-      </Flex>
-    </Card>
+      </Card>
     </Link>
   );
 }

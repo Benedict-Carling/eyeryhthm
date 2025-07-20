@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Container, Flex, Box, Text, Heading, Card, Slider, Switch, Separator } from "@radix-ui/themes";
+import {
+  Container,
+  Flex,
+  Box,
+  Text,
+  Heading,
+  Card,
+  Slider,
+  Switch,
+  Separator,
+} from "@radix-ui/themes";
 import { BellIcon } from "@radix-ui/react-icons";
 
 export default function AccountPage() {
@@ -16,7 +26,8 @@ export default function AccountPage() {
     const savedSound = localStorage.getItem("soundEnabled");
 
     if (savedThreshold) setFatigueThreshold(parseInt(savedThreshold, 10));
-    if (savedNotifications) setNotificationsEnabled(savedNotifications === "true");
+    if (savedNotifications)
+      setNotificationsEnabled(savedNotifications === "true");
     if (savedSound) setSoundEnabled(savedSound === "true");
   }, []);
 
@@ -55,20 +66,21 @@ export default function AccountPage() {
         <Card size="3">
           <Flex direction="column" gap="5">
             <Box>
-              <Heading size="4" mb="4">Fatigue Detection</Heading>
-              
+              <Heading size="4" mb="4">
+                Fatigue Detection
+              </Heading>
+
               <Flex direction="column" gap="4">
                 <Box>
                   <Flex justify="between" align="center" mb="2">
                     <Text size="3" weight="medium">
                       Fatigue Alert Threshold
                     </Text>
-                    <Text size="3" color="gray">
-                      {fatigueThreshold} blinks/min
-                    </Text>
+                    <Text size="3">{fatigueThreshold} blinks/min</Text>
                   </Flex>
-                  <Text size="2" color="gray" mb="3">
-                    Alerts will trigger when your blink rate drops below this threshold
+                  <Text size="2" mb="3">
+                    Alerts will trigger when your blink rate drops below this
+                    threshold
                   </Text>
                   <Slider
                     value={[fatigueThreshold]}
@@ -78,8 +90,8 @@ export default function AccountPage() {
                     step={1}
                   />
                   <Flex justify="between" mt="1">
-                    <Text size="1" color="gray">4 blinks/min</Text>
-                    <Text size="1" color="gray">15 blinks/min</Text>
+                    <Text size="1">4 blinks/min</Text>
+                    <Text size="1">15 blinks/min</Text>
                   </Flex>
                 </Box>
               </Flex>
@@ -88,8 +100,10 @@ export default function AccountPage() {
             <Separator size="4" />
 
             <Box>
-              <Heading size="4" mb="4">Notification Settings</Heading>
-              
+              <Heading size="4" mb="4">
+                Notification Settings
+              </Heading>
+
               <Flex direction="column" gap="4">
                 <Flex justify="between" align="center">
                   <Box>
@@ -99,7 +113,7 @@ export default function AccountPage() {
                         Desktop Notifications
                       </Flex>
                     </Text>
-                    <Text size="2" color="gray">
+                    <Text size="2">
                       Receive alerts when fatigue is detected
                     </Text>
                   </Box>
@@ -114,7 +128,7 @@ export default function AccountPage() {
                     <Text size="3" weight="medium">
                       Sound Alerts
                     </Text>
-                    <Text size="2" color="gray">
+                    <Text size="2">
                       Play a sound with fatigue notifications
                     </Text>
                   </Box>
@@ -130,8 +144,9 @@ export default function AccountPage() {
             <Separator size="4" />
 
             <Box>
-              <Text size="2" color="gray">
-                Note: Fatigue alerts only trigger after 5 minutes of continuous session time
+              <Text size="2">
+                Note: Fatigue alerts only trigger after 5 minutes of continuous
+                session time
               </Text>
             </Box>
           </Flex>
