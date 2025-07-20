@@ -1,9 +1,9 @@
 "use client";
 
 import { Container, Flex, Box, Text, Heading } from "@radix-ui/themes";
-import { Camera } from "../components/Camera";
+import { CalibrationManager } from "../../components/CalibrationManager";
 
-export default function Home() {
+export default function CalibrationPage() {
   return (
     <Container size="4">
       <Flex
@@ -15,15 +15,15 @@ export default function Home() {
       >
         <Box>
           <Heading size="8" align="center" mb="4">
-            Blink Detection
+            Calibration
           </Heading>
           <Text size="4" align="center">
-            Track your eye movements and blink patterns in real-time
+            Calibrate your eye tracking for accurate blink detection
           </Text>
         </Box>
 
         <Box style={{ width: "100%", maxWidth: "800px" }}>
-          <Camera />
+          <CalibrationManager />
         </Box>
       </Flex>
     </Container>

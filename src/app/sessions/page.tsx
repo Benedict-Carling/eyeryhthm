@@ -1,9 +1,9 @@
 "use client";
 
 import { Container, Flex, Box, Text, Heading } from "@radix-ui/themes";
-import { Camera } from "../components/Camera";
+import { SessionsView } from "../../components/SessionsView";
 
-export default function Home() {
+export default function SessionsPage() {
   return (
     <Container size="4">
       <Flex
@@ -15,15 +15,15 @@ export default function Home() {
       >
         <Box>
           <Heading size="8" align="center" mb="4">
-            Blink Detection
+            Sessions
           </Heading>
           <Text size="4" align="center">
-            Track your eye movements and blink patterns in real-time
+            View your eye tracking sessions and fatigue patterns
           </Text>
         </Box>
 
         <Box style={{ width: "100%", maxWidth: "800px" }}>
-          <Camera />
+          <SessionsView />
         </Box>
       </Flex>
     </Container>
