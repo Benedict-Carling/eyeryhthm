@@ -106,35 +106,16 @@ export function SessionsView() {
             <Eye size={16} />
           </Callout.Icon>
           <Callout.Text>
-            <Flex direction="column" gap="3">
-              <Text weight="bold">Session Requirements:</Text>
-              <Box>
-                <Flex direction="column" gap="2">
-                  <Flex gap="2" align="center">
-                    <Text size="2">•</Text>
-                    <Text size="2">Minimum session length: 2 minutes</Text>
-                  </Flex>
-                  <Flex gap="2" align="center">
-                    <Text size="2">•</Text>
-                    <Text size="2">
-                      Sessions continue through interruptions up to 10 seconds
-                    </Text>
-                  </Flex>
-                  <Flex gap="2" align="center">
-                    <Text size="2">•</Text>
-                    <Text size="2">
-                      Blink rate targets: Good (12+), Fair (8-11), Poor (&lt;8)
-                    </Text>
-                  </Flex>
-                  <Flex gap="2" align="center">
-                    <Text size="2">•</Text>
-                    <Text size="2">
-                      No camera footage is displayed or stored
-                    </Text>
-                  </Flex>
-                </Flex>
-              </Box>
-            </Flex>
+            <strong>Session Requirements:</strong>
+            <br />
+            <br />
+            • Minimum session length: 2 minutes
+            <br />
+            • Sessions continue through interruptions up to 10 seconds
+            <br />
+            • Blink rate targets: Good (12+), Fair (8-11), Poor (&lt;8)
+            <br />
+            • No camera footage is displayed or stored
           </Callout.Text>
         </Callout.Root>
       </Box>
