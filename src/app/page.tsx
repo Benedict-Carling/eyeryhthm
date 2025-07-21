@@ -10,7 +10,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("detection");
 
   return (
-    <Container size="4">
+    <Container size="3">
       <Flex
         direction="column"
         align="center"
