@@ -54,12 +54,8 @@ export function SessionsView() {
 
           {/* Tracking toggle */}
           <Flex align="center" gap="2">
+            <Switch checked={isTracking} onCheckedChange={toggleTracking} />
             {isTracking ? <Eye size={16} /> : <EyeOff size={16} />}
-            <Switch
-              checked={isTracking}
-              onCheckedChange={toggleTracking}
-              size="2"
-            />
             <Text size="2" weight="medium">
               {isTracking ? "Tracking Enabled" : "Tracking Disabled"}
             </Text>

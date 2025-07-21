@@ -151,18 +151,13 @@ export function CalibrationList() {
                       <Text size="3" weight="medium">
                         {calibration.name}
                       </Text>
-                      {calibration.isActive && (
-                        <Badge color="green" size="1">
-                          Active
-                        </Badge>
-                      )}
                     </>
                   )}
                 </Flex>
 
                 {editingId !== calibration.id && (
                   <Flex align="center" gap="2">
-                    {!calibration.isActive && (
+                    {!calibration.isActive ? (
                       <Button
                         size="1"
                         variant="ghost"
@@ -170,6 +165,10 @@ export function CalibrationList() {
                       >
                         Set as Active
                       </Button>
+                    ) : (
+                      <Badge color="green" size="1">
+                        Active
+                      </Badge>
                     )}
                     <IconButton
                       size="1"

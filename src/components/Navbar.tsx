@@ -29,7 +29,7 @@ export function Navbar() {
       justify="between"
       px="6"
       py="3"
-      style={{ 
+      style={{
         borderBottom: "1px solid var(--gray-a5)",
         backgroundColor: "var(--color-background)",
       }}
@@ -40,7 +40,7 @@ export function Navbar() {
             BlinkTrack
           </Text>
         </Link>
-        
+
         <Flex gap="4">
           {navLinks.map((link) => (
             <Link
@@ -48,8 +48,10 @@ export function Navbar() {
               href={link.href}
               style={{
                 textDecoration: "none",
-                color: pathname === link.href ? "var(--accent-11)" : "var(--gray-11)",
-                fontWeight: pathname === link.href ? "500" : "400",
+                color:
+                  pathname === link.href
+                    ? "var(--accent-11)"
+                    : "var(--gray-11)",
               }}
             >
               <Text size="3">{link.label}</Text>
