@@ -53,7 +53,7 @@ export default function AccountPage() {
 
   return (
     <Container size="3">
-      <Flex direction="column" gap="6">
+      <Flex direction="column" gap="6" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
         <Box>
           <Heading size="8" mb="2">
             Account Settings

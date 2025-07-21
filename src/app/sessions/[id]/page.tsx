@@ -23,7 +23,7 @@ export default function SessionDetailPage() {
   if (!session) {
     return (
       <Container size="3">
-        <Flex direction="column" gap="4" style={{ padding: "40px 0" }}>
+        <Flex direction="column" gap="4" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
           <Button onClick={() => router.back()} variant="ghost">
             <ArrowLeftIcon /> Back
           </Button>
@@ -73,7 +73,7 @@ export default function SessionDetailPage() {
 
   return (
     <Container size="3">
-      <Flex direction="column" gap="6" style={{ padding: "40px 0" }}>
+      <Flex direction="column" gap="6" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
         <Button onClick={() => router.back()} variant="ghost" style={{ width: "fit-content" }}>
           <ArrowLeftIcon /> Back to Sessions
         </Button>
