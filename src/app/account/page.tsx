@@ -1,8 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Container, Flex, Box, Text, Heading, Card, Slider, Switch, Separator } from "@radix-ui/themes";
-import { BellIcon } from "@radix-ui/react-icons";
+import {
+  Container,
+  Flex,
+  Box,
+  Text,
+  Heading,
+  Switch,
+  Card,
+  TextField,
+  Separator,
+} from "@radix-ui/themes";
+import {
+  BellIcon,
+  MixerHorizontalIcon,
+  SpeakerLoudIcon,
+} from "@radix-ui/react-icons";
 
 export default function AccountPage() {
   const [fatigueThreshold, setFatigueThreshold] = useState(8);
@@ -16,7 +30,8 @@ export default function AccountPage() {
     const savedSound = localStorage.getItem("soundEnabled");
 
     if (savedThreshold) setFatigueThreshold(parseInt(savedThreshold, 10));
-    if (savedNotifications) setNotificationsEnabled(savedNotifications === "true");
+    if (savedNotifications)
+      setNotificationsEnabled(savedNotifications === "true");
     if (savedSound) setSoundEnabled(savedSound === "true");
   }, []);
 
@@ -38,67 +53,81 @@ export default function AccountPage() {
 
   return (
     <Container size="3">
-      <Flex
-        direction="column"
-        gap="6"
-        style={{ minHeight: "calc(100vh - 52px)", padding: "40px 0" }}
-      >
+      <Flex direction="column" gap="6">
         <Box>
-          <Heading size="8" align="center" mb="4">
+          <Heading size="8" mb="2">
             Account Settings
           </Heading>
-          <Text size="4" align="center">
+          <Text size="4" color="gray">
             Configure your fatigue detection preferences
           </Text>
         </Box>
 
-        <Card size="3">
-          <Flex direction="column" gap="5">
-            <Box>
-              <Heading size="4" mb="4">Fatigue Detection</Heading>
-              
-              <Flex direction="column" gap="4">
-                <Box>
-                  <Flex justify="between" align="center" mb="2">
+        <Flex direction="column" gap="4">
+          <Box>
+            <Heading size="5" mb="4">
+              Fatigue Detection
+            </Heading>
+
+            <Card size="2">
+              <Flex
+                justify="between"
+                align="center"
+                style={{ padding: "12px 16px" }}
+              >
+                <Box style={{ flex: 1, marginRight: "40px" }}>
+                  <Flex align="center" gap="2" mb="1">
+                    <MixerHorizontalIcon />
                     <Text size="3" weight="medium">
                       Fatigue Alert Threshold
                     </Text>
-                    <Text size="3" color="gray">
-                      {fatigueThreshold} blinks/min
-                    </Text>
                   </Flex>
-                  <Text size="2" color="gray" mb="3">
-                    Alerts will trigger when your blink rate drops below this threshold
+                  <Text size="2" color="gray">
+                    Alerts will trigger when your blink rate drops below this
+                    threshold
                   </Text>
-                  <Slider
-                    value={[fatigueThreshold]}
-                    onValueChange={handleThresholdChange}
-                    min={4}
-                    max={15}
-                    step={1}
-                  />
-                  <Flex justify="between" mt="1">
-                    <Text size="1" color="gray">4 blinks/min</Text>
-                    <Text size="1" color="gray">15 blinks/min</Text>
-                  </Flex>
                 </Box>
+                <Flex align="center" gap="2">
+                  <TextField.Root
+                    type="number"
+                    value={fatigueThreshold.toString()}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value, 10);
+                      if (!isNaN(value) && value >= 4 && value <= 15) {
+                        handleThresholdChange([value]);
+                      }
+                    }}
+                    style={{ width: "80px" }}
+                    min="4"
+                    max="15"
+                  />
+                  <Text size="2" color="gray">
+                    blinks/min
+                  </Text>
+                </Flex>
               </Flex>
-            </Box>
+            </Card>
+          </Box>
 
-            <Separator size="4" />
+          <Box>
+            <Heading size="5" mb="4">
+              Notification Settings
+            </Heading>
 
-            <Box>
-              <Heading size="4" mb="4">Notification Settings</Heading>
-              
-              <Flex direction="column" gap="4">
-                <Flex justify="between" align="center">
-                  <Box>
-                    <Text size="3" weight="medium">
-                      <Flex align="center" gap="2">
-                        <BellIcon />
+            <Card size="2">
+              <Flex direction="column">
+                <Flex
+                  justify="between"
+                  align="center"
+                  style={{ padding: "14px 16px" }}
+                >
+                  <Box style={{ flex: 1, marginRight: "40px" }}>
+                    <Flex align="center" gap="2" mb="1">
+                      <BellIcon />
+                      <Text size="3" weight="medium">
                         Desktop Notifications
-                      </Flex>
-                    </Text>
+                      </Text>
+                    </Flex>
                     <Text size="2" color="gray">
                       Receive alerts when fatigue is detected
                     </Text>
@@ -106,14 +135,26 @@ export default function AccountPage() {
                   <Switch
                     checked={notificationsEnabled}
                     onCheckedChange={handleNotificationsChange}
+                    size="2"
                   />
                 </Flex>
 
-                <Flex justify="between" align="center">
-                  <Box>
-                    <Text size="3" weight="medium">
-                      Sound Alerts
-                    </Text>
+                <Box style={{ padding: "0 16px" }}>
+                  <Separator size="4" />
+                </Box>
+
+                <Flex
+                  justify="between"
+                  align="center"
+                  style={{ padding: "14px 16px" }}
+                >
+                  <Box style={{ flex: 1, marginRight: "40px" }}>
+                    <Flex align="center" gap="2" mb="1">
+                      <SpeakerLoudIcon />
+                      <Text size="3" weight="medium">
+                        Sound Alerts
+                      </Text>
+                    </Flex>
                     <Text size="2" color="gray">
                       Play a sound with fatigue notifications
                     </Text>
@@ -122,20 +163,20 @@ export default function AccountPage() {
                     checked={soundEnabled}
                     onCheckedChange={handleSoundChange}
                     disabled={!notificationsEnabled}
+                    size="2"
                   />
                 </Flex>
               </Flex>
-            </Box>
+            </Card>
+          </Box>
 
-            <Separator size="4" />
-
-            <Box>
-              <Text size="2" color="gray">
-                Note: Fatigue alerts only trigger after 5 minutes of continuous session time
-              </Text>
-            </Box>
-          </Flex>
-        </Card>
+          <Box mt="3">
+            <Text size="2" color="gray">
+              Note: Fatigue alerts only trigger after 5 minutes of continuous
+              session time
+            </Text>
+          </Box>
+        </Flex>
       </Flex>
     </Container>
   );
