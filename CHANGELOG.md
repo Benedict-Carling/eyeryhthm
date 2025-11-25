@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.1...v1.2.2) (2025-11-25)
+
+
+### Bug Fixes
+
+* update release workflow to use correct electron-builder output directory ([353b945](https://github.com/Benedict-Carling/eyeryhthm/commit/353b9457db4e068370a22171f2c12a8fb00ffca1))
+
 ## [1.2.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.0...v1.2.1) (2025-11-25)
 
 
