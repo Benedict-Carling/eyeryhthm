@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Flex, Text, IconButton, DropdownMenu, Badge } from "@radix-ui/themes";
+import { Container, Flex, Text, IconButton, Badge } from "@radix-ui/themes";
 import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import Link from "next/link";
@@ -46,6 +46,13 @@ export function Navbar() {
     if (theme === "system") return <LaptopIcon />;
     if (theme === "dark") return <MoonIcon />;
     return <SunIcon />;
+  };
+
+  const handleThemeCycle = () => {
+    const themes: Array<"light" | "dark" | "system"> = ["light", "dark", "system"];
+    const currentIndex = themes.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
   };
 
   const navLinks = [
@@ -103,33 +110,14 @@ export function Navbar() {
               </Flex>
             </Flex>
 
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <IconButton size="2" variant="ghost">
-                  {getThemeIcon()}
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
-                <DropdownMenu.Item onClick={() => setTheme("light")}>
-                  <Flex align="center" gap="2">
-                    <SunIcon />
-                    <Text>Light</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onClick={() => setTheme("dark")}>
-                  <Flex align="center" gap="2">
-                    <MoonIcon />
-                    <Text>Dark</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onClick={() => setTheme("system")}>
-                  <Flex align="center" gap="2">
-                    <LaptopIcon />
-                    <Text>System</Text>
-                  </Flex>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <IconButton
+              size="2"
+              variant="ghost"
+              onClick={handleThemeCycle}
+              title={`Theme: ${theme} (click to cycle)`}
+            >
+              {getThemeIcon()}
+            </IconButton>
           </Flex>
         </Container>
       </div>
