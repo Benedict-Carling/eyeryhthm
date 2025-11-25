@@ -7,6 +7,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import packageJson from "../../package.json";
+import styles from "./Navbar.module.css";
 
 // Check if running in Electron on macOS
 function useIsElectronMac() {
@@ -25,16 +26,7 @@ function useIsElectronMac() {
 
 // Draggable title bar for Electron macOS traffic lights
 function TitleBar() {
-  return (
-    <div
-      style={{
-        height: 30,
-        backgroundColor: "var(--color-background)",
-        borderBottom: "1px solid var(--gray-a5)",
-        WebkitAppRegion: "drag",
-      } as React.CSSProperties}
-    />
-  );
+  return <div className={styles.titleBar} />;
 }
 
 export function Navbar() {
@@ -67,13 +59,7 @@ export function Navbar() {
       {isElectronMac && <TitleBar />}
 
       {/* Main navbar */}
-      <div
-        style={{
-          borderBottom: "1px solid var(--gray-a5)",
-          backgroundColor: "var(--color-background)",
-          WebkitAppRegion: "no-drag",
-        } as React.CSSProperties}
-      >
+      <div className={styles.navbar}>
         <Container size="3">
           <Flex
             align="center"
