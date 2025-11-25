@@ -3,33 +3,27 @@ import { Theme } from "@radix-ui/themes";
 import { Camera } from "./Camera";
 import { vi } from "vitest";
 
-// Mock the hooks
-const mockStartCamera = vi.fn();
-const mockStopCamera = vi.fn();
-const mockStartDetection = vi.fn();
-const mockStopDetection = vi.fn();
-const mockResetBlinkCounter = vi.fn();
-const mockProcessFrame = vi.fn();
-
-const mockUseCamera = vi.fn(() => ({
-  stream: null,
-  videoRef: { current: null },
-  startCamera: mockStartCamera,
-  stopCamera: mockStopCamera,
-  error: null,
-  hasPermission: false,
-  isLoading: false,
-}));
-
-const mockUseBlinkDetection = vi.fn(() => ({
-  blinkCount: 0,
-  currentEAR: 0,
-  isBlinking: false,
-  isReady: false,
-  start: mockStartDetection,
-  stop: mockStopDetection,
-  processFrame: mockProcessFrame,
-  resetBlinkCounter: mockResetBlinkCounter,
+// Use vi.hoisted to ensure mocks are available for vi.mock
+const { mockUseCamera, mockUseBlinkDetection } = vi.hoisted(() => ({
+  mockUseCamera: vi.fn(() => ({
+    stream: null,
+    videoRef: { current: null },
+    startCamera: vi.fn(),
+    stopCamera: vi.fn(),
+    error: null,
+    hasPermission: false,
+    isLoading: false,
+  })),
+  mockUseBlinkDetection: vi.fn(() => ({
+    blinkCount: 0,
+    currentEAR: 0,
+    isBlinking: false,
+    isReady: false,
+    start: vi.fn(),
+    stop: vi.fn(),
+    processFrame: vi.fn(),
+    resetBlinkCounter: vi.fn(),
+  })),
 }));
 
 vi.mock("../hooks/useCamera", () => ({
@@ -165,26 +159,38 @@ describe("Camera Component", () => {
   });
 
   test("calls startCamera when start button is clicked", async () => {
+    const startCameraFn = vi.fn();
+    mockUseCamera.mockReturnValue({
+      stream: null,
+      videoRef: { current: null },
+      startCamera: startCameraFn,
+      stopCamera: vi.fn(),
+      error: null,
+      hasPermission: false,
+      isLoading: false,
+    });
+
     renderCamera();
 
     const startButton = screen.getByText("Start Camera");
-    
+
     await act(async () => {
       fireEvent.click(startButton);
     });
 
-    expect(mockStartCamera).toHaveBeenCalledOnce();
+    expect(startCameraFn).toHaveBeenCalledOnce();
   });
 
   test("calls stopCamera when stop button is clicked", async () => {
     const mockStream = new MediaStream();
     const mockVideoRef = { current: document.createElement("video") };
+    const stopCameraFn = vi.fn();
 
     mockUseCamera.mockReturnValue({
       stream: mockStream,
       videoRef: mockVideoRef,
-      startCamera: mockStartCamera,
-      stopCamera: mockStopCamera,
+      startCamera: vi.fn(),
+      stopCamera: stopCameraFn,
       error: null,
       hasPermission: true,
       isLoading: false,
@@ -195,20 +201,20 @@ describe("Camera Component", () => {
       currentEAR: 0,
       isBlinking: false,
       isReady: true,
-      start: mockStartDetection,
-      stop: mockStopDetection,
-      processFrame: mockProcessFrame,
-      resetBlinkCounter: mockResetBlinkCounter,
+      start: vi.fn(),
+      stop: vi.fn(),
+      processFrame: vi.fn(),
+      resetBlinkCounter: vi.fn(),
     });
 
     renderCamera();
 
     const stopButton = screen.getByText("Stop Camera");
-    
+
     await act(async () => {
       fireEvent.click(stopButton);
     });
 
-    expect(mockStopCamera).toHaveBeenCalledOnce();
+    expect(stopCameraFn).toHaveBeenCalledOnce();
   });
 });

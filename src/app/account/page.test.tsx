@@ -51,34 +51,34 @@ describe('AccountPage', () => {
     });
 
     render(<AccountPage />);
-    
-    expect(screen.getByText('10 blinks/min')).toBeInTheDocument();
+
+    // Check that threshold input has the correct value
+    const thresholdInput = screen.getByRole('spinbutton');
+    expect(thresholdInput).toHaveValue(10);
     // Notifications switch should be off
     const switches = screen.getAllByRole('switch');
     const notificationSwitch = switches[0]; // First switch is notifications
-    expect(notificationSwitch).not.toBeChecked();
+    expect(notificationSwitch).toHaveAttribute('aria-checked', 'false');
     // Sound switch should be on but disabled (since notifications are off)
     const soundSwitch = switches[1]; // Second switch is sound
-    expect(soundSwitch).toBeChecked();
+    expect(soundSwitch).toHaveAttribute('aria-checked', 'true');
     expect(soundSwitch).toBeDisabled();
   });
 
   it('updates fatigue threshold and saves to localStorage', async () => {
     const user = userEvent.setup();
     render(<AccountPage />);
-    
-    const slider = screen.getByRole('slider');
-    
-    // Simulate changing the slider value by clicking near the desired position
-    // Since we can't directly set the value, we'll verify the slider works by checking initial state
-    expect(screen.getByText('8 blinks/min')).toBeInTheDocument();
-    
-    // Use keyboard to change value
-    slider.focus();
-    await user.keyboard('{ArrowRight}');
-    
+
+    const thresholdInput = screen.getByRole('spinbutton') as HTMLInputElement;
+
+    // Verify initial value is 8 (from mock localStorage)
+    expect(thresholdInput).toHaveValue(8);
+
+    // Use fireEvent to change value directly since userEvent.type has issues with validation
+    await user.tripleClick(thresholdInput); // Select all
+    await user.keyboard('9'); // Type new value
+
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith('fatigueThreshold', '9');
-    expect(screen.getByText('9 blinks/min')).toBeInTheDocument();
   });
 
   it('toggles notifications and saves to localStorage', async () => {
@@ -121,11 +121,12 @@ describe('AccountPage', () => {
     expect(soundSwitch).toBeDisabled();
   });
 
-  it('shows threshold range labels', () => {
+  it('shows threshold input with correct min/max attributes', () => {
     render(<AccountPage />);
-    
-    expect(screen.getByText('4 blinks/min')).toBeInTheDocument();
-    expect(screen.getByText('15 blinks/min')).toBeInTheDocument();
+
+    const thresholdInput = screen.getByRole('spinbutton');
+    expect(thresholdInput).toHaveAttribute('min', '4');
+    expect(thresholdInput).toHaveAttribute('max', '15');
   });
 
   it('shows informational note about fatigue alerts', () => {
