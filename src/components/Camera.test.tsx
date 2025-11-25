@@ -107,7 +107,7 @@ describe("Camera Component", () => {
       videoRef: { current: null },
       startCamera: mockStartCamera,
       stopCamera: mockStopCamera,
-      error: "Camera permission denied",
+      error: "Camera permission denied" as string | null,
       hasPermission: false,
       isLoading: false,
     });
@@ -119,10 +119,10 @@ describe("Camera Component", () => {
 
   test("renders video element when stream is available", () => {
     const mockStream = new MediaStream();
-    const mockVideoRef = { current: document.createElement("video") };
+    const mockVideoRef = { current: document.createElement("video") } as { current: HTMLVideoElement | null };
 
     mockUseCamera.mockReturnValue({
-      stream: mockStream,
+      stream: mockStream as MediaStream | null,
       videoRef: mockVideoRef,
       startCamera: mockStartCamera,
       stopCamera: mockStopCamera,
@@ -143,10 +143,10 @@ describe("Camera Component", () => {
 
   test("video element has correct styling for grayscale", () => {
     const mockStream = new MediaStream();
-    const mockVideoRef = { current: document.createElement("video") };
+    const mockVideoRef = { current: document.createElement("video") } as { current: HTMLVideoElement | null };
 
     mockUseCamera.mockReturnValue({
-      stream: mockStream,
+      stream: mockStream as MediaStream | null,
       videoRef: mockVideoRef,
       startCamera: mockStartCamera,
       stopCamera: mockStopCamera,
@@ -187,11 +187,11 @@ describe("Camera Component", () => {
 
   test("calls stopCamera when stop button is clicked", async () => {
     const mockStream = new MediaStream();
-    const mockVideoRef = { current: document.createElement("video") };
+    const mockVideoRef = { current: document.createElement("video") } as { current: HTMLVideoElement | null };
     const stopCameraFn = vi.fn();
 
     mockUseCamera.mockReturnValue({
-      stream: mockStream,
+      stream: mockStream as MediaStream | null,
       videoRef: mockVideoRef,
       startCamera: vi.fn(),
       stopCamera: stopCameraFn,

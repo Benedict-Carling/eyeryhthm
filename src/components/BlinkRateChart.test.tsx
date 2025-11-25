@@ -37,10 +37,11 @@ vi.mock('d3', () => ({
     range: vi.fn().mockReturnThis(),
   })),
   scaleLinear: vi.fn(() => {
-    const scale = vi.fn((value: number) => value * 10);
-    scale.domain = vi.fn().mockReturnValue(scale);
-    scale.nice = vi.fn().mockReturnValue(scale);
-    scale.range = vi.fn().mockReturnValue(scale);
+    const scale = Object.assign(vi.fn((value: number) => value * 10), {
+      domain: vi.fn().mockReturnThis(),
+      nice: vi.fn().mockReturnThis(),
+      range: vi.fn().mockReturnThis(),
+    });
     return scale;
   }),
   line: vi.fn(() => ({

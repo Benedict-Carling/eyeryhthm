@@ -15,7 +15,11 @@ vi.mock('../hooks/useCamera', () => ({
     videoRef: { current: null },
     startCamera: mockStartCamera,
     stopCamera: mockStopCamera,
-    hasPermission: true,
+      hasPermission: true,
+      error: null,
+      isLoading: false,
+      error: null,
+      isLoading: false,
   })),
 }));
 
@@ -156,11 +160,13 @@ describe('SessionContext', () => {
     const { useBlinkDetection } = await import('../hooks/useBlinkDetection');
     
     vi.mocked(useCamera).mockReturnValue({
-      stream: {},
+      stream: new MediaStream(),
       videoRef: { current: document.createElement('video') },
       startCamera: mockStartCamera,
       stopCamera: mockStopCamera,
-      hasPermission: true,
+        hasPermission: true,
+      error: null,
+      isLoading: false,
     });
 
     vi.mocked(useBlinkDetection).mockReturnValue({
@@ -170,6 +176,9 @@ describe('SessionContext', () => {
       start: mockStartDetection,
       stop: mockStopDetection,
       processFrame: vi.fn(),
+      resetBlinkCounter: vi.fn(),
+      isBlinking: false,
+      error: null,
     });
 
     render(
@@ -196,11 +205,9 @@ describe('SessionContext', () => {
 
     // Trigger fatigue alert
     expect(fatigueAlertCallback).toBeDefined();
-    if (fatigueAlertCallback) {
-      await act(async () => {
-        fatigueAlertCallback();
-      });
-    }
+    await act(async () => {
+      fatigueAlertCallback?.();
+    });
 
     expect(fatigueCount).toHaveTextContent('1');
   });
