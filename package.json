@@ -17,7 +17,7 @@
       "owner": "Benedict-Carling",
       "repo": "eyeryhthm",
       "private": true,
-      "token": "${GH_TOKEN}"
+      "token": "$GH_TOKEN"
     },
     "mac": {
       "category": "public.app-category.healthcare-fitness",
