@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.0.0...v1.1.0) (2025-11-25)
+
+
+### Features
+
+* trigger v1.0.1 release for Electron builds ([185c49a](https://github.com/Benedict-Carling/eyeryhthm/commit/185c49a0851f53e58b29b79f26a3e6bb4e9b263c))
+
 ## 1.0.0 (2025-11-25)
 
 
