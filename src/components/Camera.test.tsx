@@ -3,6 +3,10 @@ import { Theme } from "@radix-ui/themes";
 import { Camera } from "./Camera";
 import { vi } from "vitest";
 
+// Define mock functions at module scope so they can be referenced in tests
+const mockStartCamera = vi.fn();
+const mockStopCamera = vi.fn();
+
 // Use vi.hoisted to ensure mocks are available for vi.mock
 const { mockUseCamera, mockUseBlinkDetection } = vi.hoisted(() => ({
   mockUseCamera: vi.fn(() => ({

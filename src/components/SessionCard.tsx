@@ -134,7 +134,7 @@ export function SessionCard({ session }: SessionCardProps) {
   }, [session.blinkRateHistory, session.id]);
 
   return (
-    <Link href={`/sessions/${session.id}`} style={{ textDecoration: "none" }}>
+    <Link href={`/session?id=${session.id}`} style={{ textDecoration: "none" }}>
       <Card
         className={session.isActive ? "session-card active" : "session-card"}
         style={{

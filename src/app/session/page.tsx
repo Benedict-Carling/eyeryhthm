@@ -1,30 +1,32 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
 import { Container, Flex, Box, Text, Heading, Button, Card } from "@radix-ui/themes";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
-import { useSession } from "../../../contexts/SessionContext";
-import { SessionData } from "../../../lib/sessions/types";
-import { BlinkRateChart } from "../../../components/BlinkRateChart";
+import { useSession } from "../../contexts/SessionContext";
+import { SessionData } from "../../lib/sessions/types";
+import { BlinkRateChart } from "../../components/BlinkRateChart";
 
-export default function SessionDetailPage() {
-  const params = useParams();
+function SessionDetailContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { sessions } = useSession();
   const [session, setSession] = useState<SessionData | null>(null);
 
   useEffect(() => {
-    const sessionId = params.id as string;
-    const foundSession = sessions.find(s => s.id === sessionId);
-    setSession(foundSession || null);
-  }, [params.id, sessions]);
+    const sessionId = searchParams.get("id");
+    if (sessionId) {
+      const foundSession = sessions.find(s => s.id === sessionId);
+      setSession(foundSession || null);
+    }
+  }, [searchParams, sessions]);
 
   if (!session) {
     return (
       <Container size="3">
         <Flex direction="column" gap="4" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
-          <Button onClick={() => router.back()} variant="ghost">
+          <Button onClick={() => router.push("/")} variant="ghost">
             <ArrowLeftIcon /> Back
           </Button>
           <Text>Session not found</Text>
@@ -74,7 +76,7 @@ export default function SessionDetailPage() {
   return (
     <Container size="3">
       <Flex direction="column" gap="6" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
-        <Button onClick={() => router.back()} variant="ghost" style={{ width: "fit-content" }}>
+        <Button onClick={() => router.push("/")} variant="ghost" style={{ width: "fit-content" }}>
           <ArrowLeftIcon /> Back to Sessions
         </Button>
 
@@ -140,5 +142,19 @@ export default function SessionDetailPage() {
         </Card>
       </Flex>
     </Container>
+  );
+}
+
+export default function SessionDetailPage() {
+  return (
+    <Suspense fallback={
+      <Container size="3">
+        <Flex direction="column" gap="4" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
+          <Text>Loading...</Text>
+        </Flex>
+      </Container>
+    }>
+      <SessionDetailContent />
+    </Suspense>
   );
 }

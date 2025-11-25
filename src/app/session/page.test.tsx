@@ -2,19 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SessionDetailPage from './page';
-import { SessionData } from '../../../lib/sessions/types';
+import { SessionData } from '../../lib/sessions/types';
 
 // Mock next/navigation
 const mockPush = vi.fn();
-const mockBack = vi.fn();
-const mockParams = { id: 'session-1' };
+const mockSearchParams = new URLSearchParams('id=session-1');
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
-    back: mockBack,
   }),
-  useParams: () => mockParams,
+  useSearchParams: () => mockSearchParams,
 }));
 
 // Mock SessionContext
@@ -33,6 +31,7 @@ const mockSessions: SessionData[] = [
     quality: 'poor',
     fatigueAlertCount: 2,
     duration: 5400, // 1h 30m
+    totalBlinks: 378,
   },
   {
     id: 'session-2',
@@ -42,17 +41,18 @@ const mockSessions: SessionData[] = [
     blinkRateHistory: [],
     quality: 'good',
     fatigueAlertCount: 0,
+    totalBlinks: 0,
   },
 ];
 
-vi.mock('../../../contexts/SessionContext', () => ({
+vi.mock('../../contexts/SessionContext', () => ({
   useSession: () => ({
     sessions: mockSessions,
   }),
 }));
 
 // Mock BlinkRateChart
-vi.mock('../../../components/BlinkRateChart', () => ({
+vi.mock('../../components/BlinkRateChart', () => ({
   BlinkRateChart: ({ data }: { data: unknown[] }) => (
     <div data-testid="blink-rate-chart" data-points={data.length} />
   ),
@@ -68,12 +68,12 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 describe('SessionDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockParams.id = 'session-1';
+    mockSearchParams.set('id', 'session-1');
   });
 
   it('renders session details correctly', () => {
     render(<SessionDetailPage />);
-    
+
     expect(screen.getByText('Session Details')).toBeInTheDocument();
     expect(screen.getByText(/Monday, January 15, 2024/)).toBeInTheDocument();
     expect(screen.getByText('1h 30m 0s')).toBeInTheDocument();
@@ -84,55 +84,52 @@ describe('SessionDetailPage', () => {
 
   it('renders back button', () => {
     render(<SessionDetailPage />);
-    
+
     const backButton = screen.getByText('Back to Sessions');
     expect(backButton).toBeInTheDocument();
   });
 
-  it('navigates back when back button is clicked', async () => {
+  it('navigates back to home when back button is clicked', async () => {
     const user = userEvent.setup();
     render(<SessionDetailPage />);
-    
+
     const backButton = screen.getByText('Back to Sessions');
     await user.click(backButton);
-    
-    expect(mockBack).toHaveBeenCalled();
+
+    expect(mockPush).toHaveBeenCalledWith('/');
   });
 
   it('renders blink rate chart', () => {
     render(<SessionDetailPage />);
-    
+
     const chart = screen.getByTestId('blink-rate-chart');
     expect(chart).toBeInTheDocument();
     expect(chart).toHaveAttribute('data-points', '3');
   });
 
   it('shows "In progress" for active sessions', () => {
-    mockParams.id = 'session-2';
+    mockSearchParams.set('id', 'session-2');
     render(<SessionDetailPage />);
-    
+
     expect(screen.getByText('In progress')).toBeInTheDocument();
   });
 
   it('shows "Session not found" for invalid session ID', () => {
-    mockParams.id = 'invalid-id';
+    mockSearchParams.set('id', 'invalid-id');
     render(<SessionDetailPage />);
-    
+
     expect(screen.getByText('Session not found')).toBeInTheDocument();
   });
 
   it('formats duration correctly for different time periods', () => {
-    // Test is already covered by the first test case
     render(<SessionDetailPage />);
     expect(screen.getByText('1h 30m 0s')).toBeInTheDocument();
   });
 
   it('applies correct color to quality indicator', () => {
     render(<SessionDetailPage />);
-    
+
     const qualityText = screen.getByText('Poor');
-    // Radix UI Text component uses color prop, but it doesn't render as an HTML attribute
-    // Instead, check that the parent element contains the expected text
     expect(qualityText).toBeInTheDocument();
     expect(qualityText.parentElement).toContainElement(qualityText);
   });
