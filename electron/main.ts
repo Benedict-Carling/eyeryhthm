@@ -18,7 +18,7 @@ function createWindow() {
       sandbox: false, // Required for some media APIs
     },
     titleBarStyle: "hiddenInset", // macOS native title bar
-    trafficLightPosition: { x: 16, y: 16 },
+    trafficLightPosition: { x: 16, y: 12 },
     show: false, // Don't show until ready
     backgroundColor: "#111113", // Match app background
   });
