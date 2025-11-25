@@ -64,15 +64,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List build output
-        run: ls -la dist/
+        run: ls -la release/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: electron-mac-universal
           path: |
-            dist/*.dmg
-            dist/*.zip
+            release/*.dmg
+            release/*.zip
           if-no-files-found: error
 
       - name: Upload to GitHub Release
@@ -80,7 +80,7 @@ jobs:
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: |
-            dist/*.dmg
-            dist/*.zip
+            release/*.dmg
+            release/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
