@@ -73,28 +73,27 @@ describe('Navbar', () => {
     expect(themeButton).toBeInTheDocument();
   });
 
-  it('opens theme dropdown when clicked', async () => {
+  it('cycles theme when clicked', async () => {
     const user = userEvent.setup();
     renderNavbar();
-    
+
     const themeButton = screen.getByRole('button');
+
+    // Initial theme should be system
+    expect(themeButton).toHaveAttribute('title', expect.stringContaining('system'));
+
+    // Click to cycle to light
     await user.click(themeButton);
-    
-    expect(screen.getByText('Light')).toBeInTheDocument();
-    expect(screen.getByText('Dark')).toBeInTheDocument();
-    expect(screen.getByText('System')).toBeInTheDocument();
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('theme', 'light');
   });
 
-  it('changes theme when option is selected', async () => {
+  it('changes theme when button is clicked', async () => {
     const user = userEvent.setup();
     renderNavbar();
-    
+
     const themeButton = screen.getByRole('button');
     await user.click(themeButton);
-    
-    const lightOption = screen.getByText('Light');
-    await user.click(lightOption);
-    
+
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith('theme', 'light');
   });
 
