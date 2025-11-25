@@ -42,6 +42,13 @@ const config = {
     gatekeeperAssess: false,
     entitlements: "build-resources/entitlements.mac.plist",
     entitlementsInherit: "build-resources/entitlements.mac.plist",
+    // Code signing configuration (required for auto-updates on macOS)
+    // Set SIGNING_CERT_NAME environment variable to the name of your Developer ID certificate
+    // Example: SIGNING_CERT_NAME="Developer ID Application: Your Name" npm run electron:build:mac
+    // For more info: https://www.electron.build/code-signing.html
+    // identity: undefined, // Will auto-detect if available
+    // certificateFile: undefined, // Optional: path to certificate file
+    // certificatePassword: undefined, // Optional: password for certificate
     // Camera permission
     extendInfo: {
       NSCameraUsageDescription:

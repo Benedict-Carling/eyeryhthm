@@ -6,6 +6,7 @@ import { setupAutoUpdater } from "./updater";
 let mainWindow: BrowserWindow | null = null;
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
+const outDir = path.resolve(__dirname, "../out");
 
 // Register custom protocol for serving static files
 function registerAppProtocol() {
@@ -34,7 +35,13 @@ function registerAppProtocol() {
     }
 
     // Build the file path relative to the out directory
-    const filePath = path.join(__dirname, "../out", urlPath);
+    const filePath = path.resolve(__dirname, "../out", urlPath);
+
+    // Security: Prevent path traversal attacks
+    if (!filePath.startsWith(outDir)) {
+      console.error(`[Security] Path traversal attempt blocked: ${urlPath}`);
+      return new Response("Forbidden", { status: 403 });
+    }
 
     return net.fetch(pathToFileURL(filePath).toString());
   });
@@ -50,7 +57,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false, // Required for some media APIs
+      sandbox: true, // Security: Enable sandbox (MediaPipe works fine with it)
     },
     titleBarStyle: "hiddenInset", // macOS native title bar
     trafficLightPosition: { x: 16, y: 12 },
@@ -135,10 +142,44 @@ app.commandLine.appendSwitch("enable-media-stream");
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Register app:// protocol as a standard scheme with privileges
+  // MUST be called before creating window - required for localStorage and web APIs
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: "app",
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        corsEnabled: false,
+      },
+    },
+  ]);
+
   // Register custom protocol before creating window
   registerAppProtocol();
 
   createWindow();
+
+  // Add Content Security Policy headers for security
+  if (mainWindow) {
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [
+            "default-src 'self' app:",
+            "script-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Next.js React
+            "style-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Radix UI themes
+            "img-src 'self' data: app:",
+            "font-src 'self' app:",
+            "connect-src 'self' https://cdn.jsdelivr.net https://storage.googleapis.com", // MediaPipe CDN
+            "media-src 'self' mediastream:", // Camera access
+          ].join("; "),
+        },
+      });
+    });
+  }
 
   // Setup auto-updater (only in production)
   if (!isDev && mainWindow) {

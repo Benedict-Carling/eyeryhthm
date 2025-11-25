@@ -39,21 +39,9 @@ function sendUpdateStatus(status: UpdateStatus) {
 export function setupAutoUpdater(window: BrowserWindow) {
   mainWindow = window;
 
-  // For private repository access, the token is embedded at build time
-  // via the GH_TOKEN environment variable. electron-builder writes it
-  // to app-update.yml which electron-updater reads automatically.
-  //
-  // If GH_TOKEN wasn't set at build time, we can still try runtime token
-  const runtimeToken = process.env.GH_TOKEN;
-  if (runtimeToken) {
-    log.info("Runtime GH_TOKEN found, using for private repository access");
-    // Set the token for the GitHub provider
-    autoUpdater.requestHeaders = {
-      Authorization: `token ${runtimeToken}`,
-    };
-  } else {
-    log.info("Using build-time embedded token for updates (if available)");
-  }
+  // Auto-updater will automatically detect and use GitHub releases
+  // Repository must be public for auto-updates to work without credentials
+  log.info("Auto-updater configured for public GitHub releases");
 
   // Auto-updater events
   autoUpdater.on("checking-for-update", () => {
