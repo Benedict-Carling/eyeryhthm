@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.0...v1.1.1) (2025-11-25)
+
+
+### Bug Fixes
+
+* correct Electron build output path and limit to macOS ([2ed6ed7](https://github.com/Benedict-Carling/eyeryhthm/commit/2ed6ed74d12e124f883127c543a821557009cf3a))
+
 ## [1.1.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.0.0...v1.1.0) (2025-11-25)
 
 
