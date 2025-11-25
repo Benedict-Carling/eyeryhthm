@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.0...v1.2.1) (2025-11-25)
+
+
+### Bug Fixes
+
+* use correct electron-builder token environment variable syntax ([286ec8a](https://github.com/Benedict-Carling/eyeryhthm/commit/286ec8a0dfbb28519f7d81e810eaa41463748d56))
+
 ## [1.2.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.3...v1.2.0) (2025-11-25)
 
 
