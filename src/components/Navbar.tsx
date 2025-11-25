@@ -71,7 +71,8 @@ export function Navbar() {
         style={{
           borderBottom: "1px solid var(--gray-a5)",
           backgroundColor: "var(--color-background)",
-        }}
+          WebkitAppRegion: "no-drag",
+        } as React.CSSProperties}
       >
         <Container size="3">
           <Flex
