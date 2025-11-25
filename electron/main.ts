@@ -1,9 +1,44 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net } from "electron";
 import path from "path";
+import { pathToFileURL } from "url";
+import { setupAutoUpdater } from "./updater";
 
 let mainWindow: BrowserWindow | null = null;
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
+
+// Register custom protocol for serving static files
+function registerAppProtocol() {
+  protocol.handle("app", (request) => {
+    // Convert app://./path to file path
+    let urlPath = request.url.replace("app://./", "");
+
+    // Remove leading slash if present
+    if (urlPath.startsWith("/")) {
+      urlPath = urlPath.slice(1);
+    }
+
+    // Handle root path
+    if (urlPath === "" || urlPath === "/") {
+      urlPath = "index.html";
+    }
+
+    // Remove query strings and hashes
+    urlPath = urlPath.split("?")[0].split("#")[0];
+
+    // Handle directory paths - append index.html
+    // This handles paths like "calibration/", "account/", etc.
+    if (urlPath.endsWith("/") || (!urlPath.includes(".") && !urlPath.endsWith("/"))) {
+      const testPath = urlPath.endsWith("/") ? urlPath : `${urlPath}/`;
+      urlPath = `${testPath}index.html`;
+    }
+
+    // Build the file path relative to the out directory
+    const filePath = path.join(__dirname, "../out", urlPath);
+
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -35,8 +70,8 @@ function createWindow() {
     // Open DevTools in development
     mainWindow.webContents.openDevTools();
   } else {
-    // In production, load the static export
-    mainWindow.loadFile(path.join(__dirname, "../out/index.html"));
+    // In production, load via custom protocol for proper path resolution
+    mainWindow.loadURL("app://./index.html");
   }
 
   // Handle external links - open in default browser
@@ -47,13 +82,41 @@ function createWindow() {
 
   // Handle navigation within the app for static export
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    // Allow navigation to local files and dev server
+    // Allow navigation to local files, dev server, and app protocol
     if (
       url.startsWith("file://") ||
-      url.startsWith("http://localhost:3000")
+      url.startsWith("http://localhost:3000") ||
+      url.startsWith("app://")
     ) {
       return;
     }
+
+    // In production, intercept absolute path navigations and convert to app:// URLs
+    // Next.js Link components use absolute paths like /calibration/, /account/
+    if (!isDev && (url.startsWith("app://./") || !url.startsWith("http"))) {
+      event.preventDefault();
+      // Extract path from the URL - handle both absolute and relative paths
+      let navPath = url;
+      try {
+        const parsedUrl = new URL(url);
+        navPath = parsedUrl.pathname;
+      } catch {
+        // URL might be a relative path, use as-is
+        if (url.startsWith("/")) {
+          navPath = url;
+        }
+      }
+
+      // Ensure path ends with /index.html for directories
+      if (!navPath.endsWith(".html")) {
+        navPath = navPath.endsWith("/") ? `${navPath}index.html` : `${navPath}/index.html`;
+      }
+
+      // Navigate using the app protocol
+      mainWindow?.loadURL(`app://.${navPath}`);
+      return;
+    }
+
     // Open external URLs in default browser
     event.preventDefault();
     shell.openExternal(url);
@@ -72,7 +135,15 @@ app.commandLine.appendSwitch("enable-media-stream");
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Register custom protocol before creating window
+  registerAppProtocol();
+
   createWindow();
+
+  // Setup auto-updater (only in production)
+  if (!isDev && mainWindow) {
+    setupAutoUpdater(mainWindow);
+  }
 
   // On macOS, re-create window when dock icon is clicked
   app.on("activate", () => {

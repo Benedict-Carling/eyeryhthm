@@ -102,11 +102,33 @@ describe('Navbar', () => {
     const nextNavigation = await import('next/navigation');
     const { usePathname } = vi.mocked(nextNavigation);
     usePathname.mockReturnValue('/calibration');
-    
+
     renderNavbar();
-    
+
     const calibrationLink = screen.getByText('Calibration');
     const calibrationLinkElement = calibrationLink.closest('a');
     expect(calibrationLinkElement).toHaveStyle({ color: 'var(--accent-11)' });
+  });
+
+  it('navigation links have correct href paths', () => {
+    renderNavbar();
+
+    // Get all navigation links
+    const sessionsLink = screen.getByText('Sessions').closest('a');
+    const calibrationLink = screen.getByText('Calibration').closest('a');
+    const accountLink = screen.getByText('Account').closest('a');
+
+    // Verify href attributes are set correctly
+    expect(sessionsLink).toHaveAttribute('href', '/');
+    expect(calibrationLink).toHaveAttribute('href', '/calibration');
+    expect(accountLink).toHaveAttribute('href', '/account');
+  });
+
+  it('displays version number from package.json', () => {
+    renderNavbar();
+
+    // Version badge should show v{version} format
+    const versionText = screen.getByText(/^v\d+\.\d+\.\d+$/);
+    expect(versionText).toBeInTheDocument();
   });
 });

@@ -17,6 +17,7 @@ import {
   MixerHorizontalIcon,
   SpeakerLoudIcon,
 } from "@radix-ui/react-icons";
+import { VersionInfo } from "@/components/VersionInfo";
 
 export default function AccountPage() {
   const [fatigueThreshold, setFatigueThreshold] = useState(8);
@@ -175,6 +176,13 @@ export default function AccountPage() {
               Note: Fatigue alerts only trigger after 5 minutes of continuous
               session time
             </Text>
+          </Box>
+
+          <Box>
+            <Heading size="5" mb="4">
+              About
+            </Heading>
+            <VersionInfo />
           </Box>
         </Flex>
       </Flex>

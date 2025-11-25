@@ -5,6 +5,38 @@
   "main": "dist-electron/main.js",
   "author": "BlinkTrack",
   "description": "Privacy-focused real-time eye movement tracking application",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Benedict-Carling/eyeryhthm.git"
+  },
+  "build": {
+    "appId": "com.blinktrack.eyeryhthm",
+    "productName": "BlinkTrack",
+    "publish": {
+      "provider": "github",
+      "owner": "Benedict-Carling",
+      "repo": "eyeryhthm",
+      "private": true,
+      "token": "${GH_TOKEN}"
+    },
+    "mac": {
+      "category": "public.app-category.healthcare-fitness",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "linux": {
+      "target": ["AppImage"]
+    },
+    "files": [
+      "dist-electron/**/*",
+      "out/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    }
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -27,6 +59,8 @@
     "@radix-ui/themes": "^3.2.1",
     "@sentry/nextjs": "^9.40.0",
     "d3": "^7.9.0",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
     "lucide-react": "^0.525.0",
     "next": "15.4.2",
     "react": "19.1.0",

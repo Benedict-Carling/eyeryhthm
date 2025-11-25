@@ -25,18 +25,33 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    
+
     const updateResolvedTheme = (e?: MediaQueryListEvent) => {
+      let newResolvedTheme: "light" | "dark";
       if (theme === "system") {
         const matches = e ? e.matches : mediaQuery.matches;
-        setResolvedTheme(matches ? "dark" : "light");
+        newResolvedTheme = matches ? "dark" : "light";
       } else {
-        setResolvedTheme(theme as "light" | "dark");
+        newResolvedTheme = theme as "light" | "dark";
+      }
+      setResolvedTheme(newResolvedTheme);
+
+      // Update the document class for Radix Themes
+      // Radix Themes uses class names on the root element for theming
+      const root = document.documentElement;
+      root.classList.remove("light", "dark");
+      root.classList.add(newResolvedTheme);
+
+      // Also update the radix-themes element if it exists
+      const radixTheme = document.querySelector(".radix-themes");
+      if (radixTheme) {
+        radixTheme.classList.remove("light", "dark");
+        radixTheme.classList.add(newResolvedTheme);
       }
     };
 
     updateResolvedTheme();
-    
+
     if (theme === "system") {
       mediaQuery.addEventListener("change", updateResolvedTheme);
       return () => mediaQuery.removeEventListener("change", updateResolvedTheme);

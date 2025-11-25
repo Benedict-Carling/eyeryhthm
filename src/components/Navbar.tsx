@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Flex, Text, IconButton, DropdownMenu } from "@radix-ui/themes";
+import { Container, Flex, Text, IconButton, DropdownMenu, Badge } from "@radix-ui/themes";
 import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import packageJson from "../../package.json";
 
 // Check if running in Electron on macOS
 function useIsElectronMac() {
@@ -73,9 +74,14 @@ export function Navbar() {
           >
             <Flex align="center" gap="6" wrap="wrap" style={{ minWidth: 0 }}>
               <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-                <Text size="5" weight="bold" style={{ color: "var(--gray-12)" }}>
-                  BlinkTrack
-                </Text>
+                <Flex align="center" gap="2">
+                  <Text size="5" weight="bold" style={{ color: "var(--gray-12)" }}>
+                    BlinkTrack
+                  </Text>
+                  <Badge size="1" color="gray" variant="soft">
+                    v{packageJson.version}
+                  </Badge>
+                </Flex>
               </Link>
 
               <Flex gap="4" style={{ flexShrink: 0 }}>

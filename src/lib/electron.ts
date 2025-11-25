@@ -5,6 +5,28 @@
  * the Electron environment when running as a desktop app.
  */
 
+export interface UpdateStatus {
+  status:
+    | "checking"
+    | "available"
+    | "not-available"
+    | "downloading"
+    | "downloaded"
+    | "error";
+  info?: {
+    version: string;
+    releaseDate?: string;
+    releaseNotes?: string;
+  };
+  error?: string;
+  progress?: {
+    percent: number;
+    bytesPerSecond: number;
+    transferred: number;
+    total: number;
+  };
+}
+
 export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   getPlatform: () => Promise<{
@@ -17,6 +39,11 @@ export interface ElectronAPI {
   minimizeWindow: () => void;
   maximizeWindow: () => void;
   closeWindow: () => void;
+  // Auto-update APIs
+  checkForUpdates: () => Promise<unknown>;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => Promise<void>;
+  onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
 }
 
 declare global {

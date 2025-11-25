@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
   // Enable static export for Electron
   output: isElectronBuild ? "export" : undefined,
 
-  // Use relative paths for Electron (file:// protocol)
-  assetPrefix: isElectronBuild ? "./" : undefined,
+  // No assetPrefix needed - Electron uses custom app:// protocol that handles absolute paths
+  // The app:// protocol serves files from the correct location regardless of current page path
 
   // Disable image optimization for static export (not supported)
   images: {

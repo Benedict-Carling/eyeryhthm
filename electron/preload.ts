@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 
 // Expose protected methods that allow the renderer process to use
 // ipcRenderer without exposing the entire object
@@ -15,25 +15,45 @@ contextBridge.exposeInMainWorld("electronAPI", {
   minimizeWindow: () => ipcRenderer.send("minimize-window"),
   maximizeWindow: () => ipcRenderer.send("maximize-window"),
   closeWindow: () => ipcRenderer.send("close-window"),
+
+  // Auto-update APIs
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("download-update"),
+  installUpdate: () => ipcRenderer.invoke("install-update"),
+  onUpdateStatus: (callback: (status: UpdateStatus) => void) => {
+    const listener = (_event: IpcRendererEvent, status: UpdateStatus) => {
+      callback(status);
+    };
+    ipcRenderer.on("update-status", listener);
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener("update-status", listener);
+    };
+  },
 });
 
-// Type definitions for the exposed API
-export interface ElectronAPI {
-  getAppVersion: () => Promise<string>;
-  getPlatform: () => Promise<{
-    platform: string;
-    arch: string;
+// Update status type (mirrors the one in updater.ts)
+export interface UpdateStatus {
+  status:
+    | "checking"
+    | "available"
+    | "not-available"
+    | "downloading"
+    | "downloaded"
+    | "error";
+  info?: {
     version: string;
-  }>;
-  isElectron: () => Promise<boolean>;
-  platform: string;
-  minimizeWindow: () => void;
-  maximizeWindow: () => void;
-  closeWindow: () => void;
+    releaseDate?: string;
+    releaseNotes?: string;
+  };
+  error?: string;
+  progress?: {
+    percent: number;
+    bytesPerSecond: number;
+    transferred: number;
+    total: number;
+  };
 }
 
-declare global {
-  interface Window {
-    electronAPI?: ElectronAPI;
-  }
-}
+// Type definitions for the exposed API are in src/lib/electron.ts
+// to avoid duplicate global declarations during Next.js build
