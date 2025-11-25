@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.1...v1.1.2) (2025-11-25)
+
+
+### Bug Fixes
+
+* use relative asset paths for Electron static export ([e4ed430](https://github.com/Benedict-Carling/eyeryhthm/commit/e4ed430560ccdb03d1cc16f58e3475ef61eebc2b))
+
 ## [1.1.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.0...v1.1.1) (2025-11-25)
 
 
