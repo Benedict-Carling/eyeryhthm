@@ -29,14 +29,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
 
       - name: Run ESLint
         run: npm run lint
@@ -48,14 +42,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
 
       - name: Run unit tests
         run: npm run test:unit
@@ -68,14 +56,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -98,14 +88,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
 
       - name: Build Next.js
         run: npm run build
@@ -113,13 +97,21 @@ jobs:
       - name: Build Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
 
-  # Test Electron build (without packaging) - selective OS based on branch
+      - name: Upload Next.js build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next/
+          retention-days: 1
+
+  # Test Electron build (without packaging) - only runs after basic checks pass
   electron-build-test:
     name: Test Electron Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    needs: [lint, test-unit, build]
     if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && !github.event.pull_request.draft) }}
     strategy:
-      fail-fast: false
+      fail-fast: ${{ github.event_name == 'pull_request' }}
       matrix:
         # Full matrix on main, Ubuntu-only on PRs to save costs
         os: ${{ github.ref == 'refs/heads/main' && fromJson('["ubuntu-latest", "macos-latest", "windows-latest"]') || fromJson('["ubuntu-latest"]') }}
@@ -127,19 +119,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
+
+      - name: Download Next.js build artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js static export
-        run: npm run build
-        env:
-          ELECTRON_BUILD: "true"
+          name: next-build
+          path: .next/
 
       - name: Compile Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
