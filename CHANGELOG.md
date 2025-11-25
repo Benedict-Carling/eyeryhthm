@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.2...v1.2.3) (2025-11-25)
+
+
+### Bug Fixes
+
+* enable click handling in Electron navbar by adding no-drag region ([779e334](https://github.com/Benedict-Carling/eyeryhthm/commit/779e33403673b2a0bbe38eaa3ff026564be21f9c))
+
 ## [1.2.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.1...v1.2.2) (2025-11-25)
 
 
