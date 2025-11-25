@@ -46,3 +46,12 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Electron
+/dist-electron/
+/release/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.snap
