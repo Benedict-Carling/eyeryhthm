@@ -1,17 +1,22 @@
 import {withSentryConfig} from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+const isElectronBuild = process.env.ELECTRON_BUILD === "true";
+
 const nextConfig: NextConfig = {
   // Enable static export for Electron
-  output: process.env.ELECTRON_BUILD === "true" ? "export" : undefined,
+  output: isElectronBuild ? "export" : undefined,
+
+  // Use relative paths for Electron (file:// protocol)
+  assetPrefix: isElectronBuild ? "./" : undefined,
 
   // Disable image optimization for static export (not supported)
   images: {
-    unoptimized: process.env.ELECTRON_BUILD === "true",
+    unoptimized: isElectronBuild,
   },
 
   // Ensure trailing slashes for static file serving
-  trailingSlash: process.env.ELECTRON_BUILD === "true",
+  trailingSlash: isElectronBuild,
 };
 
 export default withSentryConfig(nextConfig, {
