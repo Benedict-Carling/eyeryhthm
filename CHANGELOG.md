@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.2...v1.1.3) (2025-11-25)
+
+
+### Bug Fixes
+
+* correct Electron production mode detection and asset paths ([13f833a](https://github.com/Benedict-Carling/eyeryhthm/commit/13f833a8df357078dba2283737705925f41285c2))
+
 ## [1.1.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.1...v1.1.2) (2025-11-25)
 
 
