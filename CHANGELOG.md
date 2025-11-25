@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.3...v1.2.0) (2025-11-25)
+
+
+### Features
+
+* trigger release workflow ([00438c6](https://github.com/Benedict-Carling/eyeryhthm/commit/00438c69e8363e6342106f14525aeec84350de3e))
+
 ## [1.1.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.1.2...v1.1.3) (2025-11-25)
 
 
