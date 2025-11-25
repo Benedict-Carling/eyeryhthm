@@ -55,7 +55,7 @@ export function Navbar() {
     setTheme(themes[nextIndex]);
   };
 
-  const navLinks = [
+  const navigationLinks = [
     { href: "/", label: "Sessions" },
     { href: "/calibration", label: "Calibration" },
     { href: "/account", label: "Account" },
@@ -92,7 +92,7 @@ export function Navbar() {
               </Link>
 
               <Flex gap="4" style={{ flexShrink: 0 }}>
-                {navLinks.map((link) => (
+                {navigationLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
