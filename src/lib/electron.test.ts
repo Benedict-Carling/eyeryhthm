@@ -44,6 +44,9 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        getTrackingEnabled: vi.fn(),
+        setTrackingEnabled: vi.fn(),
+        onTrackingToggle: vi.fn(),
       };
 
       vi.stubGlobal("window", {
@@ -98,6 +101,9 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        getTrackingEnabled: vi.fn(),
+        setTrackingEnabled: vi.fn(),
+        onTrackingToggle: vi.fn(),
       };
 
       vi.stubGlobal("window", {
@@ -125,6 +131,9 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        getTrackingEnabled: vi.fn(),
+        setTrackingEnabled: vi.fn(),
+        onTrackingToggle: vi.fn(),
       };
 
       vi.stubGlobal("window", {
@@ -173,6 +182,9 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        getTrackingEnabled: vi.fn(),
+        setTrackingEnabled: vi.fn(),
+        onTrackingToggle: vi.fn(),
       };
 
       vi.stubGlobal("window", {
