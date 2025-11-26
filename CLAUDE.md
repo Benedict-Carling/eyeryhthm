@@ -24,6 +24,13 @@ npm run test:unit:ui # Run Vitest with UI interface
 
 # Run a specific unit test
 npm run test:unit -- path/to/test.test.tsx
+
+# Electron Desktop App
+npm run electron:dev          # Start Electron in dev mode
+npm run electron:build        # Build for current platform
+npm run electron:build:mac    # Build for macOS
+npm run electron:build:win    # Build for Windows
+npm run electron:build:linux  # Build for Linux
 ```
 
 ## Architecture Overview
@@ -116,9 +123,52 @@ ThemeProvider
 - `LoadingSpinner.tsx` - Loading states
 - Use Radix UI primitives throughout
 
+### Auto-Update System
+
+**Overview**:
+The Electron app includes automatic update detection using `electron-updater` with GitHub Releases.
+
+**Configuration** (`package.json:12-20`):
+- Public repository: No authentication required
+- GitHub provider configured for `Benedict-Carling/eyeryhthm`
+- Updates fetched from public GitHub Releases API
+- Rate limit: 60 requests/hour per IP (sufficient for update checks)
+
+**How it works**:
+1. App checks for updates on startup (after 3-second delay)
+2. Queries GitHub Releases API: `https://api.github.com/repos/Benedict-Carling/eyeryhthm/releases/latest`
+3. Compares latest release version with current app version
+4. Notifies user if update available via `VersionInfo` component
+5. User chooses when to download and install
+
+**Update Flow** (`electron/updater.ts`):
+- `checking` → `available` → `downloading` → `downloaded` → Install & restart
+- Auto-download disabled - user controls when to update
+- Auto-install on quit enabled for convenience
+
+**UI Component** (`src/components/VersionInfo.tsx`):
+- Displays current version and update status
+- Shows download progress with percentage and speed
+- Provides action buttons: Check, Download, Install
+- Only visible in Electron environment
+
+**Releasing New Versions**:
+1. Update version in `package.json`
+2. Commit and tag: `git tag v1.2.5 && git push --tags`
+3. Build release: `npm run electron:build`
+4. Create GitHub release with assets from `/release` folder
+5. Users automatically notified of update on next app launch
+
+**Best Practices**:
+- Use semantic versioning (e.g., 1.2.4)
+- Include release notes in GitHub releases
+- Test builds before publishing
+- GitHub Releases must be public for auto-update to work
+
 ### Development Notes
 
 1. **Camera Testing**: Use Chrome with `--use-fake-device-for-media-stream` flag
 2. **Performance**: MediaPipe processing runs at ~30 FPS, adjust `VIDEO_FPS` if needed
 3. **Mobile Support**: Currently optimized for desktop, mobile has limited testing
 4. **Browser Support**: Requires modern browsers with WebRTC support
+5. **Electron Development**: Auto-update only works in production builds, not dev mode

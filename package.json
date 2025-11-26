@@ -16,8 +16,7 @@
       "provider": "github",
       "owner": "Benedict-Carling",
       "repo": "eyeryhthm",
-      "private": true,
-      "token": "$GH_TOKEN"
+      "private": false
     },
     "mac": {
       "category": "public.app-category.healthcare-fitness",

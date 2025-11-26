@@ -2,6 +2,33 @@ import { autoUpdater, UpdateInfo } from "electron-updater";
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
 
+/**
+ * Auto-updater configuration for public GitHub repository
+ *
+ * This app uses electron-updater to check for new releases from the public
+ * GitHub repository. No authentication is required for public repositories.
+ *
+ * How it works:
+ * - electron-builder publishes releases to GitHub with release assets
+ * - electron-updater checks the GitHub Releases API for updates
+ * - For public repos, the API allows unauthenticated access
+ * - Rate limit: 60 requests/hour per IP (sufficient for update checks)
+ *
+ * Configuration in package.json:
+ *   "publish": {
+ *     "provider": "github",
+ *     "owner": "Benedict-Carling",
+ *     "repo": "eyeryhthm",
+ *     "private": false
+ *   }
+ *
+ * When releasing a new version:
+ * 1. Update version in package.json
+ * 2. Run: npm run electron:build
+ * 3. Create GitHub release with generated assets from /release folder
+ * 4. Users will automatically be notified of the update
+ */
+
 // Configure logging for auto-updater
 log.transports.file.level = "info";
 autoUpdater.logger = log;
@@ -39,21 +66,9 @@ function sendUpdateStatus(status: UpdateStatus) {
 export function setupAutoUpdater(window: BrowserWindow) {
   mainWindow = window;
 
-  // For private repository access, the token is embedded at build time
-  // via the GH_TOKEN environment variable. electron-builder writes it
-  // to app-update.yml which electron-updater reads automatically.
-  //
-  // If GH_TOKEN wasn't set at build time, we can still try runtime token
-  const runtimeToken = process.env.GH_TOKEN;
-  if (runtimeToken) {
-    log.info("Runtime GH_TOKEN found, using for private repository access");
-    // Set the token for the GitHub provider
-    autoUpdater.requestHeaders = {
-      Authorization: `token ${runtimeToken}`,
-    };
-  } else {
-    log.info("Using build-time embedded token for updates (if available)");
-  }
+  // Public repository - no authentication required
+  // GitHub API allows unauthenticated access to public releases
+  log.info("Configured for public repository - no authentication required");
 
   // Auto-updater events
   autoUpdater.on("checking-for-update", () => {
