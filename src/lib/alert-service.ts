@@ -1,4 +1,4 @@
-import { SessionData } from "./sessions/types";
+import { SessionData, BlinkRatePoint } from "./sessions/types";
 
 export interface AlertServiceConfig {
   fatigueThreshold: number;
@@ -9,7 +9,35 @@ export interface AlertServiceConfig {
 export class AlertService {
   private intervalId: NodeJS.Timeout | null = null;
   private lastAlertTime: number = 0;
-  private alertCooldown = 60000; // 1 minute cooldown between alerts
+  private alertCooldown = 300000; // 5 minute cooldown between alerts
+  private belowThresholdSince: number | null = null;
+  private sustainedThresholdDuration = 30000; // 30 seconds below threshold before alerting
+  private movingWindowDuration = 120000; // 2 minute moving window for blink rate calculation
+
+  /**
+   * Calculate the average blink rate over a moving window (last 2 minutes).
+   * This is more responsive to fatigue than using the full session average,
+   * which can be diluted by early healthy blink rates.
+   */
+  private getMovingWindowBlinkRate(blinkRateHistory: BlinkRatePoint[]): number | null {
+    if (blinkRateHistory.length === 0) return null;
+
+    const now = Date.now();
+    const windowStart = now - this.movingWindowDuration;
+
+    // Get points within the moving window
+    const recentPoints = blinkRateHistory.filter(point => point.timestamp >= windowStart);
+
+    if (recentPoints.length === 0) {
+      // If no points in window, use the most recent point
+      const lastPoint = blinkRateHistory[blinkRateHistory.length - 1];
+      return lastPoint ? lastPoint.rate : null;
+    }
+
+    // Calculate average of recent points
+    const sum = recentPoints.reduce((acc, point) => acc + point.rate, 0);
+    return sum / recentPoints.length;
+  }
 
   private getConfig(): AlertServiceConfig {
     return {
@@ -80,14 +108,27 @@ export class AlertService {
     const config = this.getConfig();
     const sessionDuration = (Date.now() - session.startTime.getTime()) / 1000 / 60; // in minutes
 
-    // Only check after 5 minutes
-    if (sessionDuration < 5) return false;
+    // Only check after 3 minutes
+    if (sessionDuration < 3) return false;
 
-    // Check if blink rate is below threshold
-    const currentBlinkRate = session.averageBlinkRate;
+    // Use moving window blink rate (last 2 minutes) for more responsive fatigue detection
+    const currentBlinkRate = this.getMovingWindowBlinkRate(session.blinkRateHistory);
+    if (currentBlinkRate === null) return false;
+
+    const now = Date.now();
+
     if (currentBlinkRate < config.fatigueThreshold) {
-      const now = Date.now();
-      
+      // Track when we first went below threshold
+      if (this.belowThresholdSince === null) {
+        this.belowThresholdSince = now;
+      }
+
+      // Check if we've been below threshold for sustained duration (30 seconds)
+      const belowThresholdDuration = now - this.belowThresholdSince;
+      if (belowThresholdDuration < this.sustainedThresholdDuration) {
+        return false;
+      }
+
       // Check cooldown
       if (now - this.lastAlertTime < this.alertCooldown) {
         return false;
@@ -95,10 +136,13 @@ export class AlertService {
 
       this.lastAlertTime = now;
 
+      // Format session duration for display
+      const durationMinutes = Math.round(sessionDuration);
+
       if (config.notificationsEnabled) {
         this.showNotification(
-          "Fatigue Alert",
-          `Your blink rate has dropped to ${Math.round(currentBlinkRate)} blinks/min. Consider taking a break.`,
+          "Time for a break?",
+          `You've been focused for ${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}. Your blink rate (${Math.round(currentBlinkRate)}/min) suggests your eyes could use a rest. Try the 20-20-20 rule.`,
           config.soundEnabled
         );
       }
@@ -109,6 +153,9 @@ export class AlertService {
       }
 
       return true;
+    } else {
+      // Reset sustained threshold tracking when blink rate recovers
+      this.belowThresholdSince = null;
     }
 
     return false;

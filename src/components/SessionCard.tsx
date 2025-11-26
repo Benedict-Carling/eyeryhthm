@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
 import * as d3 from "d3";
-import { SessionData, formatSessionDuration } from "../lib/sessions/types";
+import { SessionData, formatSessionDuration, BlinkRatePoint } from "../lib/sessions/types";
 import { ClockIcon } from "@radix-ui/react-icons";
-import { Bell, BellOff, Eye } from "lucide-react";
+import { Bell, BellOff, Eye, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { useCalibration } from "../contexts/CalibrationContext";
 import Link from "next/link";
 import "./SessionCard.css";
@@ -41,6 +41,49 @@ export function SessionCard({ session }: SessionCardProps) {
     if (!calibrationId) return null;
     const calibration = calibrations.find(c => c.id === calibrationId);
     return calibration?.name || 'Unknown calibration';
+  };
+
+  // Calculate current blink rate using 2-minute moving window
+  const currentBlinkRate = useMemo(() => {
+    if (session.blinkRateHistory.length === 0) return null;
+
+    const now = Date.now();
+    const windowDuration = 120000; // 2 minutes
+    const windowStart = now - windowDuration;
+
+    const recentPoints = session.blinkRateHistory.filter(
+      (point: BlinkRatePoint) => point.timestamp >= windowStart
+    );
+
+    if (recentPoints.length === 0) {
+      // Use most recent point if nothing in window
+      const lastPoint = session.blinkRateHistory[session.blinkRateHistory.length - 1];
+      return lastPoint ? Math.round(lastPoint.rate) : null;
+    }
+
+    const sum = recentPoints.reduce((acc: number, point: BlinkRatePoint) => acc + point.rate, 0);
+    return Math.round(sum / recentPoints.length);
+  }, [session.blinkRateHistory]);
+
+  // Check if session is 3+ minutes old (show current rate)
+  const sessionDurationMinutes = useMemo(() => {
+    const endTime = session.endTime || new Date();
+    return (endTime.getTime() - session.startTime.getTime()) / 1000 / 60;
+  }, [session.startTime, session.endTime]);
+
+  const showCurrentRate = session.isActive && sessionDurationMinutes >= 3 && currentBlinkRate !== null;
+
+  // Determine trend (current vs session average)
+  const rateDifference = currentBlinkRate !== null ? currentBlinkRate - session.averageBlinkRate : 0;
+  const getTrendIcon = () => {
+    if (Math.abs(rateDifference) < 1) return <Minus size={12} />;
+    if (rateDifference > 0) return <TrendingUp size={12} />;
+    return <TrendingDown size={12} />;
+  };
+  const getTrendColor = () => {
+    if (Math.abs(rateDifference) < 1) return "gray";
+    if (rateDifference > 0) return "green"; // Higher blink rate is good
+    return "orange"; // Lower might indicate fatigue
   };
 
   // D3 Mini Chart
@@ -189,13 +232,18 @@ export function SessionCard({ session }: SessionCardProps) {
 
         {/* Session info */}
         <Flex gap="4" wrap="wrap">
-          {!session.isActive && session.duration && (
-            <Flex align="center" gap="2">
-              <ClockIcon />
-              <Text size="2">{formatSessionDuration(session.duration)}</Text>
-            </Flex>
-          )}
-          
+          {/* Duration - show for both active (calculated) and completed (stored) sessions */}
+          <Flex align="center" gap="2">
+            <ClockIcon />
+            <Text size="2">
+              {session.isActive
+                ? formatSessionDuration(Math.floor(sessionDurationMinutes * 60))
+                : session.duration
+                  ? formatSessionDuration(session.duration)
+                  : null}
+            </Text>
+          </Flex>
+
           {session.totalBlinks !== undefined && (
             <Flex align="center" gap="2">
               <Eye size={14} />
@@ -232,27 +280,60 @@ export function SessionCard({ session }: SessionCardProps) {
             )}
           </Box>
 
-          {/* Total blinks */}
+          {/* Blink rates */}
           <Flex direction="column" align="end" gap="1">
-            <Text
-              size="6"
-              weight="bold"
-              style={{
-                minWidth: "120px",
-                textAlign: "right",
-              }}
-            >
-              {session.totalBlinks} blinks
-            </Text>
-            <Text
-              size="2"
-              color="gray"
-              style={{
-                textAlign: "right",
-              }}
-            >
-              {Math.round(session.averageBlinkRate)}/min avg
-            </Text>
+            {showCurrentRate ? (
+              <>
+                {/* Current rate - prominent for active sessions */}
+                <Flex align="center" gap="2">
+                  <Text
+                    size="6"
+                    weight="bold"
+                    color={getTrendColor()}
+                    style={{ textAlign: "right" }}
+                  >
+                    {currentBlinkRate}/min
+                  </Text>
+                  <Badge color={getTrendColor()} variant="soft" size="1">
+                    {getTrendIcon()}
+                  </Badge>
+                </Flex>
+                <Text size="1" color="gray" style={{ textAlign: "right" }}>
+                  current rate
+                </Text>
+                {/* Session average - secondary */}
+                <Text
+                  size="2"
+                  color="gray"
+                  style={{ textAlign: "right", marginTop: "4px" }}
+                >
+                  {Math.round(session.averageBlinkRate)}/min session avg
+                </Text>
+              </>
+            ) : (
+              <>
+                {/* Default view for completed sessions or early active sessions */}
+                <Text
+                  size="6"
+                  weight="bold"
+                  style={{
+                    minWidth: "120px",
+                    textAlign: "right",
+                  }}
+                >
+                  {session.totalBlinks} blinks
+                </Text>
+                <Text
+                  size="2"
+                  color="gray"
+                  style={{
+                    textAlign: "right",
+                  }}
+                >
+                  {Math.round(session.averageBlinkRate)}/min avg
+                </Text>
+              </>
+            )}
           </Flex>
         </Flex>
       </Flex>

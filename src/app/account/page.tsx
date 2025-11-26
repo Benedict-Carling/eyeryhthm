@@ -175,8 +175,9 @@ export default function AccountPage() {
 
           <Box mt="3">
             <Text size="2" color="gray">
-              Note: Fatigue alerts only trigger after 5 minutes of continuous
-              session time
+              Note: Fatigue alerts only trigger after 3 minutes of continuous
+              session time, and only if blink rate stays below threshold for 30
+              seconds
             </Text>
           </Box>
 

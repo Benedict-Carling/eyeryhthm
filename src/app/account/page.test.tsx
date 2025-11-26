@@ -131,7 +131,7 @@ describe('AccountPage', () => {
 
   it('shows informational note about fatigue alerts', () => {
     render(<AccountPage />);
-    
-    expect(screen.getByText('Note: Fatigue alerts only trigger after 5 minutes of continuous session time')).toBeInTheDocument();
+
+    expect(screen.getByText(/Note: Fatigue alerts only trigger after 3 minutes of continuous session time/)).toBeInTheDocument();
   });
 });
