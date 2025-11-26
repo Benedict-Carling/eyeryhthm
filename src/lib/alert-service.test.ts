@@ -77,7 +77,6 @@ describe('AlertService', () => {
     quality: 'poor',
     fatigueAlertCount: 0,
     totalBlinks: 42,
-    totalBlinks: 42,
     ...overrides,
   });
 

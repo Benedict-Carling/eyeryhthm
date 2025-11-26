@@ -15,11 +15,9 @@ vi.mock('../hooks/useCamera', () => ({
     videoRef: { current: null },
     startCamera: mockStartCamera,
     stopCamera: mockStopCamera,
-      hasPermission: true,
-      error: null,
-      isLoading: false,
-      error: null,
-      isLoading: false,
+    hasPermission: true,
+    error: null,
+    isLoading: false,
   })),
 }));
 

@@ -107,7 +107,8 @@ describe("Camera Component", () => {
       videoRef: { current: null },
       startCamera: mockStartCamera,
       stopCamera: mockStopCamera,
-      error: "Camera permission denied" as string | null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error: "Camera permission denied" as any,
       hasPermission: false,
       isLoading: false,
     });
@@ -119,11 +120,13 @@ describe("Camera Component", () => {
 
   test("renders video element when stream is available", () => {
     const mockStream = new MediaStream();
-    const mockVideoRef = { current: document.createElement("video") } as { current: HTMLVideoElement | null };
+    const mockVideoRef = { current: document.createElement("video") };
 
     mockUseCamera.mockReturnValue({
-      stream: mockStream as MediaStream | null,
-      videoRef: mockVideoRef,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stream: mockStream as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      videoRef: mockVideoRef as any,
       startCamera: mockStartCamera,
       stopCamera: mockStopCamera,
       error: null,
@@ -143,11 +146,13 @@ describe("Camera Component", () => {
 
   test("video element has correct styling for grayscale", () => {
     const mockStream = new MediaStream();
-    const mockVideoRef = { current: document.createElement("video") } as { current: HTMLVideoElement | null };
+    const mockVideoRef = { current: document.createElement("video") };
 
     mockUseCamera.mockReturnValue({
-      stream: mockStream as MediaStream | null,
-      videoRef: mockVideoRef,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stream: mockStream as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      videoRef: mockVideoRef as any,
       startCamera: mockStartCamera,
       stopCamera: mockStopCamera,
       error: null,
@@ -187,12 +192,14 @@ describe("Camera Component", () => {
 
   test("calls stopCamera when stop button is clicked", async () => {
     const mockStream = new MediaStream();
-    const mockVideoRef = { current: document.createElement("video") } as { current: HTMLVideoElement | null };
+    const mockVideoRef = { current: document.createElement("video") };
     const stopCameraFn = vi.fn();
 
     mockUseCamera.mockReturnValue({
-      stream: mockStream as MediaStream | null,
-      videoRef: mockVideoRef,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stream: mockStream as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      videoRef: mockVideoRef as any,
       startCamera: vi.fn(),
       stopCamera: stopCameraFn,
       error: null,

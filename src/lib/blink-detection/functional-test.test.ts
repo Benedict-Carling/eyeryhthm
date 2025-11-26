@@ -174,7 +174,7 @@ describe("Functional Blink Detection Test", () => {
 
     detector.resetBlinkCounter();
 
-    const detectorWithPrivateMethods = detector as {
+    const detectorWithPrivateMethods = detector as unknown as {
       detectBlink: (ear: number, timestamp: number) => boolean;
     };
 
