@@ -15,12 +15,16 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock Notification API
-const mockNotification = vi.fn().mockImplementation(() => ({
-  close: vi.fn(),
-  onclick: null,
-}));
-mockNotification.requestPermission = vi.fn();
-mockNotification.permission = 'granted';
+const mockNotification = Object.assign(
+  vi.fn().mockImplementation(() => ({
+    close: vi.fn(),
+    onclick: null,
+  })),
+  {
+    requestPermission: vi.fn(),
+    permission: 'granted' as NotificationPermission,
+  }
+);
 Object.defineProperty(window, 'Notification', {
   value: mockNotification,
   writable: true,
@@ -72,6 +76,8 @@ describe('AlertService', () => {
     blinkRateHistory: [],
     quality: 'poor',
     fatigueAlertCount: 0,
+    totalBlinks: 42,
+    totalBlinks: 42,
     ...overrides,
   });
 

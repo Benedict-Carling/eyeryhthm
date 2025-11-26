@@ -55,15 +55,17 @@ export class FaceMeshVisualizer {
     if (results.faceLandmarks && results.faceLandmarks.length > 0) {
       const landmarks = results.faceLandmarks[0];
 
-      // Draw face oval (blue)
-      this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.FACE_OVAL, "#0000FF", 2);
+      if (landmarks) {
+        // Draw face oval (blue)
+        this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.FACE_OVAL, "#0000FF", 2);
 
-      // Draw eyes (green)
-      this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.LEFT_EYE, "#00FF00", 2);
-      this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.RIGHT_EYE, "#00FF00", 2);
+        // Draw eyes (green)
+        this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.LEFT_EYE, "#00FF00", 2);
+        this.drawConnections(landmarks, FACE_MESH_CONNECTIONS.RIGHT_EYE, "#00FF00", 2);
 
-      // Highlight specific eye landmarks for EAR calculation
-      this.highlightEyeLandmarks(landmarks);
+        // Highlight specific eye landmarks for EAR calculation
+        this.highlightEyeLandmarks(landmarks);
+      }
     }
   }
 
@@ -80,17 +82,19 @@ export class FaceMeshVisualizer {
     this.canvasCtx.beginPath();
 
     connections.forEach(([startIdx, endIdx]) => {
-      if (startIdx < landmarks.length && endIdx < landmarks.length) {
+      if (startIdx !== undefined && endIdx !== undefined && startIdx < landmarks.length && endIdx < landmarks.length) {
         const start = landmarks[startIdx];
         const end = landmarks[endIdx];
-        
-        const startX = start.x * this.canvas!.width;
-        const startY = start.y * this.canvas!.height;
-        const endX = end.x * this.canvas!.width;
-        const endY = end.y * this.canvas!.height;
 
-        this.canvasCtx!.moveTo(startX, startY);
-        this.canvasCtx!.lineTo(endX, endY);
+        if (start && end) {
+          const startX = start.x * this.canvas!.width;
+          const startY = start.y * this.canvas!.height;
+          const endX = end.x * this.canvas!.width;
+          const endY = end.y * this.canvas!.height;
+
+          this.canvasCtx!.moveTo(startX, startY);
+          this.canvasCtx!.lineTo(endX, endY);
+        }
       }
     });
 

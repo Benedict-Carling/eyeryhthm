@@ -113,7 +113,7 @@ describe("Functional Blink Detection Test", () => {
 
       // Access private method using bracket notation
       const isBlinking = (
-        detector as { detectBlink: (ear: number, timestamp: number) => boolean }
+        detector as unknown as { detectBlink: (ear: number, timestamp: number) => boolean }
       ).detectBlink(frame.ear, timestamp);
 
       if (isBlinking && !frame.expectBlink) {

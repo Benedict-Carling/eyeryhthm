@@ -89,10 +89,12 @@ export class BlinkAnalyzer {
 
     for (let i = 0; i < earData.length; i++) {
       const point = earData[i];
-      
+
+      if (!point) continue;
+
       if (point.ear < threshold) {
         consecutiveBelowThreshold++;
-        
+
         if (!isBlinking && consecutiveBelowThreshold >= minConsecutiveFrames) {
           isBlinking = true;
           blinkStartTime = point.time;
@@ -131,7 +133,11 @@ export class BlinkAnalyzer {
     // Check if blinks are reasonably spaced
     const intervals: number[] = [];
     for (let i = 1; i < blinkTimestamps.length; i++) {
-      intervals.push(blinkTimestamps[i] - blinkTimestamps[i - 1]);
+      const current = blinkTimestamps[i];
+      const previous = blinkTimestamps[i - 1];
+      if (current !== undefined && previous !== undefined) {
+        intervals.push(current - previous);
+      }
     }
 
     // All intervals should be at least 200ms (can't blink faster than 5 times per second)

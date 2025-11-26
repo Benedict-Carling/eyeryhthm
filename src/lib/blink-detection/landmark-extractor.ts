@@ -9,18 +9,21 @@ export function extractEyeLandmarks(
   videoWidth: number,
   videoHeight: number
 ): EyeLandmarks {
-  const points = eyeIndices.map(index => ({
-    x: landmarks[index].x * videoWidth,
-    y: landmarks[index].y * videoHeight
-  }));
+  const points = eyeIndices.map(index => {
+    const landmark = landmarks[index];
+    return {
+      x: (landmark?.x ?? 0) * videoWidth,
+      y: (landmark?.y ?? 0) * videoHeight
+    };
+  });
 
   return {
-    p1: points[0],
-    p2: points[1],
-    p3: points[2],
-    p4: points[3],
-    p5: points[4],
-    p6: points[5]
+    p1: points[0] ?? { x: 0, y: 0 },
+    p2: points[1] ?? { x: 0, y: 0 },
+    p3: points[2] ?? { x: 0, y: 0 },
+    p4: points[3] ?? { x: 0, y: 0 },
+    p5: points[4] ?? { x: 0, y: 0 },
+    p6: points[5] ?? { x: 0, y: 0 }
   };
 }
 
@@ -34,8 +37,8 @@ export function extractBothEyeLandmarks(
   }
 
   const landmarks = faceMeshResults.faceLandmarks[0];
-  
-  if (landmarks.length < 468) {
+
+  if (!landmarks || landmarks.length < 468) {
     return null;
   }
 

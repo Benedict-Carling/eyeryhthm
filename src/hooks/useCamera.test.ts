@@ -29,7 +29,7 @@ describe("useCamera Hook", () => {
 
   test("startCamera successfully gets media stream", async () => {
     const mockStream = new MediaStream();
-    const mockVideoTrack = new MediaStreamTrack("video");
+    const mockVideoTrack = new MediaStreamTrack();
     mockStream.addTrack(mockVideoTrack);
 
     mockGetUserMedia.mockResolvedValue(mockStream);
@@ -89,7 +89,7 @@ describe("useCamera Hook", () => {
 
   test("startCamera sets up video element correctly", async () => {
     const mockStream = new MediaStream();
-    const mockVideoTrack = new MediaStreamTrack("video");
+    const mockVideoTrack = new MediaStreamTrack();
     mockStream.addTrack(mockVideoTrack);
 
     mockGetUserMedia.mockResolvedValue(mockStream);
@@ -119,7 +119,7 @@ describe("useCamera Hook", () => {
 
   test("stopCamera stops all tracks and cleans up", async () => {
     const mockStream = new MediaStream();
-    const mockVideoTrack = new MediaStreamTrack("video");
+    const mockVideoTrack = new MediaStreamTrack();
     const mockStopTrack = vi.fn();
     mockVideoTrack.stop = mockStopTrack;
     mockStream.addTrack(mockVideoTrack);
@@ -150,7 +150,7 @@ describe("useCamera Hook", () => {
 
   test("video element receives onloadedmetadata handler", async () => {
     const mockStream = new MediaStream();
-    const mockVideoTrack = new MediaStreamTrack("video");
+    const mockVideoTrack = new MediaStreamTrack();
     mockStream.addTrack(mockVideoTrack);
 
     mockGetUserMedia.mockResolvedValue(mockStream);
