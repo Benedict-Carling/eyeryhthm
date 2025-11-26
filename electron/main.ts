@@ -224,11 +224,12 @@ app.whenReady().then(() => {
           ...details.responseHeaders,
           "Content-Security-Policy": [
             "default-src 'self' app:",
-            "script-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Next.js React
+            "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' app: blob:", // blob: needed for Sentry worker
             "style-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Radix UI themes
             "img-src 'self' data: app:",
             "font-src 'self' app:",
-            "connect-src 'self' https://cdn.jsdelivr.net https://storage.googleapis.com", // MediaPipe CDN
+            "connect-src 'self' https://*.ingest.de.sentry.io", // Sentry error reporting
+            "worker-src 'self' blob:", // Sentry web worker
             "media-src 'self' mediastream:", // Camera access
           ].join("; "),
         },

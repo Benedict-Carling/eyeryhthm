@@ -1,9 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { 
-  FaceLandmarker, 
+import {
+  FaceLandmarker,
   FilesetResolver,
   FaceLandmarkerResult
 } from '@mediapipe/tasks-vision';
+
+// Local paths for bundled MediaPipe assets (offline support)
+const LOCAL_WASM_PATH = '/mediapipe/wasm';
+const LOCAL_MODEL_PATH = '/mediapipe/face_landmarker.task';
 
 interface UseFaceLandmarkerOptions {
   delegate?: 'GPU' | 'CPU';
@@ -40,13 +44,11 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm"
-        );
+        const vision = await FilesetResolver.forVisionTasks(LOCAL_WASM_PATH);
 
         const landmarkerOptions = {
           baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            modelAssetPath: LOCAL_MODEL_PATH,
             delegate: options.delegate || "GPU"
           },
           runningMode: "VIDEO" as const,
@@ -70,18 +72,18 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
           }
         }
 
-        setState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          isInitialized: true, 
-          error: null 
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          isInitialized: true,
+          error: null
         }));
       } catch (error) {
-        setState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          isInitialized: false, 
-          error: error as Error 
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          isInitialized: false,
+          error: error as Error
         }));
         throw error;
       }
