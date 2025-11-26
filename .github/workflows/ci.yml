@@ -103,6 +103,7 @@ jobs:
           name: next-build
           path: .next/
           retention-days: 1
+          include-hidden-files: true
 
   # Test Electron build (without packaging) - only runs after basic checks pass
   electron-build-test:
