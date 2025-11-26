@@ -94,7 +94,7 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
   }, [options.delegate, options.numFaces, state.isInitialized]);
 
   const detectForVideo = useCallback(async (
-    video: HTMLVideoElement | ImageBitmap,
+    source: TexImageSource,
     timestamp: number
   ): Promise<FaceLandmarkerResult | null> => {
     if (!faceLandmarkerRef.current || !state.isInitialized) {
@@ -107,7 +107,7 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
 
     try {
       // MediaPipe detectForVideo accepts any TexImageSource (includes ImageBitmap)
-      return faceLandmarkerRef.current.detectForVideo(video as HTMLVideoElement, timestamp);
+      return faceLandmarkerRef.current.detectForVideo(source as HTMLVideoElement, timestamp);
     } catch (error) {
       console.error('Face detection error:', error);
       return null;

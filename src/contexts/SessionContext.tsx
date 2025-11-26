@@ -150,6 +150,12 @@ export function SessionProvider({ children }: SessionProviderProps) {
       return;
     }
 
+    // Define event handler so we can properly remove it later
+    const handleTrackEnded = () => {
+      console.warn('[ImageCapture] Video track ended');
+      imageCaptureRef.current = null;
+    };
+
     try {
       imageCaptureRef.current = new ImageCapture(videoTrack);
       console.log('[ImageCapture] Initialized:', {
@@ -160,10 +166,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       });
 
       // Listen for track end
-      videoTrack.addEventListener('ended', () => {
-        console.warn('[ImageCapture] Video track ended');
-        imageCaptureRef.current = null;
-      });
+      videoTrack.addEventListener('ended', handleTrackEnded);
     } catch (error) {
       console.error('[ImageCapture] Initialization failed:', error);
       imageCaptureRef.current = null;
@@ -171,6 +174,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
     return () => {
       console.log('[ImageCapture] Cleaning up');
+      videoTrack.removeEventListener('ended', handleTrackEnded);
       imageCaptureRef.current = null;
     };
   }, [stream]);
@@ -375,8 +379,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
         const processStart = performance.now();
 
         // Feed ImageBitmap to MediaPipe processing
-        // Note: processFrame accepts HTMLVideoElement but MediaPipe accepts any TexImageSource
-        await processFrame(imageBitmap as unknown as HTMLVideoElement, undefined);
+        // processFrame now accepts TexImageSource (includes ImageBitmap)
+        await processFrame(imageBitmap, undefined);
 
         // Trigger frame processing callback for session stats
         handleFrameProcessing();

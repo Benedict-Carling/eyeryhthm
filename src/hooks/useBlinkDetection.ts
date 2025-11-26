@@ -74,27 +74,27 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
   }, [config]);
 
   const processFrame = useCallback(async (
-    video: HTMLVideoElement | ImageBitmap,
+    source: TexImageSource,
     canvas?: HTMLCanvasElement | null
   ) => {
     // For HTMLVideoElement, check readyState
-    if (video instanceof HTMLVideoElement && video.readyState < 2) {
+    if (source instanceof HTMLVideoElement && source.readyState < 2) {
       return;
     }
 
     try {
       const timestamp = performance.now();
-      const results = await detectForVideo(video, timestamp);
-      
+      const results = await detectForVideo(source, timestamp);
+
       if (!results || !results.faceLandmarks || results.faceLandmarks.length === 0) {
         // Log only occasionally to avoid spam
         if (Math.random() < 0.01) {
-          const width = video instanceof HTMLVideoElement ? video.videoWidth : video.width;
-          const height = video instanceof HTMLVideoElement ? video.videoHeight : video.height;
+          const width = source instanceof HTMLVideoElement ? source.videoWidth : (source as ImageBitmap).width;
+          const height = source instanceof HTMLVideoElement ? source.videoHeight : (source as ImageBitmap).height;
           console.log('No face landmarks detected', {
             videoWidth: width,
             videoHeight: height,
-            videoReady: video instanceof HTMLVideoElement ? video.readyState : 'N/A (ImageBitmap)',
+            videoReady: source instanceof HTMLVideoElement ? source.readyState : 'N/A (ImageBitmap)',
             results: results ? 'empty' : 'null'
           });
         }
@@ -108,8 +108,8 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
       }
 
       // Get dimensions from either HTMLVideoElement or ImageBitmap
-      const width = video instanceof HTMLVideoElement ? video.videoWidth : video.width;
-      const height = video instanceof HTMLVideoElement ? video.videoHeight : video.height;
+      const width = source instanceof HTMLVideoElement ? source.videoWidth : (source as ImageBitmap).width;
+      const height = source instanceof HTMLVideoElement ? source.videoHeight : (source as ImageBitmap).height;
 
       // Draw visualization if enabled
       if (config.showDebugOverlay && canvas && visualizerRef.current) {
