@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.3...v1.2.4) (2025-11-25)
+
+
+### Bug Fixes
+
+* use CSS module for webkit-app-region to ensure production build compatibility ([eb1e9ba](https://github.com/Benedict-Carling/eyeryhthm/commit/eb1e9ba370bf7332928eceae02443d423cda918e))
+
 ## [1.2.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.2...v1.2.3) (2025-11-25)
 
 
