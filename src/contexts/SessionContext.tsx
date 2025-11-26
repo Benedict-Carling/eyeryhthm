@@ -16,7 +16,6 @@ import {
 } from "../lib/sessions/types";
 import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
-import { useFrameProcessor } from "../hooks/useFrameProcessor";
 import { useCalibration } from "./CalibrationContext";
 import { AlertService } from "../lib/alert-service";
 
@@ -92,13 +91,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [isTracking, setIsTracking] = useState(false);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlinkUpdateRef = useRef<number>(Date.now());
   const blinkCountRef = useRef<number>(0);
   const sessionStartTimeRef = useRef<number>(Date.now());
   const faceDetectionLostTimeRef = useRef<number | null>(null);
   const alertServiceRef = useRef<AlertService>(new AlertService());
+
+  // ImageCapture for UI-independent processing
+  const imageCaptureRef = useRef<ImageCapture | null>(null);
+  const processingActiveRef = useRef(false);
 
   const { activeCalibration } = useCalibration();
 
@@ -127,6 +130,44 @@ export function SessionProvider({ children }: SessionProviderProps) {
       alertService.stopMonitoring();
     };
   }, []);
+
+  // Initialize ImageCapture from camera stream for UI-independent processing
+  useEffect(() => {
+    if (!stream) {
+      imageCaptureRef.current = null;
+      return;
+    }
+
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack) {
+      console.error('[ImageCapture] No video track available');
+      return;
+    }
+
+    try {
+      imageCaptureRef.current = new ImageCapture(videoTrack);
+      console.log('[ImageCapture] Initialized:', {
+        label: videoTrack.label,
+        enabled: videoTrack.enabled,
+        readyState: videoTrack.readyState,
+        settings: videoTrack.getSettings(),
+      });
+
+      // Listen for track end
+      videoTrack.addEventListener('ended', () => {
+        console.warn('[ImageCapture] Video track ended');
+        imageCaptureRef.current = null;
+      });
+    } catch (error) {
+      console.error('[ImageCapture] Initialization failed:', error);
+      imageCaptureRef.current = null;
+    }
+
+    return () => {
+      console.log('[ImageCapture] Cleaning up');
+      imageCaptureRef.current = null;
+    };
+  }, [stream]);
 
   // Initialize detection when stream is ready
   useEffect(() => {
@@ -245,6 +286,15 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
   // Handle frame processing with face detection and blink rate updates
   const handleFrameProcessing = useCallback(() => {
+    // Safety check: If ImageCapture is not available, reset state
+    if (!imageCaptureRef.current || !processingActiveRef.current) {
+      if (isFaceDetected) {
+        console.log('[SessionContext] ImageCapture unavailable, resetting face detection state');
+        setIsFaceDetected(false);
+      }
+      return;
+    }
+
     // Check if face is detected based on having valid EAR
     const faceCurrentlyDetected = currentEAR > 0;
     
@@ -279,14 +329,83 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
   }, [currentEAR, isFaceDetected, activeSession, blinkCount, updateActiveSessionBlinkRate]);
 
-  // Use the shared frame processor hook
-  useFrameProcessor({
-    videoRef,
-    canvasRef,
-    processFrame,
-    onFrame: handleFrameProcessing,
-    isEnabled: isInitialized && isTracking,
-  });
+  // ImageCapture processing loop - runs independently of UI video element
+  useEffect(() => {
+    if (!imageCaptureRef.current || !isTracking || !isInitialized) {
+      processingActiveRef.current = false;
+      return;
+    }
+
+    processingActiveRef.current = true;
+    let frameCount = 0;
+    let lastLogTime = Date.now();
+    const startTime = Date.now();
+
+    const processLoop = async () => {
+      if (!processingActiveRef.current || !imageCaptureRef.current) {
+        return;
+      }
+
+      try {
+        const grabStart = performance.now();
+
+        // Grab frame directly from camera track (Chromium-optimized)
+        const imageBitmap = await imageCaptureRef.current.grabFrame();
+
+        const grabTime = performance.now() - grabStart;
+        const processStart = performance.now();
+
+        // Feed ImageBitmap to MediaPipe processing
+        // Note: processFrame accepts HTMLVideoElement but MediaPipe accepts any TexImageSource
+        await processFrame(imageBitmap as unknown as HTMLVideoElement, undefined);
+
+        // Trigger frame processing callback for session stats
+        handleFrameProcessing();
+
+        const processTime = performance.now() - processStart;
+        frameCount++;
+
+        // Log stats every 5 seconds
+        if (Date.now() - lastLogTime > 5000) {
+          const elapsed = (Date.now() - startTime) / 1000;
+          const actualFps = frameCount / 5;
+
+          console.log('[ImageCapture] Performance:', {
+            fps: actualFps.toFixed(1),
+            avgGrabTime: `${grabTime.toFixed(2)}ms`,
+            avgProcessTime: `${processTime.toFixed(2)}ms`,
+            totalTime: `${(grabTime + processTime).toFixed(2)}ms`,
+            bitmapSize: `${imageBitmap.width}x${imageBitmap.height}`,
+            uptime: `${elapsed.toFixed(0)}s`,
+          });
+
+          frameCount = 0;
+          lastLogTime = Date.now();
+        }
+
+        // Schedule next frame (target 30fps = ~33ms)
+        // grabFrame() auto-throttles, so setTimeout ensures we don't overload
+        if (processingActiveRef.current) {
+          setTimeout(processLoop, 1000 / 30);
+        }
+      } catch (error) {
+        console.error('[ImageCapture] Frame capture failed:', error);
+
+        // Retry after delay on error
+        if (processingActiveRef.current) {
+          setTimeout(processLoop, 100);
+        }
+      }
+    };
+
+    console.log('[ImageCapture] Starting processing loop at 30fps');
+    processLoop();
+
+    return () => {
+      console.log('[ImageCapture] Stopping processing loop');
+      processingActiveRef.current = false;
+    };
+  }, [imageCaptureRef, isTracking, isInitialized, processFrame, handleFrameProcessing]);
 
   const startSession = useCallback(() => {
     if (!isTracking || activeSession || !isFaceDetected) return;

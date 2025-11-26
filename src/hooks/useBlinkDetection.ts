@@ -74,10 +74,11 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
   }, [config]);
 
   const processFrame = useCallback(async (
-    video: HTMLVideoElement,
+    video: HTMLVideoElement | ImageBitmap,
     canvas?: HTMLCanvasElement | null
   ) => {
-    if (!video || video.readyState < 2) {
+    // For HTMLVideoElement, check readyState
+    if (video instanceof HTMLVideoElement && video.readyState < 2) {
       return;
     }
 
@@ -88,10 +89,12 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
       if (!results || !results.faceLandmarks || results.faceLandmarks.length === 0) {
         // Log only occasionally to avoid spam
         if (Math.random() < 0.01) {
+          const width = video instanceof HTMLVideoElement ? video.videoWidth : video.width;
+          const height = video instanceof HTMLVideoElement ? video.videoHeight : video.height;
           console.log('No face landmarks detected', {
-            videoWidth: video.videoWidth,
-            videoHeight: video.videoHeight,
-            videoReady: video.readyState,
+            videoWidth: width,
+            videoHeight: height,
+            videoReady: video instanceof HTMLVideoElement ? video.readyState : 'N/A (ImageBitmap)',
             results: results ? 'empty' : 'null'
           });
         }
@@ -104,20 +107,24 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
         return;
       }
 
+      // Get dimensions from either HTMLVideoElement or ImageBitmap
+      const width = video instanceof HTMLVideoElement ? video.videoWidth : video.width;
+      const height = video instanceof HTMLVideoElement ? video.videoHeight : video.height;
+
       // Draw visualization if enabled
       if (config.showDebugOverlay && canvas && visualizerRef.current) {
         visualizerRef.current.drawResults(
           { faceLandmarks: results.faceLandmarks },
-          video.videoWidth,
-          video.videoHeight
+          width,
+          height
         );
       }
 
       // Extract eye landmarks and calculate EAR
       const eyeLandmarks = extractBothEyeLandmarks(
         { faceLandmarks: results.faceLandmarks },
-        video.videoWidth,
-        video.videoHeight
+        width,
+        height
       );
 
       if (!eyeLandmarks) {
