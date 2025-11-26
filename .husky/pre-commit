@@ -1,5 +1,12 @@
-# Run linting
-npm run lint
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 
-# Run unit tests
-npm run test:unit
+echo "Running pre-commit checks..."
+npm run typecheck
+npm run lint
+npm run test:unit -- --run
+
+if [ $? -ne 0 ]; then
+  echo "Pre-commit checks failed. Commit aborted."
+  exit 1
+fi

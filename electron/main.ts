@@ -6,6 +6,7 @@ import { setupAutoUpdater } from "./updater";
 let mainWindow: BrowserWindow | null = null;
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
+const outDir = path.resolve(__dirname, "../out");
 
 // Register custom protocol for serving static files
 function registerAppProtocol() {
@@ -34,7 +35,13 @@ function registerAppProtocol() {
     }
 
     // Build the file path relative to the out directory
-    const filePath = path.join(__dirname, "../out", urlPath);
+    const filePath = path.resolve(__dirname, "../out", urlPath);
+
+    // Security: Prevent path traversal attacks
+    if (!filePath.startsWith(outDir)) {
+      console.error(`[Security] Path traversal attempt blocked: ${urlPath}`);
+      return new Response("Forbidden", { status: 403 });
+    }
 
     return net.fetch(pathToFileURL(filePath).toString());
   });
@@ -50,7 +57,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false, // Required for some media APIs
+      sandbox: true, // Security: Enable sandbox (MediaPipe works fine with it)
     },
     titleBarStyle: "hiddenInset", // macOS native title bar
     trafficLightPosition: { x: 16, y: 12 },
@@ -135,10 +142,97 @@ app.commandLine.appendSwitch("enable-media-stream");
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Register app:// protocol as a standard scheme with privileges
+  // MUST be called before creating window - required for localStorage and web APIs
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: "app",
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        corsEnabled: false,
+      },
+    },
+  ]);
+
   // Register custom protocol before creating window
   registerAppProtocol();
 
   createWindow();
+
+  /**
+   * Content Security Policy (CSP) Configuration
+   *
+   * CURRENT IMPLEMENTATION:
+   * This CSP configuration uses 'unsafe-inline' for both scripts and styles to support
+   * the current Next.js static export with React 19 and Radix UI components.
+   *
+   * WHY 'unsafe-inline' IS CURRENTLY NEEDED:
+   *
+   * 1. Script Inline (script-src):
+   *    - Next.js static exports include inline <script> tags for hydration and routing
+   *    - React 19 uses inline event handlers and state management code
+   *    - Removing this would break Next.js client-side functionality
+   *
+   * 2. Style Inline (style-src):
+   *    - Radix UI components inject inline styles for positioning (popovers, tooltips, etc.)
+   *    - CSS-in-JS solutions used by UI libraries require inline style attributes
+   *    - Theme switching dynamically injects CSS custom properties
+   *
+   * PRODUCTION HARDENING ROADMAP:
+   *
+   * Before removing 'unsafe-inline' for production, evaluate:
+   *
+   * 1. Next.js Build Output Analysis:
+   *    - Inspect the /out directory after `npm run build`
+   *    - Identify all inline scripts and their purposes
+   *    - Consider using nonce-based CSP if Next.js supports it in static exports
+   *
+   * 2. Style Extraction Options:
+   *    - Audit Radix UI inline style usage (check for data-radix-popper-content-wrapper, etc.)
+   *    - Evaluate if CSS modules can replace all inline styles
+   *    - Consider build-time CSS extraction tools
+   *
+   * 3. Alternative Approaches:
+   *    - Use hash-based CSP (calculate hashes of legitimate inline scripts/styles)
+   *    - Migrate to a nonce-based approach if bundler supports it
+   *    - Consider Electron's Content Security Policy alternatives (e.g., webRequest filtering)
+   *
+   * 4. Testing Strategy:
+   *    - Test with stricter CSP in development mode first
+   *    - Verify MediaPipe, camera access, and theme switching still work
+   *    - Run full E2E test suite with hardened CSP
+   *
+   * RELATED ISSUE:
+   * TODO: Create a GitHub issue to track CSP hardening evaluation and implementation
+   *
+   * SECURITY NOTE:
+   * While 'unsafe-inline' reduces CSP protection, the risk is mitigated by:
+   * - Electron's sandbox mode is enabled (line 60)
+   * - contextIsolation prevents renderer access to Node.js (line 58)
+   * - Custom app:// protocol restricts file access to /out directory
+   * - No eval() or Function() constructors are used in the codebase
+   */
+  // Add Content Security Policy headers for security
+  if (mainWindow) {
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [
+            "default-src 'self' app:",
+            "script-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Next.js React
+            "style-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Radix UI themes
+            "img-src 'self' data: app:",
+            "font-src 'self' app:",
+            "connect-src 'self' https://cdn.jsdelivr.net https://storage.googleapis.com", // MediaPipe CDN
+            "media-src 'self' mediastream:", // Camera access
+          ].join("; "),
+        },
+      });
+    });
+  }
 
   // Setup auto-updater (only in production)
   if (!isDev && mainWindow) {

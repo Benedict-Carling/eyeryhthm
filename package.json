@@ -15,9 +15,7 @@
     "publish": {
       "provider": "github",
       "owner": "Benedict-Carling",
-      "repo": "eyeryhthm",
-      "private": true,
-      "token": "$GH_TOKEN"
+      "repo": "eyeryhthm"
     },
     "mac": {
       "category": "public.app-category.healthcare-fitness",
@@ -49,16 +47,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit",
     "test": "playwright test --reporter=line",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
     "prepare": "husky",
+    "verify": "npm run typecheck && npm run lint && npm run test:unit -- --run",
     "electron:dev": "concurrently -k \"npm run dev -- --port 3000\" \"npm run electron:start\"",
     "electron:start": "wait-on http://localhost:3000 && tsc -p electron/tsconfig.json && cross-env NODE_ENV=development electron .",
-    "electron:build": "ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder",
-    "electron:build:mac": "ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --mac",
-    "electron:build:win": "ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --win",
-    "electron:build:linux": "ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --linux"
+    "electron:build": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder",
+    "electron:build:mac": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --mac",
+    "electron:build:win": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --win",
+    "electron:build:linux": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --linux"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "0.10.21",
