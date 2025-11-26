@@ -26,6 +26,7 @@ import { Calibration } from "../lib/blink-detection/types";
 export function CalibrationList() {
   const {
     calibrations,
+    activeCalibration,
     setActiveCalibration,
     deleteCalibration,
     updateCalibrationName,
@@ -95,14 +96,15 @@ export function CalibrationList() {
     });
   };
 
+  // This should never happen as we ensure a default calibration exists
+  // But keeping as a safety fallback
   if (calibrations.length === 0) {
     return (
       <Box>
         <Callout.Root>
           <Callout.Icon>👁️</Callout.Icon>
           <Callout.Text>
-            No calibrations found. Create your first calibration to start using
-            blink detection.
+            Loading calibrations...
           </Callout.Text>
         </Callout.Root>
       </Box>
@@ -112,6 +114,15 @@ export function CalibrationList() {
   return (
     <Box>
       <Flex direction="column" gap="3">
+        {activeCalibration?.isDefault && (
+          <Callout.Root color="blue">
+            <Callout.Icon>ℹ️</Callout.Icon>
+            <Callout.Text>
+              Using factory default threshold (0.25). Run a calibration for
+              personalized detection based on your unique blink patterns.
+            </Callout.Text>
+          </Callout.Root>
+        )}
         {calibrations.map((calibration) => (
           <Card key={calibration.id} style={{ padding: "16px" }}>
             <Flex direction="column" gap="3">
@@ -166,9 +177,14 @@ export function CalibrationList() {
                         Set as Active
                       </Button>
                     ) : (
-                      <Badge color="green" size="1">
-                        Active
-                      </Badge>
+                      <Flex align="center" gap="2">
+                        <Badge
+                          color={calibration.isDefault ? "gray" : "green"}
+                          size="1"
+                        >
+                          {calibration.isDefault ? "Default" : "Active"}
+                        </Badge>
+                      </Flex>
                     )}
                     <IconButton
                       size="1"
@@ -189,6 +205,12 @@ export function CalibrationList() {
                       variant="ghost"
                       color="red"
                       onClick={() => setDeleteConfirmId(calibration.id)}
+                      disabled={calibrations.length <= 1}
+                      title={
+                        calibrations.length <= 1
+                          ? "Cannot delete the only calibration"
+                          : "Delete calibration"
+                      }
                     >
                       <TrashIcon />
                     </IconButton>

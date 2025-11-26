@@ -162,18 +162,18 @@ export class CalibrationService {
 
   static fixMultipleActiveCalibrations(): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const calibrations = this.getAllCalibrations();
       const activeCalibrations = calibrations.filter(cal => cal.isActive);
-      
+
       // If there are multiple active calibrations, keep only the most recent one active
       if (activeCalibrations.length > 1) {
         // Sort by createdAt date (most recent first)
-        activeCalibrations.sort((a, b) => 
+        activeCalibrations.sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-        
+
         // Deactivate all except the most recent
         const mostRecent = activeCalibrations[0];
         if (mostRecent) {
@@ -184,11 +184,53 @@ export class CalibrationService {
             }
           });
         }
-        
+
         localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(calibrations));
       }
     } catch (error) {
       console.error('Error fixing multiple active calibrations:', error);
+    }
+  }
+
+  static createDefaultCalibration(): Calibration {
+    const now = new Date();
+    return {
+      id: 'default',
+      name: 'Factory Default',
+      createdAt: now,
+      updatedAt: now,
+      isActive: true,
+      isDefault: true,
+      earThreshold: 0.25,
+      metadata: {
+        totalBlinksRequested: 0,
+        totalBlinksDetected: 0,
+        accuracy: 0,
+        averageBlinkInterval: 0,
+        minEarValue: 0.25,
+        maxEarValue: 0.25,
+      },
+      rawData: {
+        timestamps: [],
+        earValues: [],
+        blinkEvents: [],
+      },
+    };
+  }
+
+  static ensureDefaultCalibrationExists(): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const calibrations = this.getAllCalibrations();
+
+      // If no calibrations exist, create and save the default one
+      if (calibrations.length === 0) {
+        const defaultCalibration = this.createDefaultCalibration();
+        this.saveCalibration(defaultCalibration);
+      }
+    } catch (error) {
+      console.error('Error ensuring default calibration exists:', error);
     }
   }
 }

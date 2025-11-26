@@ -44,6 +44,8 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
 
   // Load calibrations on mount
   useEffect(() => {
+    // Ensure default calibration exists
+    CalibrationService.ensureDefaultCalibrationExists();
     // Fix any existing data with multiple active calibrations
     CalibrationService.fixMultipleActiveCalibrations();
     loadCalibrations();
@@ -90,12 +92,17 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
 
   const deleteCalibration = (id: string) => {
     try {
+      // Prevent deletion if this is the only calibration
+      if (calibrations.length <= 1) {
+        throw new Error('Cannot delete the only calibration');
+      }
+
       // Check if we're deleting the active calibration
       const calibrationToDelete = calibrations.find(cal => cal.id === id);
       const wasActive = calibrationToDelete?.isActive;
-      
+
       CalibrationService.deleteCalibration(id);
-      
+
       // If we deleted the active calibration and there are others, make the most recent one active
       if (wasActive) {
         const remainingCalibrations = CalibrationService.getAllCalibrations();
@@ -111,7 +118,7 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
           }
         }
       }
-      
+
       loadCalibrations();
     } catch (error) {
       console.error('Error deleting calibration:', error);

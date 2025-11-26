@@ -67,6 +67,7 @@ export interface Calibration {
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
+  isDefault?: boolean;
   earThreshold: number;
   metadata: CalibrationMetadata;
   rawData: CalibrationRawData;
