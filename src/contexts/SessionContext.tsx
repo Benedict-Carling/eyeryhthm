@@ -94,7 +94,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlinkUpdateRef = useRef<number>(Date.now());
-  const blinkCountRef = useRef<number>(0);
+  const blinkCountRef = useRef<number>(0); // Baseline blink count when session started
+  const blinkCountStateRef = useRef<number>(0); // Current blink count (prevents stale closures)
   const sessionStartTimeRef = useRef<number>(Date.now());
   const faceDetectionLostTimeRef = useRef<number | null>(null);
   const alertServiceRef = useRef<AlertService>(new AlertService());
@@ -119,6 +120,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
     earThreshold: activeCalibration?.earThreshold || 0.25,
     showDebugOverlay: false, // No visualization needed for background tracking
   });
+
+  // Keep blinkCount ref in sync with state to prevent stale closures
+  useEffect(() => {
+    blinkCountStateRef.current = blinkCount;
+  }, [blinkCount]);
 
   // Load mock sessions on mount and cleanup on unmount
   useEffect(() => {
@@ -234,57 +240,68 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
   }, [stream, videoRef]);
 
+  // Use functional setState to avoid dependency on activeSession
+  // This prevents cascading re-renders when session updates
   const updateActiveSessionBlinkRate = useCallback(
     (rate: number, totalBlinks: number) => {
-      if (!activeSession) return;
+      setActiveSession(prev => {
+        if (!prev) return prev;
 
-      const newPoint: BlinkRatePoint = {
-        timestamp: Date.now(),
-        rate,
-      };
+        const newPoint: BlinkRatePoint = {
+          timestamp: Date.now(),
+          rate,
+        };
 
-      const updatedHistory = [...activeSession.blinkRateHistory, newPoint];
-      const avgRate =
-        updatedHistory.reduce((sum, p) => sum + p.rate, 0) /
-        updatedHistory.length;
-      const quality = getSessionQuality(avgRate);
+        const updatedHistory = [...prev.blinkRateHistory, newPoint];
+        const avgRate =
+          updatedHistory.reduce((sum, p) => sum + p.rate, 0) /
+          updatedHistory.length;
+        const quality = getSessionQuality(avgRate);
+
+        const updatedSession: SessionData = {
+          ...prev,
+          blinkRateHistory: updatedHistory,
+          averageBlinkRate: avgRate,
+          quality,
+          totalBlinks,
+        };
+
+        // Update sessions array with the new session data
+        setSessions(prevSessions =>
+          prevSessions.map(session =>
+            session.id === updatedSession.id ? updatedSession : session
+          )
+        );
+
+        return updatedSession;
+      });
+    },
+    [] // No dependencies - prevents cascading re-renders
+  );
+
+  // Use functional setState to avoid dependency on activeSession
+  const handleFatigueAlert = useCallback(() => {
+    setActiveSession(prev => {
+      if (!prev) return prev;
 
       const updatedSession: SessionData = {
-        ...activeSession,
-        blinkRateHistory: updatedHistory,
-        averageBlinkRate: avgRate,
-        quality,
-        totalBlinks,
+        ...prev,
+        fatigueAlertCount: prev.fatigueAlertCount + 1,
       };
 
-      setActiveSession(updatedSession);
-      setSessions((prev) =>
-        prev.map((session) =>
+      setSessions(prevSessions =>
+        prevSessions.map(session =>
           session.id === updatedSession.id ? updatedSession : session
         )
       );
-    },
-    [activeSession]
-  );
 
-  const handleFatigueAlert = useCallback(() => {
-    if (!activeSession) return;
-
-    // Increment fatigue alert count
-    const updatedSession: SessionData = {
-      ...activeSession,
-      fatigueAlertCount: activeSession.fatigueAlertCount + 1,
-    };
-
-    setActiveSession(updatedSession);
-    setSessions((prev) =>
-      prev.map((session) =>
-        session.id === updatedSession.id ? updatedSession : session
-      )
-    );
-  }, [activeSession]);
+      return updatedSession;
+    });
+  }, []);
 
   // Handle frame processing with face detection and blink rate updates
+  // Only depend on values that affect the face detection state machine logic
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally exclude activeSession, blinkCount, and updateActiveSessionBlinkRate to prevent cascading re-renders (see PR #40)
   const handleFrameProcessing = useCallback(() => {
     // Safety check: If ImageCapture is not available, reset state
     if (!imageCaptureRef.current || !processingActiveRef.current) {
@@ -297,7 +314,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
     // Check if face is detected based on having valid EAR
     const faceCurrentlyDetected = currentEAR > 0;
-    
+
 
     // Handle face detection state changes
     if (faceCurrentlyDetected && !isFaceDetected) {
@@ -317,17 +334,19 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
 
     // Update blink rate every 5 seconds
+    // Read from refs to avoid stale closures while preventing effect restarts
     if (activeSession && Date.now() - lastBlinkUpdateRef.current > 5000) {
       const timeElapsed =
         (Date.now() - sessionStartTimeRef.current) / 1000 / 60; // in minutes
-      const blinksSinceStart = blinkCount - blinkCountRef.current;
+      // Use ref instead of closure value to prevent stale reads
+      const blinksSinceStart = blinkCountStateRef.current - blinkCountRef.current;
       const currentBlinkRate =
         timeElapsed > 0 ? blinksSinceStart / timeElapsed : 0;
 
       updateActiveSessionBlinkRate(currentBlinkRate, blinksSinceStart);
       lastBlinkUpdateRef.current = Date.now();
     }
-  }, [currentEAR, isFaceDetected, activeSession, blinkCount, updateActiveSessionBlinkRate]);
+  }, [currentEAR, isFaceDetected]); // activeSession, blinkCount read from closure; updateActiveSessionBlinkRate is stable
 
   // ImageCapture processing loop - runs independently of UI video element
   useEffect(() => {
@@ -431,7 +450,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const stopSession = useCallback(() => {
     if (!activeSession) return;
 
-    const totalBlinks = blinkCount - blinkCountRef.current;
+    // Use ref to prevent stale closure
+    const totalBlinks = blinkCountStateRef.current - blinkCountRef.current;
     const updatedSession: SessionData = {
       ...activeSession,
       endTime: new Date(),
