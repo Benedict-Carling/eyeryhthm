@@ -352,6 +352,15 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
   }, [currentEAR, isFaceDetected]); // activeSession, blinkCount read from closure; updateActiveSessionBlinkRate is stable
 
+  // Store stable references to avoid processing loop restarts
+  const processFrameRef = useRef(processFrame);
+  const handleFrameProcessingRef = useRef(handleFrameProcessing);
+
+  useEffect(() => {
+    processFrameRef.current = processFrame;
+    handleFrameProcessingRef.current = handleFrameProcessing;
+  }, [processFrame, handleFrameProcessing]);
+
   // ImageCapture processing loop - runs independently of UI video element
   useEffect(() => {
     if (!imageCaptureRef.current || !isTracking || !isInitialized) {
@@ -378,18 +387,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
         const grabTime = performance.now() - grabStart;
         const processStart = performance.now();
 
-        // Feed ImageBitmap to MediaPipe processing
-        // processFrame now accepts TexImageSource (includes ImageBitmap)
-        await processFrame(imageBitmap, undefined);
+        // Feed ImageBitmap to MediaPipe processing (use ref to avoid loop restarts)
+        await processFrameRef.current(imageBitmap, undefined);
 
-        // Trigger frame processing callback for session stats
-        handleFrameProcessing();
+        // Trigger frame processing callback for session stats (use ref to avoid loop restarts)
+        handleFrameProcessingRef.current();
 
         const processTime = performance.now() - processStart;
         frameCount++;
 
-        // Log stats every 5 seconds
-        if (Date.now() - lastLogTime > 5000) {
+        // Log stats every 5 seconds (only in development)
+        if (process.env.NODE_ENV === 'development' && Date.now() - lastLogTime > 5000) {
           const elapsed = (Date.now() - startTime) / 1000;
           const actualFps = frameCount / 5;
 
@@ -428,7 +436,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       console.log('[ImageCapture] Stopping processing loop');
       processingActiveRef.current = false;
     };
-  }, [imageCaptureRef, isTracking, isInitialized, processFrame, handleFrameProcessing]);
+  }, [isTracking, isInitialized]); // Removed processFrame and handleFrameProcessing - using refs instead
 
   const startSession = useCallback(() => {
     if (!isTracking || activeSession || !isFaceDetected) return;
