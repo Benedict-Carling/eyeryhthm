@@ -1,6 +1,10 @@
 import { FaceMeshResults } from "./types";
 import { FaceLandmarker, FaceLandmarkerResult, FilesetResolver } from "@mediapipe/tasks-vision";
 
+// Local paths for bundled MediaPipe assets (offline support)
+const LOCAL_WASM_PATH = '/mediapipe/wasm';
+const LOCAL_MODEL_PATH = '/mediapipe/face_landmarker.task';
+
 export class FaceMeshProcessor {
   private faceLandmarker: FaceLandmarker | null = null;
   private isInitialized = false;
@@ -16,14 +20,13 @@ export class FaceMeshProcessor {
     }
 
     try {
-      const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm"
-      );
+      const vision = await FilesetResolver.forVisionTasks(LOCAL_WASM_PATH);
 
+      // Try GPU first, fall back to CPU if it fails
       try {
         this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            modelAssetPath: LOCAL_MODEL_PATH,
             delegate: "GPU"
           },
           runningMode: "VIDEO",
@@ -37,7 +40,7 @@ export class FaceMeshProcessor {
       } catch {
         this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            modelAssetPath: LOCAL_MODEL_PATH,
             delegate: "CPU"
           },
           runningMode: "VIDEO",
