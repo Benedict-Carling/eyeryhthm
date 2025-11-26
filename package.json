@@ -75,7 +75,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@playwright/test": "^1.54.1",
+    "@playwright/test": "^1.55.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -87,7 +87,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^9.1.0",
     "cross-env": "^10.1.0",
-    "electron": "^33.2.1",
+    "electron": "^39.2.3",
     "electron-builder": "^25.1.8",
     "electron-squirrel-startup": "^1.0.1",
     "eslint": "^9",
