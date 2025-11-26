@@ -30,6 +30,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.removeListener("update-status", listener);
     };
   },
+
+  // Tracking control APIs
+  getTrackingEnabled: () => ipcRenderer.invoke("get-tracking-enabled"),
+  setTrackingEnabled: (enabled: boolean) =>
+    ipcRenderer.invoke("set-tracking-enabled", enabled),
+  onTrackingToggle: (callback: (enabled: boolean) => void) => {
+    const listener = (_event: IpcRendererEvent, enabled: boolean) => {
+      callback(enabled);
+    };
+    ipcRenderer.on("toggle-tracking", listener);
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener("toggle-tracking", listener);
+    };
+  },
 });
 
 // Update status type (mirrors the one in updater.ts)

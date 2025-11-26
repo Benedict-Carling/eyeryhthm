@@ -44,6 +44,10 @@ export interface ElectronAPI {
   downloadUpdate: () => Promise<void>;
   installUpdate: () => Promise<void>;
   onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
+  // Tracking control APIs
+  getTrackingEnabled: () => Promise<boolean>;
+  setTrackingEnabled: (enabled: boolean) => Promise<boolean>;
+  onTrackingToggle: (callback: (enabled: boolean) => void) => () => void;
 }
 
 declare global {

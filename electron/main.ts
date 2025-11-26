@@ -1,9 +1,12 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
 
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+let powerSaveId: number | null = null;
+let isTrackingEnabled = true;
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 const outDir = path.resolve(__dirname, "../out");
@@ -60,6 +63,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true, // Security: Enable sandbox (MediaPipe works fine with it)
+      backgroundThrottling: false, // Prevent throttling when minimized for continuous blink tracking
     },
     titleBarStyle: "hiddenInset", // macOS native title bar
     trafficLightPosition: { x: 16, y: 12 },
@@ -142,6 +146,100 @@ app.commandLine.appendSwitch("enable-features", "SharedArrayBuffer");
 // Request camera/microphone permissions
 app.commandLine.appendSwitch("enable-media-stream");
 
+// Prevent renderer process throttling when window is minimized/hidden
+// This is critical for continuous blink tracking in the background
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+
+/**
+ * Creates the system tray (menu bar) icon with controls for blink tracking
+ */
+function createTray() {
+  // Use the app icon for the tray
+  // TODO: Create a proper template image (black and clear) for better dark mode support
+  // Template images should be 22x22px (44x44px for @2x retina)
+  const iconPath = isDev
+    ? path.join(__dirname, "../public/icon-48x48.png")
+    : path.join(__dirname, "../build/icons/icon.png");
+
+  try {
+    const icon = nativeImage.createFromPath(iconPath);
+    // Resize to appropriate menu bar size (22x22 on macOS)
+    const resizedIcon = icon.resize({ width: 22, height: 22 });
+    tray = new Tray(resizedIcon);
+
+    updateTrayMenu();
+    tray.setToolTip("BlinkTrack - Eye Movement Tracking");
+
+    // Show window on tray icon click
+    tray.on("click", () => {
+      mainWindow?.show();
+    });
+  } catch (error) {
+    console.error("Failed to create tray icon:", error);
+    // Continue without tray if icon creation fails
+  }
+}
+
+/**
+ * Updates the tray context menu with current tracking state
+ */
+function updateTrayMenu() {
+  if (!tray) return;
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "BlinkTrack",
+      type: "normal",
+      enabled: false, // Title item, not clickable
+    },
+    { type: "separator" },
+    {
+      label: "Enable Tracking",
+      type: "checkbox",
+      checked: isTrackingEnabled,
+      click: () => {
+        isTrackingEnabled = !isTrackingEnabled;
+        // Notify renderer process
+        mainWindow?.webContents.send("toggle-tracking", isTrackingEnabled);
+        updateTrayMenu();
+
+        // Manage power save blocker based on tracking state
+        if (isTrackingEnabled && powerSaveId === null) {
+          powerSaveId = powerSaveBlocker.start("prevent-display-sleep");
+          console.log("[PowerSaveBlocker] Started (prevent-display-sleep)");
+        } else if (!isTrackingEnabled && powerSaveId !== null) {
+          powerSaveBlocker.stop(powerSaveId);
+          console.log("[PowerSaveBlocker] Stopped");
+          powerSaveId = null;
+        }
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Show Window",
+      click: () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      },
+    },
+    {
+      label: "Hide Window",
+      click: () => {
+        mainWindow?.hide();
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Quit BlinkTrack",
+      click: () => {
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
+}
+
 // Register app:// protocol as a standard scheme with privileges
 // MUST be called before app is ready - required for localStorage and web APIs
 protocol.registerSchemesAsPrivileged([
@@ -162,6 +260,18 @@ app.whenReady().then(() => {
   registerAppProtocol();
 
   createWindow();
+
+  // Create system tray for menu bar controls
+  createTray();
+
+  // Start power save blocker to prevent display sleep during tracking
+  // This ensures the camera and video processing continue when minimized
+  powerSaveId = powerSaveBlocker.start("prevent-display-sleep");
+  console.log("[PowerSaveBlocker] Started on app launch:", {
+    id: powerSaveId,
+    isStarted: powerSaveBlocker.isStarted(powerSaveId),
+    type: "prevent-display-sleep",
+  });
 
   /**
    * Content Security Policy (CSP) Configuration
@@ -293,4 +403,36 @@ ipcMain.on("maximize-window", () => {
 
 ipcMain.on("close-window", () => {
   mainWindow?.close();
+});
+
+// Get tracking enabled state
+ipcMain.handle("get-tracking-enabled", () => {
+  return isTrackingEnabled;
+});
+
+// Set tracking enabled state
+ipcMain.handle("set-tracking-enabled", (_event, enabled: boolean) => {
+  isTrackingEnabled = enabled;
+  updateTrayMenu();
+
+  // Manage power save blocker
+  if (enabled && powerSaveId === null) {
+    powerSaveId = powerSaveBlocker.start("prevent-display-sleep");
+    console.log("[PowerSaveBlocker] Started via IPC");
+  } else if (!enabled && powerSaveId !== null) {
+    powerSaveBlocker.stop(powerSaveId);
+    console.log("[PowerSaveBlocker] Stopped via IPC");
+    powerSaveId = null;
+  }
+
+  return isTrackingEnabled;
+});
+
+// Cleanup power save blocker on quit
+app.on("before-quit", () => {
+  if (powerSaveId !== null) {
+    powerSaveBlocker.stop(powerSaveId);
+    console.log("[PowerSaveBlocker] Stopped on app quit");
+    powerSaveId = null;
+  }
 });
