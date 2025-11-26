@@ -179,54 +179,52 @@ export function SessionProvider({ children }: SessionProviderProps) {
     };
   }, [stream]);
 
-  // Initialize detection when stream is ready
+  // Initialize detection when stream is ready - no video element required!
+  // ImageCapture API works directly with MediaStreamTrack
   useEffect(() => {
     let mounted = true;
 
     const initializeEverything = async () => {
-      // Remove canvas requirement - it's optional for visualization only
-      if (!stream || !videoRef.current || isInitialized || !isTracking) {
+      if (!stream || !imageCaptureRef.current || isInitialized || !isTracking) {
         return;
       }
 
-      const video = videoRef.current;
+      const videoTrack = stream.getVideoTracks()[0];
+      if (!videoTrack) {
+        console.error('[SessionContext] No video track available for initialization');
+        return;
+      }
 
-      // Wait for video to be ready with metadata
-      if (video.readyState < 3) {
+      // Wait for track to be live (replaces video.readyState check)
+      if (videoTrack.readyState !== 'live') {
+        console.log('[SessionContext] Waiting for video track to be live...');
         await new Promise<void>((resolve) => {
-          const handleLoadedData = () => {
-            video.removeEventListener("loadeddata", handleLoadedData);
-            resolve();
+          const checkState = () => {
+            if (videoTrack.readyState === 'live') {
+              resolve();
+            } else {
+              setTimeout(checkState, 100);
+            }
           };
-          video.addEventListener("loadeddata", handleLoadedData);
+          checkState();
         });
       }
 
-      // Ensure video has dimensions
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        console.warn('Video dimensions are 0, waiting for metadata...');
-        await new Promise<void>((resolve) => {
-          const handleLoadedMetadata = () => {
-            video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-            resolve();
-          };
-          video.addEventListener("loadedmetadata", handleLoadedMetadata);
-        });
-      }
-
-      // Small delay to ensure stable video feed
+      // Small delay to ensure stable camera feed
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       if (!mounted) return;
 
-      // Initialize detection
+      // Initialize detection - canvas is optional for visualization
       try {
+        console.log('[SessionContext] Initializing detection with ImageCapture...');
         await startDetection(canvasRef.current || undefined);
         if (mounted) {
           setIsInitialized(true);
+          console.log('[SessionContext] Detection initialized successfully');
         }
       } catch (err) {
-        console.error("Failed to start detection:", err);
+        console.error("[SessionContext] Failed to start detection:", err);
       }
     };
 
@@ -235,7 +233,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return () => {
       mounted = false;
     };
-  }, [stream, isTracking, startDetection, isInitialized, videoRef]);
+  }, [stream, isTracking, startDetection, isInitialized]);
 
   // Set video stream
   useEffect(() => {
@@ -414,22 +412,21 @@ export function SessionProvider({ children }: SessionProviderProps) {
           lastLogTime = Date.now();
         }
 
-        // Schedule next frame (target 30fps = ~33ms)
-        // grabFrame() auto-throttles, so setTimeout ensures we don't overload
+        // Schedule next frame using requestAnimationFrame for smooth, display-synced updates
         if (processingActiveRef.current) {
-          setTimeout(processLoop, 1000 / 30);
+          requestAnimationFrame(processLoop);
         }
       } catch (error) {
         console.error('[ImageCapture] Frame capture failed:', error);
 
-        // Retry after delay on error
+        // Retry on next frame on error
         if (processingActiveRef.current) {
-          setTimeout(processLoop, 100);
+          requestAnimationFrame(processLoop);
         }
       }
     };
 
-    console.log('[ImageCapture] Starting processing loop at 30fps');
+    console.log('[ImageCapture] Starting processing loop with requestAnimationFrame');
     processLoop();
 
     return () => {
