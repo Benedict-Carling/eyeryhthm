@@ -194,10 +194,10 @@ export function CalibrationFlow({
         accuracy: 1.0,
         averageBlinkInterval:
           analysisResult.blinkTimestamps.length > 1
-            ? (analysisResult.blinkTimestamps[
+            ? ((analysisResult.blinkTimestamps[
                 analysisResult.blinkTimestamps.length - 1
-              ] -
-                analysisResult.blinkTimestamps[0]) /
+              ] ?? 0) -
+                (analysisResult.blinkTimestamps[0] ?? 0)) /
               9
             : 0,
         minEarValue: Math.min(...earData.map((d) => d.ear)),

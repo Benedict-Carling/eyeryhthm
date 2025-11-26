@@ -101,11 +101,14 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
         const remainingCalibrations = CalibrationService.getAllCalibrations();
         if (remainingCalibrations.length > 0) {
           // Sort by createdAt date (most recent first)
-          remainingCalibrations.sort((a, b) => 
+          remainingCalibrations.sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           // Set the most recent as active
-          CalibrationService.setActiveCalibration(remainingCalibrations[0].id);
+          const mostRecent = remainingCalibrations[0];
+          if (mostRecent) {
+            CalibrationService.setActiveCalibration(mostRecent.id);
+          }
         }
       }
       

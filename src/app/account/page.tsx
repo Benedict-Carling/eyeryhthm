@@ -38,8 +38,10 @@ export default function AccountPage() {
 
   const handleThresholdChange = (value: number[]) => {
     const threshold = value[0];
-    setFatigueThreshold(threshold);
-    localStorage.setItem("fatigueThreshold", threshold.toString());
+    if (threshold !== undefined) {
+      setFatigueThreshold(threshold);
+      localStorage.setItem("fatigueThreshold", threshold.toString());
+    }
   };
 
   const handleNotificationsChange = (enabled: boolean) => {

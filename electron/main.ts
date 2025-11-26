@@ -24,7 +24,9 @@ function registerAppProtocol() {
     }
 
     // Remove query strings and hashes
-    urlPath = urlPath.split("?")[0].split("#")[0];
+    const withoutQuery = urlPath.split("?")[0];
+    const withoutHash = withoutQuery ? withoutQuery.split("#")[0] : "";
+    urlPath = withoutHash ?? urlPath;
 
     // Handle directory paths - append index.html
     // This handles paths like "calibration/", "account/", etc.

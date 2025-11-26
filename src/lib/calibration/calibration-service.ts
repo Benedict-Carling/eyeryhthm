@@ -175,12 +175,15 @@ export class CalibrationService {
         );
         
         // Deactivate all except the most recent
-        calibrations.forEach(cal => {
-          if (cal.id !== activeCalibrations[0].id) {
-            cal.isActive = false;
-            cal.updatedAt = new Date();
-          }
-        });
+        const mostRecent = activeCalibrations[0];
+        if (mostRecent) {
+          calibrations.forEach(cal => {
+            if (cal.id !== mostRecent.id) {
+              cal.isActive = false;
+              cal.updatedAt = new Date();
+            }
+          });
+        }
         
         localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(calibrations));
       }
