@@ -142,22 +142,22 @@ app.commandLine.appendSwitch("enable-features", "SharedArrayBuffer");
 // Request camera/microphone permissions
 app.commandLine.appendSwitch("enable-media-stream");
 
+// Register app:// protocol as a standard scheme with privileges
+// MUST be called before app is ready - required for localStorage and web APIs
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "app",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: false,
+    },
+  },
+]);
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
-  // Register app:// protocol as a standard scheme with privileges
-  // MUST be called before creating window - required for localStorage and web APIs
-  protocol.registerSchemesAsPrivileged([
-    {
-      scheme: "app",
-      privileges: {
-        standard: true,
-        secure: true,
-        supportFetchAPI: true,
-        corsEnabled: false,
-      },
-    },
-  ]);
-
   // Register custom protocol before creating window
   registerAppProtocol();
 
