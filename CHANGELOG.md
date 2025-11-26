@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.5](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.4...v1.2.5) (2025-11-26)
+
+
+### Bug Fixes
+
+* add type safety for urlPath string operations ([b362b47](https://github.com/Benedict-Carling/eyeryhthm/commit/b362b47a07ec275e35081963687fb6b5524cafbe))
+* **ci:** add include-hidden-files to artifact upload for .next directory ([8ab8823](https://github.com/Benedict-Carling/eyeryhthm/commit/8ab8823bcaa87a3f8ce47463b9d70edc317cb9ff))
+* regenerate package-lock.json for updated dependencies ([3891575](https://github.com/Benedict-Carling/eyeryhthm/commit/389157522bfd09f9cf85f3235cba356fe8d5a7bb))
+* resolve TypeScript strict mode errors in test files ([0e079a6](https://github.com/Benedict-Carling/eyeryhthm/commit/0e079a6fe6c5634b6b0544332382b61868b3e862))
+
 ## [1.2.4](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.3...v1.2.4) (2025-11-25)
 
 
