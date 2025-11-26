@@ -19,24 +19,28 @@
     },
     "mac": {
       "category": "public.app-category.healthcare-fitness",
+      "icon": "build/icons/icon.icns",
       "target": [
         "dmg",
         "zip"
       ]
     },
     "win": {
+      "icon": "build/icons/icon.ico",
       "target": [
         "nsis"
       ]
     },
     "linux": {
+      "icon": "build/icons/icon.png",
       "target": [
         "AppImage"
       ]
     },
     "files": [
       "dist-electron/**/*",
-      "out/**/*"
+      "out/**/*",
+      "build/icons/**/*"
     ],
     "directories": {
       "output": "release"
