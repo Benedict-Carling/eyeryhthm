@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.3.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.5...v1.3.0) (2025-11-26)
+
+
+### Features
+
+* add BlinkTrack logo and icons for all platforms ([2ebf7d1](https://github.com/Benedict-Carling/eyeryhthm/commit/2ebf7d1f229ae9ef4504d1042a1c950195b58cd5))
+* bundle MediaPipe assets locally for offline support ([c1f38da](https://github.com/Benedict-Carling/eyeryhthm/commit/c1f38da9b711e51094feffb2dd1fbe3ef02b8ea7))
+* bundle MediaPipe assets locally for offline support ([85d3f8c](https://github.com/Benedict-Carling/eyeryhthm/commit/85d3f8c7d1bc076c695eda3187a99e2bb65c635d))
+* improve fatigue detection with moving window and enhanced UI ([612be6b](https://github.com/Benedict-Carling/eyeryhthm/commit/612be6bafb9bc6d2a48e08955fa917618214cfcf))
+
+
+### Bug Fixes
+
+* move protocol.registerSchemesAsPrivileged before app.whenReady ([2e7b2ef](https://github.com/Benedict-Carling/eyeryhthm/commit/2e7b2efdcfe3d847437983d48a9da8284575e6ed))
+* update CSP for offline MediaPipe and Sentry ([7e119e3](https://github.com/Benedict-Carling/eyeryhthm/commit/7e119e33ea2b7a827f7ea8640ef6b497a3099917))
+
 ## [1.2.5](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.4...v1.2.5) (2025-11-26)
 
 
