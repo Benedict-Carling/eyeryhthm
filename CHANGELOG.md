@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.3.0...v1.4.0) (2025-11-27)
+
+
+### Features
+
+* enforce default calibration to always exist ([f78e498](https://github.com/Benedict-Carling/eyeryhthm/commit/f78e4989a1bada099b2af6e1f5f83f9bf7f3d170))
+* implement ImageCapture API for UI-independent session tracking ([bd961b3](https://github.com/Benedict-Carling/eyeryhthm/commit/bd961b3f861ceb582c8812526bde865abb74af5f))
+* implement robust background processing with MediaStreamTrackProcessor ([ce0d2c5](https://github.com/Benedict-Carling/eyeryhthm/commit/ce0d2c5d8d88b031b2ce6bde096e7f779a748e00))
+* remove video element dependency and optimize frame processing ([30cad18](https://github.com/Benedict-Carling/eyeryhthm/commit/30cad1821cb05d54533b5fbc1d5e8af2cfb51ce6))
+* track face lost periods and fix VideoFrame detection ([491fedf](https://github.com/Benedict-Carling/eyeryhthm/commit/491fedf4174ecce92cd1f6617316e1bba7123be4))
+
+
+### Bug Fixes
+
+* improve type safety and event listener cleanup in ImageCapture implementation ([194f7dc](https://github.com/Benedict-Carling/eyeryhthm/commit/194f7dc0f3c4d2a66ee0544ebf8260db4811abcb))
+* prevent ImageCapture processing loop from restarting on every render ([1b8b593](https://github.com/Benedict-Carling/eyeryhthm/commit/1b8b593807b658cee7a3b2b985f79da1020e2edd))
+* resolve cascading re-renders and negative blink counts in session tracking ([9aee9ec](https://github.com/Benedict-Carling/eyeryhthm/commit/9aee9ec9e7d059dc121187f3c0a03df4e420e3c9))
+
 ## [1.3.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.5...v1.3.0) (2025-11-26)
 
 
