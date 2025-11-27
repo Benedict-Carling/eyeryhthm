@@ -106,9 +106,6 @@ function createWindow() {
     mainWindow?.show();
   });
 
-  // Redundant but ensures backgroundThrottling is disabled
-  mainWindow.webContents.setBackgroundThrottling(false);
-
   // Load the app
   if (isDev) {
     // In development, load from Next.js dev server

@@ -93,6 +93,9 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
     return initPromise;
   }, [options.delegate, options.numFaces, state.isInitialized]);
 
+  // MediaPipe accepts these input sources for face detection
+  type MediaPipeInputSource = HTMLVideoElement | VideoFrame | ImageBitmap;
+
   const detectForVideo = useCallback(async (
     source: TexImageSource,
     timestamp: number
@@ -106,10 +109,9 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
     }
 
     try {
-      // MediaPipe detectForVideo accepts any TexImageSource (HTMLVideoElement, ImageBitmap, VideoFrame, etc.)
-      // TypeScript types may be restrictive, but the API accepts all TexImageSource types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return faceLandmarkerRef.current.detectForVideo(source as any, timestamp);
+      // MediaPipe detectForVideo accepts HTMLVideoElement, VideoFrame, or ImageBitmap
+      // All are valid TexImageSource types
+      return faceLandmarkerRef.current.detectForVideo(source as MediaPipeInputSource, timestamp);
     } catch (error) {
       console.error('Face detection error:', error);
       return null;

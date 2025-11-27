@@ -35,6 +35,12 @@ interface SessionProviderProps {
   children: ReactNode;
 }
 
+// Constants for session tracking
+const FPS_LOG_INTERVAL_MS = 5000; // Log FPS every 5 seconds
+const FACE_DETECTION_LOST_TIMEOUT_MS = 10000; // Stop session if face lost for 10 seconds
+const CAMERA_STABILIZATION_DELAY_MS = 200; // Wait for stable camera feed before processing
+const BLINK_RATE_UPDATE_INTERVAL_MS = 5000; // Update blink rate every 5 seconds
+
 // Mock data generator for demo purposes
 const generateMockSessions = (): SessionData[] => {
   const now = new Date();
@@ -133,12 +139,34 @@ export function SessionProvider({ children }: SessionProviderProps) {
     };
   }, []);
 
-  // MediaStreamTrackProcessor for reliable frame capture (runs in main thread)
-  // Combined with Electron anti-throttling flags, this provides consistent FPS even when minimized
+  /**
+   * MediaStreamTrackProcessor for reliable frame capture
+   *
+   * CHROMIUM-SPECIFIC IMPLEMENTATION:
+   * - Runs in main thread (W3C spec recommends worker-only usage)
+   * - Required due to MediaStreamTrack transfer limitations to workers
+   * - MediaStreamTrack objects cannot be cloned or transferred via postMessage
+   *
+   * ELECTRON ANTI-THROTTLING STRATEGY:
+   * - Command-line flags: disable-renderer-backgrounding, disable-background-timer-throttling
+   * - powerSaveBlocker.start('prevent-app-suspension') prevents macOS App Nap
+   * - backgroundThrottling: false in webPreferences
+   * - Combined, these maintain ~30 FPS even when window is minimized
+   *
+   * EVENT LOOP OPTIMIZATION:
+   * - Uses setTimeout(0) macrotasks instead of Promise microtasks
+   * - Prevents event loop starvation and allows UI updates
+   *
+   * RESOURCE MANAGEMENT:
+   * - VideoFrame.close() called after each frame to release GPU memory
+   * - Critical to prevent memory leaks with WebCodecs API
+   */
+  // Using 'any' for refs as MediaStreamTrackProcessor types aren't fully resolved at compile time
+  // Type safety is enforced at usage sites through window.MediaStreamTrackProcessor
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const processorRef = useRef<any | null>(null);
+  const processorRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const readerRef = useRef<any | null>(null);
+  const readerRef = useRef<any>(null);
   const processingLoopActiveRef = useRef(false);
 
   // Initialize detection and start MediaStreamTrackProcessor when stream is ready
@@ -172,7 +200,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       }
 
       // Small delay to ensure stable camera feed
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, CAMERA_STABILIZATION_DELAY_MS));
 
       if (!mounted) return;
 
@@ -284,16 +312,16 @@ export function SessionProvider({ children }: SessionProviderProps) {
       if (!faceDetectionLostTimeRef.current) {
         faceDetectionLostTimeRef.current = Date.now();
       } else {
-        // Check if 10 seconds have passed
-        if (Date.now() - faceDetectionLostTimeRef.current > 10000) {
+        // Check if timeout has passed
+        if (Date.now() - faceDetectionLostTimeRef.current > FACE_DETECTION_LOST_TIMEOUT_MS) {
           setIsFaceDetected(false);
         }
       }
     }
 
-    // Update blink rate every 5 seconds
+    // Update blink rate periodically
     // Read from refs to avoid stale closures while preventing effect restarts
-    if (activeSession && Date.now() - lastBlinkUpdateRef.current > 5000) {
+    if (activeSession && Date.now() - lastBlinkUpdateRef.current > BLINK_RATE_UPDATE_INTERVAL_MS) {
       const timeElapsed =
         (Date.now() - sessionStartTimeRef.current) / 1000 / 60; // in minutes
       // Use ref instead of closure value to prevent stale reads
@@ -326,8 +354,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      processorRef.current = new (window as any).MediaStreamTrackProcessor({ track });
+      processorRef.current = new window.MediaStreamTrackProcessor({ track });
       readerRef.current = processorRef.current.readable.getReader();
       processingLoopActiveRef.current = true;
 
@@ -354,20 +381,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
             return;
           }
 
-          // Convert VideoFrame to ImageBitmap for MediaPipe compatibility
-          // MediaPipe's detectForVideo expects ImageBitmap, not VideoFrame
-          let imageBitmap: ImageBitmap | null = null;
+          // Process VideoFrame directly with MediaPipe
+          // VideoFrame is a TexImageSource and can be used directly without conversion
           try {
-            imageBitmap = await createImageBitmap(frame);
-
-            // Process the bitmap with MediaPipe
-            await processFrameRef.current(imageBitmap, undefined);
+            // Pass VideoFrame directly to MediaPipe (zero-copy, more efficient)
+            await processFrameRef.current(frame, undefined);
             handleFrameProcessingRef.current();
 
             // FPS monitoring
             frameCount++;
             const now = Date.now();
-            if (now - lastFpsLog >= 5000) {
+            if (now - lastFpsLog >= FPS_LOG_INTERVAL_MS) {
               const fps = (frameCount / ((now - lastFpsLog) / 1000)).toFixed(1);
               console.log(`[SessionContext] FPS: ${fps}`);
               frameCount = 0;
@@ -376,10 +400,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
           } catch (error) {
             console.error('[SessionContext] Frame processing error:', error);
           } finally {
-            // CRITICAL: Close both the frame and bitmap to release resources
-            if (imageBitmap) {
-              imageBitmap.close();
-            }
+            // CRITICAL: Close the VideoFrame to release GPU memory
             frame.close();
           }
 
@@ -508,10 +529,10 @@ export function SessionProvider({ children }: SessionProviderProps) {
     if (isTracking && isFaceDetected && !activeSession) {
       startSession();
     } else if (!isFaceDetected && activeSession) {
-      // Only stop session if face has been lost for more than 10 seconds
+      // Only stop session if face has been lost for more than the timeout period
       if (
         faceDetectionLostTimeRef.current &&
-        Date.now() - faceDetectionLostTimeRef.current > 10000
+        Date.now() - faceDetectionLostTimeRef.current > FACE_DETECTION_LOST_TIMEOUT_MS
       ) {
         stopSession();
       }
