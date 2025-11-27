@@ -12,7 +12,6 @@ import {
 } from "@radix-ui/themes";
 import { useSession } from "../contexts/SessionContext";
 import { SessionCard } from "./SessionCard";
-import { VideoCanvas } from "./VideoCanvas";
 import { FaceIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -23,8 +22,6 @@ export function SessionsView() {
     isTracking,
     isFaceDetected,
     toggleTracking,
-    videoRef,
-    canvasRef,
   } = useSession();
 
   return (
@@ -62,18 +59,6 @@ export function SessionsView() {
           </Flex>
         </Flex>
       </Flex>
-
-      {/* Video Display - Shows camera feed when tracking is enabled */}
-      {isTracking && (
-        <Box mb="6" style={{ display: "flex", justifyContent: "center" }}>
-          <VideoCanvas
-            videoRef={videoRef}
-            canvasRef={canvasRef}
-            showCanvas={false} // No canvas overlay needed for sessions
-            maxWidth="480px"
-          />
-        </Box>
-      )}
 
       {/* Active Session */}
       {activeSession && (

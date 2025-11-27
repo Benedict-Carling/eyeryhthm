@@ -1,9 +1,11 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
 
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+let powerSaveBlockerId: number | null = null;
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 const outDir = path.resolve(__dirname, "../out");
@@ -49,6 +51,37 @@ function registerAppProtocol() {
   });
 }
 
+function createTray() {
+  // Use a simple icon for the tray (you can replace with a custom icon)
+  const icon = nativeImage.createEmpty();
+  tray = new Tray(icon);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show BlinkTrack',
+      click: () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      }
+    },
+    {
+      label: 'Quit',
+      click: () => {
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setToolTip('BlinkTrack - Eye Movement Tracking');
+  tray.setContextMenu(contextMenu);
+
+  // Double-click to show window
+  tray.on('double-click', () => {
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -60,6 +93,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true, // Security: Enable sandbox (MediaPipe works fine with it)
+      backgroundThrottling: false, // Prevent throttling when window is hidden
     },
     titleBarStyle: "hiddenInset", // macOS native title bar
     trafficLightPosition: { x: 16, y: 12 },
@@ -136,6 +170,16 @@ function createWindow() {
   });
 }
 
+// CRITICAL: Prevent background throttling - these flags must be set BEFORE app.ready
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+
+// CalculateNativeWinOcclusion is Windows-only and does nothing on macOS/Linux
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+}
+
 // Disable hardware acceleration issues on some systems
 app.commandLine.appendSwitch("enable-features", "SharedArrayBuffer");
 
@@ -160,6 +204,13 @@ protocol.registerSchemesAsPrivileged([
 app.whenReady().then(() => {
   // Register custom protocol before creating window
   registerAppProtocol();
+
+  // Create system tray for background operation
+  createTray();
+
+  // Prevent system from throttling timers (allows tracking when hidden/minimized)
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+  console.log('[PowerSave] Timer throttling prevention enabled:', powerSaveBlockerId);
 
   createWindow();
 
@@ -229,7 +280,7 @@ app.whenReady().then(() => {
             "img-src 'self' data: app:",
             "font-src 'self' app:",
             "connect-src 'self' https://*.ingest.de.sentry.io", // Sentry error reporting
-            "worker-src 'self' blob:", // Sentry web worker
+            "worker-src 'self' app: blob:", // Frame capture worker + Sentry web worker
             "media-src 'self' mediastream:", // Camera access
           ].join("; "),
         },
@@ -254,6 +305,14 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+  }
+});
+
+// Cleanup on quit
+app.on('before-quit', () => {
+  if (powerSaveBlockerId !== null) {
+    powerSaveBlocker.stop(powerSaveBlockerId);
+    console.log('[PowerSave] Timer throttling prevention disabled');
   }
 });
 

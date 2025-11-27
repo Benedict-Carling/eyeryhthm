@@ -93,8 +93,11 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
     return initPromise;
   }, [options.delegate, options.numFaces, state.isInitialized]);
 
+  // MediaPipe accepts these input sources for face detection
+  type MediaPipeInputSource = HTMLVideoElement | VideoFrame | ImageBitmap;
+
   const detectForVideo = useCallback(async (
-    video: HTMLVideoElement, 
+    source: TexImageSource,
     timestamp: number
   ): Promise<FaceLandmarkerResult | null> => {
     if (!faceLandmarkerRef.current || !state.isInitialized) {
@@ -106,7 +109,9 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
     }
 
     try {
-      return faceLandmarkerRef.current.detectForVideo(video, timestamp);
+      // MediaPipe detectForVideo accepts HTMLVideoElement, VideoFrame, or ImageBitmap
+      // All are valid TexImageSource types
+      return faceLandmarkerRef.current.detectForVideo(source as MediaPipeInputSource, timestamp);
     } catch (error) {
       console.error('Face detection error:', error);
       return null;

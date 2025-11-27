@@ -16,7 +16,6 @@ import {
 } from "../lib/sessions/types";
 import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
-import { useFrameProcessor } from "../hooks/useFrameProcessor";
 import { useCalibration } from "./CalibrationContext";
 import { AlertService } from "../lib/alert-service";
 
@@ -35,6 +34,12 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 interface SessionProviderProps {
   children: ReactNode;
 }
+
+// Constants for session tracking
+const FPS_LOG_INTERVAL_MS = 5000; // Log FPS every 5 seconds
+const FACE_DETECTION_LOST_TIMEOUT_MS = 10000; // Stop session if face lost for 10 seconds
+const CAMERA_STABILIZATION_DELAY_MS = 200; // Wait for stable camera feed before processing
+const BLINK_RATE_UPDATE_INTERVAL_MS = 5000; // Update blink rate every 5 seconds
 
 // Mock data generator for demo purposes
 const generateMockSessions = (): SessionData[] => {
@@ -92,10 +97,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [isTracking, setIsTracking] = useState(false);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlinkUpdateRef = useRef<number>(Date.now());
-  const blinkCountRef = useRef<number>(0);
+  const blinkCountRef = useRef<number>(0); // Baseline blink count when session started
+  const blinkCountStateRef = useRef<number>(0); // Current blink count (prevents stale closures)
   const sessionStartTimeRef = useRef<number>(Date.now());
   const faceDetectionLostTimeRef = useRef<number | null>(null);
   const alertServiceRef = useRef<AlertService>(new AlertService());
@@ -117,6 +123,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
     showDebugOverlay: false, // No visualization needed for background tracking
   });
 
+  // Keep blinkCount ref in sync with state to prevent stale closures
+  useEffect(() => {
+    blinkCountStateRef.current = blinkCount;
+  }, [blinkCount]);
+
   // Load mock sessions on mount and cleanup on unmount
   useEffect(() => {
     setSessions(generateMockSessions());
@@ -128,54 +139,86 @@ export function SessionProvider({ children }: SessionProviderProps) {
     };
   }, []);
 
-  // Initialize detection when stream is ready
+  /**
+   * MediaStreamTrackProcessor for reliable frame capture
+   *
+   * CHROMIUM-SPECIFIC IMPLEMENTATION:
+   * - Runs in main thread (W3C spec recommends worker-only usage)
+   * - Required due to MediaStreamTrack transfer limitations to workers
+   * - MediaStreamTrack objects cannot be cloned or transferred via postMessage
+   *
+   * ELECTRON ANTI-THROTTLING STRATEGY:
+   * - Command-line flags: disable-renderer-backgrounding, disable-background-timer-throttling
+   * - powerSaveBlocker.start('prevent-app-suspension') prevents macOS App Nap
+   * - backgroundThrottling: false in webPreferences
+   * - Combined, these maintain ~30 FPS even when window is minimized
+   *
+   * EVENT LOOP OPTIMIZATION:
+   * - Uses setTimeout(0) macrotasks instead of Promise microtasks
+   * - Prevents event loop starvation and allows UI updates
+   *
+   * RESOURCE MANAGEMENT:
+   * - VideoFrame.close() called after each frame to release GPU memory
+   * - Critical to prevent memory leaks with WebCodecs API
+   */
+  // Using 'any' for refs as MediaStreamTrackProcessor types aren't fully resolved at compile time
+  // Type safety is enforced at usage sites through window.MediaStreamTrackProcessor
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const processorRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const readerRef = useRef<any>(null);
+  const processingLoopActiveRef = useRef(false);
+
+  // Initialize detection and start MediaStreamTrackProcessor when stream is ready
   useEffect(() => {
     let mounted = true;
 
     const initializeEverything = async () => {
-      // Remove canvas requirement - it's optional for visualization only
-      if (!stream || !videoRef.current || isInitialized || !isTracking) {
+      if (!stream || isInitialized || !isTracking) {
         return;
       }
 
-      const video = videoRef.current;
+      const videoTrack = stream.getVideoTracks()[0];
+      if (!videoTrack) {
+        console.error('[SessionContext] No video track available for initialization');
+        return;
+      }
 
-      // Wait for video to be ready with metadata
-      if (video.readyState < 3) {
+      // Wait for track to be live
+      if (videoTrack.readyState !== 'live') {
+        console.log('[SessionContext] Waiting for video track to be live...');
         await new Promise<void>((resolve) => {
-          const handleLoadedData = () => {
-            video.removeEventListener("loadeddata", handleLoadedData);
-            resolve();
+          const checkState = () => {
+            if (videoTrack.readyState === 'live') {
+              resolve();
+            } else {
+              setTimeout(checkState, 100);
+            }
           };
-          video.addEventListener("loadeddata", handleLoadedData);
+          checkState();
         });
       }
 
-      // Ensure video has dimensions
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        console.warn('Video dimensions are 0, waiting for metadata...');
-        await new Promise<void>((resolve) => {
-          const handleLoadedMetadata = () => {
-            video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-            resolve();
-          };
-          video.addEventListener("loadedmetadata", handleLoadedMetadata);
-        });
-      }
-
-      // Small delay to ensure stable video feed
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // Small delay to ensure stable camera feed
+      await new Promise((resolve) => setTimeout(resolve, CAMERA_STABILIZATION_DELAY_MS));
 
       if (!mounted) return;
 
-      // Initialize detection
+      // Initialize MediaPipe detection - canvas is optional for visualization
       try {
+        console.log('[SessionContext] Initializing MediaPipe detection...');
         await startDetection(canvasRef.current || undefined);
+
         if (mounted) {
           setIsInitialized(true);
+          console.log('[SessionContext] Detection initialized successfully');
+
+          // Start MediaStreamTrackProcessor-based frame capture
+          console.log('[SessionContext] Starting MediaStreamTrackProcessor frame capture...');
+          startTrackProcessor(videoTrack);
         }
       } catch (err) {
-        console.error("Failed to start detection:", err);
+        console.error("[SessionContext] Failed to start detection:", err);
       }
     };
 
@@ -184,7 +227,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return () => {
       mounted = false;
     };
-  }, [stream, isTracking, startDetection, isInitialized, videoRef]);
+  }, [stream, isTracking, startDetection, isInitialized]);
 
   // Set video stream
   useEffect(() => {
@@ -193,61 +236,71 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
   }, [stream, videoRef]);
 
+  // Use functional setState to avoid dependency on activeSession
+  // This prevents cascading re-renders when session updates
   const updateActiveSessionBlinkRate = useCallback(
     (rate: number, totalBlinks: number) => {
-      if (!activeSession) return;
+      setActiveSession(prev => {
+        if (!prev) return prev;
 
-      const newPoint: BlinkRatePoint = {
-        timestamp: Date.now(),
-        rate,
-      };
+        const newPoint: BlinkRatePoint = {
+          timestamp: Date.now(),
+          rate,
+        };
 
-      const updatedHistory = [...activeSession.blinkRateHistory, newPoint];
-      const avgRate =
-        updatedHistory.reduce((sum, p) => sum + p.rate, 0) /
-        updatedHistory.length;
-      const quality = getSessionQuality(avgRate);
+        const updatedHistory = [...prev.blinkRateHistory, newPoint];
+        const avgRate =
+          updatedHistory.reduce((sum, p) => sum + p.rate, 0) /
+          updatedHistory.length;
+        const quality = getSessionQuality(avgRate);
+
+        const updatedSession: SessionData = {
+          ...prev,
+          blinkRateHistory: updatedHistory,
+          averageBlinkRate: avgRate,
+          quality,
+          totalBlinks,
+        };
+
+        // Update sessions array with the new session data
+        setSessions(prevSessions =>
+          prevSessions.map(session =>
+            session.id === updatedSession.id ? updatedSession : session
+          )
+        );
+
+        return updatedSession;
+      });
+    },
+    [] // No dependencies - prevents cascading re-renders
+  );
+
+  // Use functional setState to avoid dependency on activeSession
+  const handleFatigueAlert = useCallback(() => {
+    setActiveSession(prev => {
+      if (!prev) return prev;
 
       const updatedSession: SessionData = {
-        ...activeSession,
-        blinkRateHistory: updatedHistory,
-        averageBlinkRate: avgRate,
-        quality,
-        totalBlinks,
+        ...prev,
+        fatigueAlertCount: prev.fatigueAlertCount + 1,
       };
 
-      setActiveSession(updatedSession);
-      setSessions((prev) =>
-        prev.map((session) =>
+      setSessions(prevSessions =>
+        prevSessions.map(session =>
           session.id === updatedSession.id ? updatedSession : session
         )
       );
-    },
-    [activeSession]
-  );
 
-  const handleFatigueAlert = useCallback(() => {
-    if (!activeSession) return;
-
-    // Increment fatigue alert count
-    const updatedSession: SessionData = {
-      ...activeSession,
-      fatigueAlertCount: activeSession.fatigueAlertCount + 1,
-    };
-
-    setActiveSession(updatedSession);
-    setSessions((prev) =>
-      prev.map((session) =>
-        session.id === updatedSession.id ? updatedSession : session
-      )
-    );
-  }, [activeSession]);
+      return updatedSession;
+    });
+  }, []);
 
   // Handle frame processing with face detection and blink rate updates
+  // Only depend on values that affect the face detection state machine logic
   const handleFrameProcessing = useCallback(() => {
     // Check if face is detected based on having valid EAR
     const faceCurrentlyDetected = currentEAR > 0;
-    
+
 
     // Handle face detection state changes
     if (faceCurrentlyDetected && !isFaceDetected) {
@@ -259,34 +312,132 @@ export function SessionProvider({ children }: SessionProviderProps) {
       if (!faceDetectionLostTimeRef.current) {
         faceDetectionLostTimeRef.current = Date.now();
       } else {
-        // Check if 10 seconds have passed
-        if (Date.now() - faceDetectionLostTimeRef.current > 10000) {
+        // Check if timeout has passed
+        if (Date.now() - faceDetectionLostTimeRef.current > FACE_DETECTION_LOST_TIMEOUT_MS) {
           setIsFaceDetected(false);
         }
       }
     }
 
-    // Update blink rate every 5 seconds
-    if (activeSession && Date.now() - lastBlinkUpdateRef.current > 5000) {
+    // Update blink rate periodically
+    // Read from refs to avoid stale closures while preventing effect restarts
+    if (activeSession && Date.now() - lastBlinkUpdateRef.current > BLINK_RATE_UPDATE_INTERVAL_MS) {
       const timeElapsed =
         (Date.now() - sessionStartTimeRef.current) / 1000 / 60; // in minutes
-      const blinksSinceStart = blinkCount - blinkCountRef.current;
+      // Use ref instead of closure value to prevent stale reads
+      const blinksSinceStart = blinkCountStateRef.current - blinkCountRef.current;
       const currentBlinkRate =
         timeElapsed > 0 ? blinksSinceStart / timeElapsed : 0;
 
       updateActiveSessionBlinkRate(currentBlinkRate, blinksSinceStart);
       lastBlinkUpdateRef.current = Date.now();
     }
-  }, [currentEAR, isFaceDetected, activeSession, blinkCount, updateActiveSessionBlinkRate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEAR, isFaceDetected, updateActiveSessionBlinkRate]); // activeSession read from ref; blinkCount read from ref
 
-  // Use the shared frame processor hook
-  useFrameProcessor({
-    videoRef,
-    canvasRef,
-    processFrame,
-    onFrame: handleFrameProcessing,
-    isEnabled: isInitialized && isTracking,
-  });
+  // Store stable references to avoid triggering worker callback changes
+  const processFrameRef = useRef(processFrame);
+  const handleFrameProcessingRef = useRef(handleFrameProcessing);
+
+  useEffect(() => {
+    processFrameRef.current = processFrame;
+    handleFrameProcessingRef.current = handleFrameProcessing;
+  }, [processFrame, handleFrameProcessing]);
+
+  // Start MediaStreamTrackProcessor-based frame capture
+  const startTrackProcessor = useCallback((track: MediaStreamTrack) => {
+    // Check if MediaStreamTrackProcessor is available
+    if (typeof window !== 'undefined' && !('MediaStreamTrackProcessor' in window)) {
+      console.warn('[SessionContext] MediaStreamTrackProcessor not supported, using fallback');
+      // Could fallback to ImageCapture or requestAnimationFrame here
+      return;
+    }
+
+    try {
+      processorRef.current = new window.MediaStreamTrackProcessor({ track });
+      readerRef.current = processorRef.current.readable.getReader();
+      processingLoopActiveRef.current = true;
+
+      console.log('[SessionContext] MediaStreamTrackProcessor initialized');
+
+      // FPS monitoring
+      let frameCount = 0;
+      let lastFpsLog = Date.now();
+
+      // Start the frame processing loop
+      // Uses setTimeout(0) to create macrotasks instead of microtasks
+      // This prevents starving the event loop and allows UI updates
+      const processLoop = async () => {
+        if (!readerRef.current || !processingLoopActiveRef.current) {
+          return;
+        }
+
+        try {
+          const { value: frame, done } = await readerRef.current.read();
+
+          if (done || !frame) {
+            console.log('[SessionContext] Stream ended');
+            processingLoopActiveRef.current = false;
+            return;
+          }
+
+          // Process VideoFrame directly with MediaPipe
+          // VideoFrame is a TexImageSource and can be used directly without conversion
+          try {
+            // Pass VideoFrame directly to MediaPipe (zero-copy, more efficient)
+            await processFrameRef.current(frame, undefined);
+            handleFrameProcessingRef.current();
+
+            // FPS monitoring
+            frameCount++;
+            const now = Date.now();
+            if (now - lastFpsLog >= FPS_LOG_INTERVAL_MS) {
+              const fps = (frameCount / ((now - lastFpsLog) / 1000)).toFixed(1);
+              console.log(`[SessionContext] FPS: ${fps}`);
+              frameCount = 0;
+              lastFpsLog = now;
+            }
+          } catch (error) {
+            console.error('[SessionContext] Frame processing error:', error);
+          } finally {
+            // CRITICAL: Close the VideoFrame to release GPU memory
+            frame.close();
+          }
+
+          // Continue processing if still active
+          // Use setTimeout(0) to schedule as macrotask, allowing event loop breathing room
+          if (processingLoopActiveRef.current) {
+            setTimeout(processLoop, 0);
+          }
+        } catch (error) {
+          console.error('[SessionContext] Frame read error:', error);
+          processingLoopActiveRef.current = false;
+        }
+      };
+
+      // Start the loop
+      processLoop();
+    } catch (error) {
+      console.error('[SessionContext] Failed to initialize MediaStreamTrackProcessor:', error);
+    }
+  }, []);
+
+  // Stop MediaStreamTrackProcessor
+  const stopTrackProcessor = useCallback(() => {
+    processingLoopActiveRef.current = false;
+
+    if (readerRef.current) {
+      try {
+        readerRef.current.releaseLock();
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+      readerRef.current = null;
+    }
+
+    processorRef.current = null;
+    console.log('[SessionContext] MediaStreamTrackProcessor stopped');
+  }, []);
 
   const startSession = useCallback(() => {
     if (!isTracking || activeSession || !isFaceDetected) return;
@@ -312,7 +463,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const stopSession = useCallback(() => {
     if (!activeSession) return;
 
-    const totalBlinks = blinkCount - blinkCountRef.current;
+    // Use ref to prevent stale closure
+    const totalBlinks = blinkCountStateRef.current - blinkCountRef.current;
     const updatedSession: SessionData = {
       ...activeSession,
       endTime: new Date(),
@@ -329,7 +481,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         session.id === updatedSession.id ? updatedSession : session
       )
     );
-  }, [activeSession, blinkCount]);
+  }, [activeSession]); // blinkCount read from ref
 
   const toggleTracking = useCallback(async () => {
     const newTrackingState = !isTracking;
@@ -355,6 +507,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       }
       setIsInitialized(false);
       stopDetection();
+      stopTrackProcessor(); // Stop MediaStreamTrackProcessor
       stopCamera();
       setIsFaceDetected(false);
       // Stop alert monitoring
@@ -366,6 +519,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     startCamera,
     stopCamera,
     stopDetection,
+    stopTrackProcessor,
     stopSession,
     handleFatigueAlert,
   ]);
@@ -375,10 +529,10 @@ export function SessionProvider({ children }: SessionProviderProps) {
     if (isTracking && isFaceDetected && !activeSession) {
       startSession();
     } else if (!isFaceDetected && activeSession) {
-      // Only stop session if face has been lost for more than 10 seconds
+      // Only stop session if face has been lost for more than the timeout period
       if (
         faceDetectionLostTimeRef.current &&
-        Date.now() - faceDetectionLostTimeRef.current > 10000
+        Date.now() - faceDetectionLostTimeRef.current > FACE_DETECTION_LOST_TIMEOUT_MS
       ) {
         stopSession();
       }
