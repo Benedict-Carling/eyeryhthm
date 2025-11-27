@@ -37,7 +37,7 @@ interface SessionProviderProps {
 
 // Constants for session tracking
 const FPS_LOG_INTERVAL_MS = 5000; // Log FPS every 5 seconds
-const FACE_DETECTION_LOST_TIMEOUT_MS = 10000; // Stop session if face lost for 10 seconds
+const FACE_DETECTION_LOST_TIMEOUT_MS = 60000; // Stop session if face lost for 60 seconds (1 minute)
 const CAMERA_STABILIZATION_DELAY_MS = 200; // Wait for stable camera feed before processing
 const BLINK_RATE_UPDATE_INTERVAL_MS = 5000; // Update blink rate every 5 seconds
 
@@ -104,6 +104,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const blinkCountStateRef = useRef<number>(0); // Current blink count (prevents stale closures)
   const sessionStartTimeRef = useRef<number>(Date.now());
   const faceDetectionLostTimeRef = useRef<number | null>(null);
+  const currentFaceLostPeriodStartRef = useRef<number | null>(null); // Track start of current idle period
   const alertServiceRef = useRef<AlertService>(new AlertService());
 
   const { activeCalibration } = useCalibration();
@@ -304,13 +305,44 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
     // Handle face detection state changes
     if (faceCurrentlyDetected && !isFaceDetected) {
-      // Face just detected
+      // Face just detected (regained)
       setIsFaceDetected(true);
       faceDetectionLostTimeRef.current = null;
+
+      // Close the current face lost period if one was started
+      if (currentFaceLostPeriodStartRef.current !== null && activeSession) {
+        const periodEnd = Date.now();
+        const newPeriod = {
+          start: currentFaceLostPeriodStartRef.current,
+          end: periodEnd,
+        };
+
+        setActiveSession(prev => {
+          if (!prev) return prev;
+
+          const updatedSession = {
+            ...prev,
+            faceLostPeriods: [...(prev.faceLostPeriods || []), newPeriod],
+          };
+
+          // Update sessions array
+          setSessions(prevSessions =>
+            prevSessions.map(session =>
+              session.id === updatedSession.id ? updatedSession : session
+            )
+          );
+
+          return updatedSession;
+        });
+
+        currentFaceLostPeriodStartRef.current = null;
+      }
     } else if (!faceCurrentlyDetected && isFaceDetected) {
-      // Face just lost - start 10-second timer
+      // Face just lost - start 60-second timer
       if (!faceDetectionLostTimeRef.current) {
         faceDetectionLostTimeRef.current = Date.now();
+        // Start tracking this idle period
+        currentFaceLostPeriodStartRef.current = Date.now();
       } else {
         // Check if timeout has passed
         if (Date.now() - faceDetectionLostTimeRef.current > FACE_DETECTION_LOST_TIMEOUT_MS) {
@@ -452,16 +484,28 @@ export function SessionProvider({ children }: SessionProviderProps) {
       fatigueAlertCount: 0,
       calibrationId: activeCalibration?.id,
       totalBlinks: 0,
+      faceLostPeriods: [],
     };
 
     setActiveSession(newSession);
     setSessions((prev) => [newSession, ...prev]);
     blinkCountRef.current = blinkCount;
     sessionStartTimeRef.current = Date.now();
+    currentFaceLostPeriodStartRef.current = null; // Reset idle period tracking
   }, [isTracking, activeSession, isFaceDetected, blinkCount, activeCalibration]);
 
   const stopSession = useCallback(() => {
     if (!activeSession) return;
+
+    // Close any open face lost period
+    const faceLostPeriods = [...(activeSession.faceLostPeriods || [])];
+    if (currentFaceLostPeriodStartRef.current !== null) {
+      faceLostPeriods.push({
+        start: currentFaceLostPeriodStartRef.current,
+        end: Date.now(),
+      });
+      currentFaceLostPeriodStartRef.current = null;
+    }
 
     // Use ref to prevent stale closure
     const totalBlinks = blinkCountStateRef.current - blinkCountRef.current;
@@ -473,6 +517,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         (new Date().getTime() - activeSession.startTime.getTime()) / 1000
       ),
       totalBlinks,
+      faceLostPeriods,
     };
 
     setActiveSession(null);

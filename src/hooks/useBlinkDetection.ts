@@ -89,12 +89,24 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
       if (!results || !results.faceLandmarks || results.faceLandmarks.length === 0) {
         // Log only occasionally to avoid spam
         if (Math.random() < 0.01) {
-          const width = source instanceof HTMLVideoElement ? source.videoWidth : (source as ImageBitmap).width;
-          const height = source instanceof HTMLVideoElement ? source.videoHeight : (source as ImageBitmap).height;
+          let width: number, height: number;
+          if (source instanceof HTMLVideoElement) {
+            width = source.videoWidth;
+            height = source.videoHeight;
+          } else if ('displayWidth' in source) {
+            // VideoFrame
+            width = source.displayWidth;
+            height = source.displayHeight;
+          } else {
+            // ImageBitmap
+            width = (source as ImageBitmap).width;
+            height = (source as ImageBitmap).height;
+          }
           console.log('No face landmarks detected', {
             videoWidth: width,
             videoHeight: height,
-            videoReady: source instanceof HTMLVideoElement ? source.readyState : 'N/A (ImageBitmap)',
+            sourceType: source instanceof HTMLVideoElement ? 'HTMLVideoElement' : ('displayWidth' in source ? 'VideoFrame' : 'ImageBitmap'),
+            videoReady: source instanceof HTMLVideoElement ? source.readyState : 'N/A',
             results: results ? 'empty' : 'null'
           });
         }
@@ -107,9 +119,20 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
         return;
       }
 
-      // Get dimensions from either HTMLVideoElement or ImageBitmap
-      const width = source instanceof HTMLVideoElement ? source.videoWidth : (source as ImageBitmap).width;
-      const height = source instanceof HTMLVideoElement ? source.videoHeight : (source as ImageBitmap).height;
+      // Get dimensions from HTMLVideoElement, VideoFrame, or ImageBitmap
+      let width: number, height: number;
+      if (source instanceof HTMLVideoElement) {
+        width = source.videoWidth;
+        height = source.videoHeight;
+      } else if ('displayWidth' in source) {
+        // VideoFrame
+        width = source.displayWidth;
+        height = source.displayHeight;
+      } else {
+        // ImageBitmap
+        width = (source as ImageBitmap).width;
+        height = (source as ImageBitmap).height;
+      }
 
       // Draw visualization if enabled
       if (config.showDebugOverlay && canvas && visualizerRef.current) {
