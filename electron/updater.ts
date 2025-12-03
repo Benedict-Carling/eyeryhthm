@@ -7,8 +7,9 @@ import { trackEvent, AnalyticsEvents } from "./analytics";
 log.transports.file.level = "info";
 autoUpdater.logger = log;
 
-// Disable auto-download - we'll let the user choose when to download
-autoUpdater.autoDownload = false;
+// Enable auto-download - updates download silently in the background
+// User can restart anytime, or the update installs automatically on quit
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 export interface UpdateStatus {

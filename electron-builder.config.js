@@ -249,7 +249,7 @@ const config = {
   // Publish configuration for GitHub releases
   publish: {
     provider: "github",
-    owner: "benedictcarling",
+    owner: "Benedict-Carling",
     repo: "eyeryhthm",
     releaseType: "release",
   },

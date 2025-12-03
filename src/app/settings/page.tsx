@@ -11,18 +11,32 @@ import {
   Card,
   TextField,
   Separator,
+  Callout,
+  Button,
+  Progress,
 } from "@radix-ui/themes";
 import {
   BellIcon,
   MixerHorizontalIcon,
   SpeakerLoudIcon,
+  DownloadIcon,
+  UpdateIcon,
+  RocketIcon,
 } from "@radix-ui/react-icons";
 import { VersionInfo } from "@/components/VersionInfo";
+import { useUpdateStatus } from "@/hooks/useUpdateStatus";
 
-export default function AccountPage() {
+export default function SettingsPage() {
   const [fatigueThreshold, setFatigueThreshold] = useState(8);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const {
+    isElectron,
+    updateStatus,
+    hasUpdate,
+    downloadUpdate,
+    installUpdate,
+  } = useUpdateStatus();
 
   useEffect(() => {
     // Load saved settings
@@ -54,17 +68,86 @@ export default function AccountPage() {
     localStorage.setItem("soundEnabled", enabled.toString());
   };
 
+  const renderUpdateCallout = () => {
+    if (!isElectron || !hasUpdate) return null;
+
+    if (updateStatus?.status === "downloading" && updateStatus.progress) {
+      return (
+        <Callout.Root color="blue">
+          <Callout.Icon>
+            <DownloadIcon />
+          </Callout.Icon>
+          <Callout.Text>
+            <Flex direction="column" gap="2" style={{ width: "100%" }}>
+              <Text>
+                Downloading update v{updateStatus.info?.version}...{" "}
+                {updateStatus.progress.percent.toFixed(0)}%
+              </Text>
+              <Progress value={updateStatus.progress.percent} size="1" />
+            </Flex>
+          </Callout.Text>
+        </Callout.Root>
+      );
+    }
+
+    if (updateStatus?.status === "available") {
+      return (
+        <Callout.Root color="orange">
+          <Callout.Icon>
+            <UpdateIcon />
+          </Callout.Icon>
+          <Callout.Text>
+            <Flex justify="between" align="center" style={{ width: "100%" }}>
+              <Text>
+                Update v{updateStatus.info?.version} is available.
+              </Text>
+              <Button size="1" variant="soft" onClick={downloadUpdate}>
+                <DownloadIcon />
+                Download
+              </Button>
+            </Flex>
+          </Callout.Text>
+        </Callout.Root>
+      );
+    }
+
+    if (updateStatus?.status === "downloaded") {
+      return (
+        <Callout.Root color="green">
+          <Callout.Icon>
+            <RocketIcon />
+          </Callout.Icon>
+          <Callout.Text>
+            <Flex justify="between" align="center" style={{ width: "100%" }}>
+              <Text>
+                Update v{updateStatus.info?.version} ready. Restart or quit to apply.
+              </Text>
+              <Button size="1" variant="soft" color="green" onClick={installUpdate}>
+                <RocketIcon />
+                Restart now
+              </Button>
+            </Flex>
+          </Callout.Text>
+        </Callout.Root>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <Container size="3">
       <Flex direction="column" gap="6" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
         <Box>
           <Heading size="8" mb="2">
-            Account Settings
+            Settings
           </Heading>
           <Text size="4" color="gray">
             Configure your fatigue detection preferences
           </Text>
         </Box>
+
+        {renderUpdateCallout()}
 
         <Flex direction="column" gap="4">
           <Box>

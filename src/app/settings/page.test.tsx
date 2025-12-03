@@ -1,7 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AccountPage from './page';
+import SettingsPage from './page';
+
+// Mock useUpdateStatus hook
+vi.mock('@/hooks/useUpdateStatus', () => ({
+  useUpdateStatus: () => ({
+    isElectron: false,
+    updateStatus: null,
+    hasUpdate: false,
+    checkForUpdates: vi.fn(),
+    downloadUpdate: vi.fn(),
+    installUpdate: vi.fn(),
+  }),
+}));
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -22,7 +34,7 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
 });
 
-describe('AccountPage', () => {
+describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLocalStorage.getItem.mockImplementation((key) => {
@@ -33,10 +45,10 @@ describe('AccountPage', () => {
     });
   });
 
-  it('renders account settings page', () => {
-    render(<AccountPage />);
-    
-    expect(screen.getByText('Account Settings')).toBeInTheDocument();
+  it('renders settings page', () => {
+    render(<SettingsPage />);
+
+    expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Configure your fatigue detection preferences')).toBeInTheDocument();
     expect(screen.getByText('Fatigue Detection')).toBeInTheDocument();
     expect(screen.getByText('Notification Settings')).toBeInTheDocument();
@@ -50,7 +62,7 @@ describe('AccountPage', () => {
       return null;
     });
 
-    render(<AccountPage />);
+    render(<SettingsPage />);
 
     // Check that threshold input has the correct value
     const thresholdInput = screen.getByRole('spinbutton');
@@ -67,7 +79,7 @@ describe('AccountPage', () => {
 
   it('updates fatigue threshold and saves to localStorage', async () => {
     const user = userEvent.setup();
-    render(<AccountPage />);
+    render(<SettingsPage />);
 
     const thresholdInput = screen.getByRole('spinbutton') as HTMLInputElement;
 
@@ -82,7 +94,7 @@ describe('AccountPage', () => {
   });
 
   it('notification switches are disabled (feature in development)', () => {
-    render(<AccountPage />);
+    render(<SettingsPage />);
 
     const switches = screen.getAllByRole('switch');
     const notificationSwitch = switches[0]!;
@@ -94,7 +106,7 @@ describe('AccountPage', () => {
   });
 
   it('shows threshold input with correct min/max attributes', () => {
-    render(<AccountPage />);
+    render(<SettingsPage />);
 
     const thresholdInput = screen.getByRole('spinbutton');
     expect(thresholdInput).toHaveAttribute('min', '4');
@@ -102,7 +114,7 @@ describe('AccountPage', () => {
   });
 
   it('shows informational note about fatigue alerts', () => {
-    render(<AccountPage />);
+    render(<SettingsPage />);
 
     expect(screen.getByText(/Note: Fatigue alerts only trigger after 3 minutes of continuous session time/)).toBeInTheDocument();
   });

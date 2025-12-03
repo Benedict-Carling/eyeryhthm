@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSession } from "../contexts/SessionContext";
 import { useCalibration } from "../contexts/CalibrationContext";
+import { useUpdateStatus } from "../hooks/useUpdateStatus";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import packageJson from "../../package.json";
@@ -36,6 +37,7 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const { isTracking, toggleTracking } = useSession();
   const { hasOnlyFactoryDefault } = useCalibration();
+  const { hasUpdate } = useUpdateStatus();
   const pathname = usePathname();
   const isElectronMac = useIsElectronMac();
   const showCalibrationNotification = hasOnlyFactoryDefault();
@@ -59,7 +61,7 @@ export function Navbar() {
   const navigationLinks = [
     { href: "/", label: "Sessions" },
     { href: "/calibration", label: "Calibration" },
-    { href: "/account", label: "Account" },
+    { href: "/settings", label: "Settings" },
   ];
 
   return (
@@ -103,6 +105,9 @@ export function Navbar() {
                     <span style={{ position: "relative" }}>
                       <Text size="3">{link.label}</Text>
                       {link.href === "/calibration" && showCalibrationNotification && (
+                        <span className={styles.notificationDot} />
+                      )}
+                      {link.href === "/settings" && hasUpdate && (
                         <span className={styles.notificationDot} />
                       )}
                     </span>

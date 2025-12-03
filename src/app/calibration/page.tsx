@@ -1,6 +1,7 @@
 "use client";
 
-import { Container, Flex, Box, Text, Heading } from "@radix-ui/themes";
+import { Container, Flex, Box, Text, Heading, Callout } from "@radix-ui/themes";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { CalibrationManager } from "../../components/CalibrationManager";
 
 export default function CalibrationPage() {
@@ -15,6 +16,15 @@ export default function CalibrationPage() {
             Personalize your blink detection settings
           </Text>
         </Box>
+
+        <Callout.Root color="blue">
+          <Callout.Icon>
+            <InfoCircledIcon />
+          </Callout.Icon>
+          <Callout.Text>
+            For best results, create a new calibration for each working location or computer you use. If the angle or distance between your face and the camera changes, a new calibration will improve detection performance.
+          </Callout.Text>
+        </Callout.Root>
 
         <CalibrationManager />
       </Flex>

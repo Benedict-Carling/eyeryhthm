@@ -25,6 +25,13 @@ vi.mock('../contexts/CalibrationContext', () => ({
   }),
 }));
 
+// Mock useUpdateStatus hook
+vi.mock('../hooks/useUpdateStatus', () => ({
+  useUpdateStatus: () => ({
+    hasUpdate: false,
+  }),
+}));
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
@@ -74,11 +81,11 @@ describe('Navbar', () => {
 
   it('renders the navbar with all navigation links', () => {
     renderNavbar();
-    
+
     expect(screen.getByText('BlinkTrack')).toBeInTheDocument();
     expect(screen.getByText('Sessions')).toBeInTheDocument();
     expect(screen.getByText('Calibration')).toBeInTheDocument();
-    expect(screen.getByText('Account')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 
   it('shows theme toggle button', () => {
@@ -130,12 +137,12 @@ describe('Navbar', () => {
     // Get all navigation links
     const sessionsLink = screen.getByText('Sessions').closest('a');
     const calibrationLink = screen.getByText('Calibration').closest('a');
-    const accountLink = screen.getByText('Account').closest('a');
+    const settingsLink = screen.getByText('Settings').closest('a');
 
     // Verify href attributes are set correctly
     expect(sessionsLink).toHaveAttribute('href', '/');
     expect(calibrationLink).toHaveAttribute('href', '/calibration');
-    expect(accountLink).toHaveAttribute('href', '/account');
+    expect(settingsLink).toHaveAttribute('href', '/settings');
   });
 
   it('displays version number from package.json', () => {
