@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeIm
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
+import { initAnalytics, trackEvent, AnalyticsEvents } from "./analytics";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -123,6 +124,9 @@ function toggleTracking() {
   isTrackingEnabled = !isTrackingEnabled;
   updateTrayMenu();
 
+  // Track analytics event
+  trackEvent(isTrackingEnabled ? AnalyticsEvents.TRACKING_STARTED : AnalyticsEvents.TRACKING_STOPPED);
+
   // Notify renderer process to toggle tracking
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('toggle-tracking', isTrackingEnabled);
@@ -132,6 +136,9 @@ function toggleTracking() {
 // Set launch at login preference
 function setLaunchAtLogin(enabled: boolean) {
   launchAtLoginEnabled = enabled;
+
+  // Track analytics event
+  trackEvent(enabled ? AnalyticsEvents.LAUNCH_AT_LOGIN_ENABLED : AnalyticsEvents.LAUNCH_AT_LOGIN_DISABLED);
 
   if (process.platform === 'darwin' || process.platform === 'win32') {
     // Note: openAsHidden is deprecated on macOS 13+ (Ventura/Sonoma)
@@ -330,6 +337,10 @@ protocol.registerSchemesAsPrivileged([
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Initialize analytics (privacy-first, no personal data collected)
+  initAnalytics();
+  trackEvent(AnalyticsEvents.APP_STARTED);
+
   // Register custom protocol before creating window
   registerAppProtocol();
 
@@ -441,6 +452,8 @@ app.on("window-all-closed", () => {
 
 // Cleanup on quit
 app.on('before-quit', () => {
+  trackEvent(AnalyticsEvents.APP_QUIT);
+
   if (powerSaveBlockerId !== null) {
     powerSaveBlocker.stop(powerSaveBlockerId);
     console.log('[PowerSave] Timer throttling prevention disabled');

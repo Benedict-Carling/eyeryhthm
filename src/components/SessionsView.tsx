@@ -9,7 +9,7 @@ import {
 } from "@radix-ui/themes";
 import { useSession } from "../contexts/SessionContext";
 import { SessionCard } from "./SessionCard";
-import { Eye, EyeOff, UserX } from "lucide-react";
+import { EyeOff, UserX } from "lucide-react";
 
 export function SessionsView() {
   const {
@@ -73,26 +73,6 @@ export function SessionsView() {
         </Flex>
       </Box>
 
-      {/* Info callout */}
-      <Box mt="6">
-        <Callout.Root>
-          <Callout.Icon>
-            <Eye size={16} />
-          </Callout.Icon>
-          <Callout.Text>
-            <strong>Session Requirements:</strong>
-            <br />
-            <br />
-            • Minimum session length: 2 minutes
-            <br />
-            • Sessions continue through interruptions up to 10 seconds
-            <br />
-            • Blink rate targets: Good (12+), Fair (8-11), Poor (&lt;8)
-            <br />
-            • No camera footage is displayed or stored
-          </Callout.Text>
-        </Callout.Root>
-      </Box>
     </Box>
   );
 }

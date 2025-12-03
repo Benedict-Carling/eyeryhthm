@@ -1,6 +1,7 @@
 import { autoUpdater, UpdateInfo } from "electron-updater";
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
+import { trackEvent, AnalyticsEvents } from "./analytics";
 
 // Configure logging for auto-updater
 log.transports.file.level = "info";
@@ -51,6 +52,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
 
   autoUpdater.on("update-available", (info: UpdateInfo) => {
     log.info("Update available:", info.version);
+    trackEvent(AnalyticsEvents.UPDATE_AVAILABLE, { version: info.version });
     sendUpdateStatus({ status: "available", info });
   });
 
@@ -74,6 +76,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
 
   autoUpdater.on("update-downloaded", (info: UpdateInfo) => {
     log.info("Update downloaded:", info.version);
+    trackEvent(AnalyticsEvents.UPDATE_DOWNLOADED, { version: info.version });
     sendUpdateStatus({ status: "downloaded", info });
   });
 
@@ -104,6 +107,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
 
   ipcMain.handle("install-update", () => {
     log.info("Installing update and restarting...");
+    trackEvent(AnalyticsEvents.UPDATE_INSTALLED);
     autoUpdater.quitAndInstall(false, true);
   });
 
