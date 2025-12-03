@@ -55,3 +55,6 @@ next-env.d.ts
 *.AppImage
 *.deb
 *.snap
+
+# Generated icon variants (keep only final icons)
+/build-resources/icons/

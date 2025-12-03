@@ -19,31 +19,21 @@
     },
     "mac": {
       "category": "public.app-category.healthcare-fitness",
-      "icon": "build/icons/icon.icns",
-      "target": [
-        "dmg",
-        "zip"
-      ]
+      "icon": "build-resources/icon.icns",
+      "target": ["dmg", "zip"]
     },
     "win": {
-      "icon": "build/icons/icon.ico",
-      "target": [
-        "nsis"
-      ]
+      "icon": "build-resources/icon.ico",
+      "target": ["nsis"]
     },
     "linux": {
-      "icon": "build/icons/icon.png",
-      "target": [
-        "AppImage"
-      ]
+      "icon": "build-resources/icon.png",
+      "target": ["AppImage"]
     },
-    "files": [
-      "dist-electron/**/*",
-      "out/**/*",
-      "build/icons/**/*"
-    ],
+    "files": ["dist-electron/**/*", "out/**/*"],
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build-resources"
     }
   },
   "scripts": {
@@ -93,6 +83,7 @@
     "cross-env": "^10.1.0",
     "electron": "^39.2.3",
     "electron-builder": "^25.1.8",
+    "electron-icon-builder": "^2.0.1",
     "electron-squirrel-startup": "^1.0.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.6",
