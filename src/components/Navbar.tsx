@@ -78,7 +78,7 @@ export function Navbar() {
             <Flex align="center" gap="6" wrap="wrap" style={{ minWidth: 0 }}>
               <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
                 <Flex align="center" gap="2">
-                  <Text size="5" weight="bold" style={{ color: "var(--gray-12)" }}>
+                  <Text size="5" weight="bold" style={{ color: "var(--mauve-12)" }}>
                     BlinkTrack
                   </Text>
                   <Badge size="1" color="gray" variant="soft">
@@ -97,7 +97,7 @@ export function Navbar() {
                       color:
                         pathname === link.href
                           ? "var(--accent-11)"
-                          : "var(--gray-11)",
+                          : "var(--mauve-11)",
                     }}
                   >
                     <span style={{ position: "relative" }}>

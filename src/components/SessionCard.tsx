@@ -103,6 +103,9 @@ export function SessionCard({ session }: SessionCardProps) {
 
   const showCurrentRate = session.isActive && sessionDurationMinutes >= 3 && currentBlinkRate !== null;
 
+  // Only show quality indicator for sessions >= 1 minute
+  const showQualityBadge = sessionDurationMinutes >= 1;
+
   // Get display blink count - use live value for active sessions
   const displayBlinkCount = session.isActive ? liveBlinkCount : session.totalBlinks;
 
@@ -197,14 +200,14 @@ export function SessionCard({ session }: SessionCardProps) {
     gradient
       .append("stop")
       .attr("offset", "0%")
-      .attr("stop-color", "#3B82F6")
-      .attr("stop-opacity", 0.8);
+      .attr("stop-color", "var(--indigo-9)")
+      .attr("stop-opacity", 1);
 
     gradient
       .append("stop")
       .attr("offset", "100%")
-      .attr("stop-color", "#8B5CF6")
-      .attr("stop-opacity", 0.8);
+      .attr("stop-color", "var(--indigo-7)")
+      .attr("stop-opacity", 1);
 
     // Add area
     const area = d3
@@ -264,7 +267,7 @@ export function SessionCard({ session }: SessionCardProps) {
         {/* Header */}
         <Flex justify="between" align="center">
           <Flex align="center" gap="3">
-            <Text size="5" weight="medium">
+            <Text size="5" weight="medium" style={{ color: "var(--mauve-12)" }}>
               {formatTime(session.startTime)}
             </Text>
             {session.isActive && (
@@ -292,11 +295,13 @@ export function SessionCard({ session }: SessionCardProps) {
 
           {/* Quality badges */}
           <Flex gap="2" align="center">
-            <Badge color={getQualityColor(session.quality)} variant="soft">
-              {session.quality.charAt(0).toUpperCase() +
-                session.quality.slice(1)}{" "}
-              quality
-            </Badge>
+            {showQualityBadge && (
+              <Badge color={getQualityColor(session.quality)} variant="soft">
+                {session.quality.charAt(0).toUpperCase() +
+                  session.quality.slice(1)}{" "}
+                quality
+              </Badge>
+            )}
             {session.fatigueAlertCount > 0 ? (
               <Badge color="orange" variant="soft">
                 <Bell size={14} /> {session.fatigueAlertCount} fatigue alert
@@ -311,11 +316,11 @@ export function SessionCard({ session }: SessionCardProps) {
         </Flex>
 
         {/* Session info */}
-        <Flex gap="4" wrap="wrap">
+        <Flex gap="4" wrap="wrap" align="center">
           {/* Duration - show for both active (calculated) and completed (stored) sessions */}
-          <Flex align="center" gap="2">
-            <Text color="gray"><ClockIcon /></Text>
-            <Text size="2" color="gray">
+          <Flex align="center" gap="1">
+            <ClockIcon style={{ color: "var(--mauve-11)" }} />
+            <Text size="2" style={{ color: "var(--mauve-11)" }}>
               {session.isActive
                 ? formatSessionDuration(Math.floor(sessionDurationMinutes * 60))
                 : session.duration
@@ -325,16 +330,16 @@ export function SessionCard({ session }: SessionCardProps) {
           </Flex>
 
           {displayBlinkCount !== undefined && (
-            <Flex align="center" gap="2">
-              <Text color="gray"><Eye size={14} /></Text>
-              <Text size="2" color="gray">{displayBlinkCount} total blinks</Text>
+            <Flex align="center" gap="1">
+              <Eye size={14} style={{ color: "var(--mauve-11)" }} />
+              <Text size="2" style={{ color: "var(--mauve-11)" }}>{displayBlinkCount} total blinks</Text>
             </Flex>
           )}
 
           {session.calibrationId && (
             <Flex align="center" gap="2">
-              <Text size="2" color="gray">Using</Text>
-              <Text size="2" color="gray" weight="bold">{getCalibrationName(session.calibrationId)}</Text>
+              <Text size="2" style={{ color: "var(--mauve-9)" }}>Using</Text>
+              <Text size="2" weight="bold" style={{ color: "var(--mauve-9)" }}>{getCalibrationName(session.calibrationId)}</Text>
             </Flex>
           )}
         </Flex>
@@ -398,15 +403,16 @@ export function SessionCard({ session }: SessionCardProps) {
                   style={{
                     minWidth: "120px",
                     textAlign: "right",
+                    color: "var(--indigo-11)",
                   }}
                 >
                   {displayBlinkCount} blinks
                 </Text>
                 <Text
                   size="2"
-                  color="gray"
                   style={{
                     textAlign: "right",
+                    color: "var(--mauve-11)",
                   }}
                 >
                   {displayBlinkRate}/min avg

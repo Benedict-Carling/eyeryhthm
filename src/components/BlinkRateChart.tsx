@@ -62,14 +62,14 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
     gradient
       .append("stop")
       .attr("offset", "0%")
-      .attr("stop-color", "#3B82F6")
-      .attr("stop-opacity", 0.8);
+      .attr("stop-color", "var(--indigo-9)")
+      .attr("stop-opacity", 1);
 
     gradient
       .append("stop")
       .attr("offset", "100%")
-      .attr("stop-color", "#8B5CF6")
-      .attr("stop-opacity", 0.8);
+      .attr("stop-color", "var(--indigo-7)")
+      .attr("stop-opacity", 1);
 
     // Add orange bars for face lost periods (behind the chart)
     if (faceLostPeriods && faceLostPeriods.length > 0) {
@@ -135,7 +135,7 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
       .attr("cx", (d) => xScale(new Date(d.timestamp)))
       .attr("cy", (d) => yScale(d.rate))
       .attr("r", 4)
-      .attr("fill", "#8B5CF6");
+      .attr("fill", "var(--indigo-9)");
 
     // Add the X Axis
     g.append("g")

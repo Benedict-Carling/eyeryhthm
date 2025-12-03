@@ -43,6 +43,9 @@ export const formatSessionDuration = (seconds: number): string => {
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
+  if (minutes < 1) {
+    return "< 1 min";
+  }
   return `${minutes}m`;
 };
 
