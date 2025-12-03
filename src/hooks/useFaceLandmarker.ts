@@ -4,7 +4,6 @@ import {
   FilesetResolver,
   FaceLandmarkerResult
 } from '@mediapipe/tasks-vision';
-import { getPreloadedFaceLandmarker, clearPreloadedFaceLandmarker } from './useMediaPipePreloader';
 
 // Local paths for bundled MediaPipe assets (offline support)
 const LOCAL_WASM_PATH = '/mediapipe/wasm';
@@ -45,25 +44,6 @@ export function useFaceLandmarker(options: UseFaceLandmarkerOptions = {}) {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        // Check if we have a preloaded instance available
-        const preloaded = getPreloadedFaceLandmarker();
-        if (preloaded) {
-          console.log('[useFaceLandmarker] Using preloaded MediaPipe instance');
-          faceLandmarkerRef.current = preloaded;
-          // Clear the preloaded reference so it's not reused after disposal
-          clearPreloadedFaceLandmarker();
-
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            isInitialized: true,
-            error: null
-          }));
-          return;
-        }
-
-        // No preloaded instance, initialize from scratch
-        console.log('[useFaceLandmarker] No preloaded instance, initializing from scratch...');
         const vision = await FilesetResolver.forVisionTasks(LOCAL_WASM_PATH);
 
         const landmarkerOptions = {

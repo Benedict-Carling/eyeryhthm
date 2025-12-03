@@ -16,7 +16,6 @@ import {
 } from "../lib/sessions/types";
 import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
-import { useMediaPipePreloader } from "../hooks/useMediaPipePreloader";
 import { useCalibration } from "./CalibrationContext";
 import { AlertService } from "../lib/alert-service";
 import { getElectronAPI } from "../lib/electron";
@@ -109,10 +108,6 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [sessionStartTime, setSessionStartTime] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Preload MediaPipe in background if camera permission was previously granted
-  // This reduces perceived latency when user starts tracking
-  useMediaPipePreloader();
   const lastBlinkUpdateRef = useRef<number>(Date.now());
   const blinkCountRef = useRef<number>(0); // Baseline blink count when session started
   const blinkCountStateRef = useRef<number>(0); // Current blink count (prevents stale closures)
