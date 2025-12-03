@@ -1,5 +1,12 @@
 .titleBar {
-  height: 30px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  /* Traffic lights are at trafficLightPosition { x: 16, y: 12 } with ~14px diameter.
+     They extend to roughly y=26. Using 38px provides comfortable coverage.
+     This is a fixed value because traffic lights are native macOS UI elements
+     positioned in window coordinates - they don't move when webContents zooms. */
+  height: 38px;
   background-color: var(--color-background);
   border-bottom: 1px solid var(--gray-a5);
   -webkit-app-region: drag;
@@ -7,7 +14,15 @@
 }
 
 .navbar {
+  position: sticky;
+  top: 0;
+  z-index: 99;
   border-bottom: 1px solid var(--gray-a5);
   background-color: var(--color-background);
   -webkit-app-region: no-drag;
+}
+
+/* When title bar exists, navbar should be positioned below it */
+.navbarWithTitleBar {
+  top: 38px;
 }

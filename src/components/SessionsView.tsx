@@ -10,13 +10,14 @@ import {
 } from "@radix-ui/themes";
 import { useSession } from "../contexts/SessionContext";
 import { SessionCard } from "./SessionCard";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, UserX } from "lucide-react";
 
 export function SessionsView() {
   const {
     sessions,
     activeSession,
     isTracking,
+    isFaceDetected,
   } = useSession();
 
   return (
@@ -42,6 +43,20 @@ export function SessionsView() {
             </Callout.Icon>
             <Callout.Text>
               Tracking is disabled. Enable tracking in the navigation bar to record sessions.
+            </Callout.Text>
+          </Callout.Root>
+        </Box>
+      )}
+
+      {/* Face not detected callout - only show when no active session */}
+      {isTracking && !isFaceDetected && !activeSession && (
+        <Box mb="6">
+          <Callout.Root color="yellow">
+            <Callout.Icon>
+              <UserX size={16} />
+            </Callout.Icon>
+            <Callout.Text>
+              No face detected. Position yourself in front of the camera to start a session.
             </Callout.Text>
           </Callout.Root>
         </Box>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
 import * as d3 from "d3";
 import { SessionData, formatSessionDuration, BlinkRatePoint } from "../lib/sessions/types";
@@ -11,6 +11,9 @@ import { useSession } from "../contexts/SessionContext";
 import Link from "next/link";
 import "./SessionCard.css";
 
+// Debounce interval for chart updates (ms) - prevents aggressive re-rendering
+const CHART_UPDATE_DEBOUNCE_MS = 3000;
+
 interface SessionCardProps {
   session: SessionData;
 }
@@ -18,7 +21,26 @@ interface SessionCardProps {
 export function SessionCard({ session }: SessionCardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const { calibrations } = useCalibration();
-  const { isFaceDetected, faceLostCountdown } = useSession();
+  const {
+    isFaceDetected,
+    faceLostCountdown,
+    currentBlinkCount,
+    sessionBaselineBlinkCount,
+    sessionStartTime,
+  } = useSession();
+
+  // Debounced chart history - only updates every CHART_UPDATE_DEBOUNCE_MS for active sessions
+  // Initialize with session data so chart shows immediately
+  const [debouncedHistory, setDebouncedHistory] = useState<BlinkRatePoint[]>(session.blinkRateHistory);
+  const lastChartUpdateRef = useRef<number>(Date.now()); // Set to now since we already initialized with data
+
+  // Derive live blink count and rate from source of truth (only for active sessions)
+  const liveBlinkCount = session.isActive ? currentBlinkCount - sessionBaselineBlinkCount : 0;
+  const liveBlinkRate = useMemo(() => {
+    if (!session.isActive || sessionStartTime === 0) return 0;
+    const timeElapsedMinutes = (Date.now() - sessionStartTime) / 1000 / 60;
+    return timeElapsedMinutes > 0 ? liveBlinkCount / timeElapsedMinutes : 0;
+  }, [session.isActive, sessionStartTime, liveBlinkCount]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -45,8 +67,14 @@ export function SessionCard({ session }: SessionCardProps) {
     return calibration?.name || 'Unknown calibration';
   };
 
-  // Calculate current blink rate using 2-minute moving window
+  // Calculate current blink rate - use live value for active sessions, history for completed
   const currentBlinkRate = useMemo(() => {
+    // For active sessions, use the live blink rate from context (updates instantly)
+    if (session.isActive) {
+      return liveBlinkRate > 0 ? Math.round(liveBlinkRate) : null;
+    }
+
+    // For completed sessions, calculate from history using 2-minute moving window
     if (session.blinkRateHistory.length === 0) return null;
 
     const now = Date.now();
@@ -65,7 +93,7 @@ export function SessionCard({ session }: SessionCardProps) {
 
     const sum = recentPoints.reduce((acc: number, point: BlinkRatePoint) => acc + point.rate, 0);
     return Math.round(sum / recentPoints.length);
-  }, [session.blinkRateHistory]);
+  }, [session.isActive, session.blinkRateHistory, liveBlinkRate]);
 
   // Check if session is 3+ minutes old (show current rate)
   const sessionDurationMinutes = useMemo(() => {
@@ -74,6 +102,12 @@ export function SessionCard({ session }: SessionCardProps) {
   }, [session.startTime, session.endTime]);
 
   const showCurrentRate = session.isActive && sessionDurationMinutes >= 3 && currentBlinkRate !== null;
+
+  // Get display blink count - use live value for active sessions
+  const displayBlinkCount = session.isActive ? liveBlinkCount : session.totalBlinks;
+
+  // Get display blink rate (session average) - use live value for active sessions
+  const displayBlinkRate = session.isActive ? Math.round(liveBlinkRate) : Math.round(session.averageBlinkRate);
 
   // Determine trend (current vs session average)
   const rateDifference = currentBlinkRate !== null ? currentBlinkRate - session.averageBlinkRate : 0;
@@ -88,9 +122,37 @@ export function SessionCard({ session }: SessionCardProps) {
     return "orange"; // Lower might indicate fatigue
   };
 
-  // D3 Mini Chart
+  // Debounce chart history updates to prevent aggressive re-rendering
   useEffect(() => {
-    if (!svgRef.current || session.blinkRateHistory.length === 0) return;
+    // For non-active sessions, always sync immediately
+    if (!session.isActive) {
+      setDebouncedHistory(session.blinkRateHistory);
+      return;
+    }
+
+    // For active sessions, debounce updates
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastChartUpdateRef.current;
+
+    if (timeSinceLastUpdate >= CHART_UPDATE_DEBOUNCE_MS) {
+      // Enough time has passed, update immediately
+      setDebouncedHistory(session.blinkRateHistory);
+      lastChartUpdateRef.current = now;
+    } else {
+      // Schedule an update for when debounce period ends
+      const timeUntilUpdate = CHART_UPDATE_DEBOUNCE_MS - timeSinceLastUpdate;
+      const timeoutId = setTimeout(() => {
+        setDebouncedHistory(session.blinkRateHistory);
+        lastChartUpdateRef.current = Date.now();
+      }, timeUntilUpdate);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [session.blinkRateHistory, session.isActive]);
+
+  // D3 Mini Chart - uses debounced history to prevent aggressive re-rendering
+  useEffect(() => {
+    if (!svgRef.current || debouncedHistory.length === 0) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -106,12 +168,12 @@ export function SessionCard({ session }: SessionCardProps) {
     // Scales
     const xScale = d3
       .scaleLinear()
-      .domain([0, session.blinkRateHistory.length - 1])
+      .domain([0, debouncedHistory.length - 1])
       .range([0, width]);
 
     const yScale = d3
       .scaleLinear()
-      .domain([0, d3.max(session.blinkRateHistory, (d) => d.rate) || 20])
+      .domain([0, d3.max(debouncedHistory, (d) => d.rate) || 20])
       .range([height, 0]);
 
     // Line generator
@@ -153,14 +215,14 @@ export function SessionCard({ session }: SessionCardProps) {
       .curve(d3.curveMonotoneX);
 
     g.append("path")
-      .datum(session.blinkRateHistory)
+      .datum(debouncedHistory)
       .attr("fill", `url(#mini-gradient-${session.id})`)
       .attr("fill-opacity", 0.1)
       .attr("d", area);
 
     // Add line
     const path = g.append("path")
-      .datum(session.blinkRateHistory)
+      .datum(debouncedHistory)
       .attr("fill", "none")
       .attr("stroke", `url(#mini-gradient-${session.id})`)
       .attr("stroke-width", 2)
@@ -176,7 +238,7 @@ export function SessionCard({ session }: SessionCardProps) {
       .ease(d3.easeLinear)
       .attr("stroke-dashoffset", 0);
 
-  }, [session.blinkRateHistory, session.id]);
+  }, [debouncedHistory, session.id]);
 
   return (
     <Link href={`/session?id=${session.id}`} style={{ textDecoration: "none" }}>
@@ -262,10 +324,10 @@ export function SessionCard({ session }: SessionCardProps) {
             </Text>
           </Flex>
 
-          {session.totalBlinks !== undefined && (
+          {displayBlinkCount !== undefined && (
             <Flex align="center" gap="2">
               <Text color="gray"><Eye size={14} /></Text>
-              <Text size="2" color="gray">{session.totalBlinks} total blinks</Text>
+              <Text size="2" color="gray">{displayBlinkCount} total blinks</Text>
             </Flex>
           )}
 
@@ -324,7 +386,7 @@ export function SessionCard({ session }: SessionCardProps) {
                   color="gray"
                   style={{ textAlign: "right", marginTop: "4px" }}
                 >
-                  {Math.round(session.averageBlinkRate)}/min session avg
+                  {displayBlinkRate}/min session avg
                 </Text>
               </>
             ) : (
@@ -338,7 +400,7 @@ export function SessionCard({ session }: SessionCardProps) {
                     textAlign: "right",
                   }}
                 >
-                  {session.totalBlinks} blinks
+                  {displayBlinkCount} blinks
                 </Text>
                 <Text
                   size="2"
@@ -347,7 +409,7 @@ export function SessionCard({ session }: SessionCardProps) {
                     textAlign: "right",
                   }}
                 >
-                  {Math.round(session.averageBlinkRate)}/min avg
+                  {displayBlinkRate}/min avg
                 </Text>
               </>
             )}

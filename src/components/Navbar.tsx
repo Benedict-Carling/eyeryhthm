@@ -65,7 +65,7 @@ export function Navbar() {
       {isElectronMac && <TitleBar />}
 
       {/* Main navbar */}
-      <div className={styles.navbar}>
+      <div className={isElectronMac ? `${styles.navbar} ${styles.navbarWithTitleBar}` : styles.navbar}>
         <Container size="3">
           <Flex
             align="center"

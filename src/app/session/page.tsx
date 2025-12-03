@@ -1,18 +1,31 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo, useRef } from "react";
 import { Container, Flex, Box, Text, Heading, Button, Card } from "@radix-ui/themes";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useSession } from "../../contexts/SessionContext";
-import { SessionData } from "../../lib/sessions/types";
+import { SessionData, BlinkRatePoint } from "../../lib/sessions/types";
 import { BlinkRateChart } from "../../components/BlinkRateChart";
+
+// Debounce interval for chart updates (ms) - prevents aggressive re-rendering
+const CHART_UPDATE_DEBOUNCE_MS = 3000;
 
 function SessionDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { sessions } = useSession();
+  const {
+    sessions,
+    currentBlinkCount,
+    sessionBaselineBlinkCount,
+    sessionStartTime,
+  } = useSession();
   const [session, setSession] = useState<SessionData | null>(null);
+
+  // Debounced chart history - only updates every CHART_UPDATE_DEBOUNCE_MS for active sessions
+  const [debouncedHistory, setDebouncedHistory] = useState<BlinkRatePoint[]>([]);
+  const lastChartUpdateRef = useRef<number>(0); // Start at 0 to ensure first update is immediate
+  const initializedForSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
     const sessionId = searchParams.get("id");
@@ -21,6 +34,56 @@ function SessionDetailContent() {
       setSession(foundSession || null);
     }
   }, [searchParams, sessions]);
+
+  // Derive live blink count and rate from source of truth (only for active sessions)
+  const liveBlinkCount = session?.isActive ? currentBlinkCount - sessionBaselineBlinkCount : 0;
+  const liveBlinkRate = useMemo(() => {
+    if (!session?.isActive || sessionStartTime === 0) return 0;
+    const timeElapsedMinutes = (Date.now() - sessionStartTime) / 1000 / 60;
+    return timeElapsedMinutes > 0 ? liveBlinkCount / timeElapsedMinutes : 0;
+  }, [session?.isActive, sessionStartTime, liveBlinkCount]);
+
+  // Get display values - use live values for active sessions
+  const displayBlinkCount = session?.isActive ? liveBlinkCount : session?.totalBlinks;
+  const displayBlinkRate = session?.isActive ? Math.round(liveBlinkRate) : Math.round(session?.averageBlinkRate ?? 0);
+
+  // Debounce chart history updates to prevent aggressive re-rendering
+  useEffect(() => {
+    if (!session) return;
+
+    // Always show chart immediately on first load for this session
+    if (initializedForSessionRef.current !== session.id) {
+      setDebouncedHistory(session.blinkRateHistory);
+      lastChartUpdateRef.current = Date.now();
+      initializedForSessionRef.current = session.id;
+      return;
+    }
+
+    // For non-active sessions, always sync immediately
+    if (!session.isActive) {
+      setDebouncedHistory(session.blinkRateHistory);
+      return;
+    }
+
+    // For active sessions, debounce subsequent updates
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastChartUpdateRef.current;
+
+    if (timeSinceLastUpdate >= CHART_UPDATE_DEBOUNCE_MS) {
+      // Enough time has passed, update immediately
+      setDebouncedHistory(session.blinkRateHistory);
+      lastChartUpdateRef.current = now;
+    } else {
+      // Schedule an update for when debounce period ends
+      const timeUntilUpdate = CHART_UPDATE_DEBOUNCE_MS - timeSinceLastUpdate;
+      const timeoutId = setTimeout(() => {
+        setDebouncedHistory(session.blinkRateHistory);
+        lastChartUpdateRef.current = Date.now();
+      }, timeUntilUpdate);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [session]);
 
   if (!session) {
     return (
@@ -101,7 +164,7 @@ function SessionDetailContent() {
             <Flex direction="column" gap="2">
               <Text size="2" color="gray">Total Blinks</Text>
               <Text size="5" weight="medium">
-                {session.totalBlinks} blinks
+                {displayBlinkCount} blinks
               </Text>
             </Flex>
           </Card>
@@ -110,7 +173,7 @@ function SessionDetailContent() {
             <Flex direction="column" gap="2">
               <Text size="2" color="gray">Average Blink Rate</Text>
               <Text size="5" weight="medium">
-                {Math.round(session.averageBlinkRate)} blinks/min
+                {displayBlinkRate} blinks/min
               </Text>
             </Flex>
           </Card>
@@ -138,7 +201,7 @@ function SessionDetailContent() {
           <Heading size="4" mb="4">Blink Rate Over Time</Heading>
           <Box style={{ height: "400px" }}>
             <BlinkRateChart
-              data={session.blinkRateHistory}
+              data={debouncedHistory}
               faceLostPeriods={session.faceLostPeriods}
               sessionEndTime={session.endTime ? new Date(session.endTime).getTime() : undefined}
             />

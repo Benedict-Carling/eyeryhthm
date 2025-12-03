@@ -28,6 +28,10 @@ interface SessionContextType {
   toggleTracking: () => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  // Source of truth for live blink data (derived values computed by consumers)
+  currentBlinkCount: number; // Raw blink count from detection (source of truth)
+  sessionBaselineBlinkCount: number; // Blink count when active session started
+  sessionStartTime: number; // Timestamp when active session started
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -99,6 +103,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [faceLostCountdown, setFaceLostCountdown] = useState<number | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [sessionBaselineBlinkCount, setSessionBaselineBlinkCount] = useState(0);
+  const [sessionStartTime, setSessionStartTime] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlinkUpdateRef = useRef<number>(Date.now());
@@ -363,12 +369,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
       }
     }
 
-    // Update blink rate periodically
-    // Read from refs to avoid stale closures while preventing effect restarts
+    // Update session data (including chart history) periodically
+    // Live blink count/rate are derived by consumers from source of truth values
     if (activeSession && Date.now() - lastBlinkUpdateRef.current > BLINK_RATE_UPDATE_INTERVAL_MS) {
       const timeElapsed =
         (Date.now() - sessionStartTimeRef.current) / 1000 / 60; // in minutes
-      // Use ref instead of closure value to prevent stale reads
       const blinksSinceStart = blinkCountStateRef.current - blinkCountRef.current;
       const currentBlinkRate =
         timeElapsed > 0 ? blinksSinceStart / timeElapsed : 0;
@@ -504,6 +509,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
     blinkCountRef.current = blinkCount;
     sessionStartTimeRef.current = Date.now();
     currentFaceLostPeriodStartRef.current = null; // Reset idle period tracking
+    // Set baseline values for consumers to derive live counts
+    setSessionBaselineBlinkCount(blinkCount);
+    setSessionStartTime(Date.now());
   }, [isTracking, activeSession, isFaceDetected, blinkCount, activeCalibration]);
 
   const stopSession = useCallback(() => {
@@ -603,6 +611,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
     toggleTracking,
     videoRef,
     canvasRef,
+    currentBlinkCount: blinkCount,
+    sessionBaselineBlinkCount,
+    sessionStartTime,
   };
 
   return (
