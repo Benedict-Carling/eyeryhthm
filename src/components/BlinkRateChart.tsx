@@ -2,13 +2,15 @@
 
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { BlinkRatePoint } from "../lib/sessions/types";
+import { BlinkRatePoint, FaceLostPeriod } from "../lib/sessions/types";
 
 interface BlinkRateChartProps {
   data: BlinkRatePoint[];
+  faceLostPeriods?: FaceLostPeriod[];
+  sessionEndTime?: number; // Used as fallback for periods without end timestamp
 }
 
-export function BlinkRateChart({ data }: BlinkRateChartProps) {
+export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkRateChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -68,6 +70,39 @@ export function BlinkRateChart({ data }: BlinkRateChartProps) {
       .attr("offset", "100%")
       .attr("stop-color", "#8B5CF6")
       .attr("stop-opacity", 0.8);
+
+    // Add orange bars for face lost periods (behind the chart)
+    if (faceLostPeriods && faceLostPeriods.length > 0) {
+      const xDomain = xScale.domain();
+      const domainStart = xDomain[0];
+      const domainEnd = xDomain[1];
+      if (!domainStart || !domainEnd) return;
+      const chartStartTime = domainStart.getTime();
+      const chartEndTime = domainEnd.getTime();
+
+      faceLostPeriods.forEach((period) => {
+        // Use sessionEndTime as fallback for periods without end
+        const periodEnd = period.end ?? sessionEndTime ?? Date.now();
+        const periodStart = period.start;
+
+        // Only draw if period overlaps with chart time range
+        if (periodEnd >= chartStartTime && periodStart <= chartEndTime) {
+          const clampedStart = Math.max(periodStart, chartStartTime);
+          const clampedEnd = Math.min(periodEnd, chartEndTime);
+
+          const x1 = xScale(new Date(clampedStart));
+          const x2 = xScale(new Date(clampedEnd));
+
+          g.append("rect")
+            .attr("x", x1)
+            .attr("y", 0)
+            .attr("width", Math.max(0, x2 - x1))
+            .attr("height", innerHeight)
+            .attr("fill", "var(--orange-4)")
+            .attr("opacity", 0.5);
+        }
+      });
+    }
 
     // Add area under the line
     const area = d3
@@ -171,7 +206,7 @@ export function BlinkRateChart({ data }: BlinkRateChartProps) {
       .style("font-size", "12px")
       .text("Fatigue Threshold");
 
-  }, [data]);
+  }, [data, faceLostPeriods, sessionEndTime]);
 
   return (
     <svg

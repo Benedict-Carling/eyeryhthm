@@ -1,6 +1,6 @@
 export interface FaceLostPeriod {
   start: number; // timestamp in ms
-  end: number;   // timestamp in ms
+  end?: number;  // timestamp in ms, undefined if face is currently lost
 }
 
 export interface SessionData {
@@ -48,12 +48,18 @@ export const formatSessionDuration = (seconds: number): string => {
 
 /**
  * Calculate total idle time from face lost periods
+ * @param faceLostPeriods Array of face lost periods
+ * @param sessionEndTime Optional session end time to use for periods without end timestamp
  */
-export const calculateTotalIdleTime = (faceLostPeriods?: FaceLostPeriod[]): number => {
+export const calculateTotalIdleTime = (
+  faceLostPeriods?: FaceLostPeriod[],
+  sessionEndTime?: number
+): number => {
   if (!faceLostPeriods || faceLostPeriods.length === 0) return 0;
 
   return faceLostPeriods.reduce((total, period) => {
-    return total + (period.end - period.start);
+    const end = period.end ?? sessionEndTime ?? Date.now();
+    return total + (end - period.start);
   }, 0);
 };
 

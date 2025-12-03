@@ -137,9 +137,53 @@ function SessionDetailContent() {
         <Card size="3">
           <Heading size="4" mb="4">Blink Rate Over Time</Heading>
           <Box style={{ height: "400px" }}>
-            <BlinkRateChart data={session.blinkRateHistory} />
+            <BlinkRateChart
+              data={session.blinkRateHistory}
+              faceLostPeriods={session.faceLostPeriods}
+              sessionEndTime={session.endTime ? new Date(session.endTime).getTime() : undefined}
+            />
           </Box>
         </Card>
+
+        {/* Debug card for face lost periods */}
+        {session.faceLostPeriods && session.faceLostPeriods.length > 0 && (
+          <Card size="3">
+            <Heading size="4" mb="4">Face Lost Periods (Debug)</Heading>
+            <Box style={{ fontFamily: "monospace", fontSize: "12px" }}>
+              {session.faceLostPeriods.map((period, index) => {
+                const startDate = new Date(period.start);
+                const endDate = period.end
+                  ? new Date(period.end)
+                  : session.endTime
+                    ? new Date(session.endTime)
+                    : null;
+                const duration = endDate
+                  ? Math.round((endDate.getTime() - period.start) / 1000)
+                  : null;
+
+                return (
+                  <Box key={index} mb="2" style={{ padding: "8px", background: "var(--orange-2)", borderRadius: "4px" }}>
+                    <Text size="2">
+                      <strong>Period {index + 1}:</strong>
+                    </Text>
+                    <br />
+                    <Text size="1" color="gray">
+                      Start: {startDate.toLocaleTimeString()} ({period.start})
+                    </Text>
+                    <br />
+                    <Text size="1" color="gray">
+                      End: {endDate ? `${endDate.toLocaleTimeString()} (${period.end ?? "session end"})` : "ongoing"}
+                    </Text>
+                    <br />
+                    <Text size="1" color="gray">
+                      Duration: {duration !== null ? `${duration}s` : "ongoing"}
+                    </Text>
+                  </Box>
+                );
+              })}
+            </Box>
+          </Card>
+        )}
       </Flex>
     </Container>
   );

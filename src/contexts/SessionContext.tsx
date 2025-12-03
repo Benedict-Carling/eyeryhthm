@@ -24,6 +24,7 @@ interface SessionContextType {
   activeSession: SessionData | null;
   isTracking: boolean;
   isFaceDetected: boolean;
+  faceLostCountdown: number | null; // seconds remaining before session closes, null if face is detected
   toggleTracking: () => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -37,7 +38,7 @@ interface SessionProviderProps {
 
 // Constants for session tracking
 const FPS_LOG_INTERVAL_MS = 5000; // Log FPS every 5 seconds
-const FACE_DETECTION_LOST_TIMEOUT_MS = 60000; // Stop session if face lost for 60 seconds (1 minute)
+const FACE_DETECTION_LOST_TIMEOUT_MS = 20000; // Stop session if face lost for 20 seconds
 const CAMERA_STABILIZATION_DELAY_MS = 200; // Wait for stable camera feed before processing
 const BLINK_RATE_UPDATE_INTERVAL_MS = 5000; // Update blink rate every 5 seconds
 
@@ -96,6 +97,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [activeSession, setActiveSession] = useState<SessionData | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const [faceLostCountdown, setFaceLostCountdown] = useState<number | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -302,11 +304,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
     // Check if face is detected based on having valid EAR
     const faceCurrentlyDetected = currentEAR > 0;
 
-
     // Handle face detection state changes
     if (faceCurrentlyDetected && !isFaceDetected) {
       // Face just detected (regained)
       setIsFaceDetected(true);
+      setFaceLostCountdown(null); // Clear countdown
       faceDetectionLostTimeRef.current = null;
 
       // Close the current face lost period if one was started
@@ -338,16 +340,26 @@ export function SessionProvider({ children }: SessionProviderProps) {
         currentFaceLostPeriodStartRef.current = null;
       }
     } else if (!faceCurrentlyDetected && isFaceDetected) {
-      // Face just lost - start 60-second timer
+      // Face just lost - start tracking and countdown
       if (!faceDetectionLostTimeRef.current) {
         faceDetectionLostTimeRef.current = Date.now();
         // Start tracking this idle period
         currentFaceLostPeriodStartRef.current = Date.now();
+        // Immediately mark face as not detected for UI
+        setIsFaceDetected(false);
+        // Start countdown from 20 seconds
+        setFaceLostCountdown(Math.ceil(FACE_DETECTION_LOST_TIMEOUT_MS / 1000));
+      }
+    } else if (!faceCurrentlyDetected && !isFaceDetected && faceDetectionLostTimeRef.current) {
+      // Face is still lost - update countdown
+      const elapsedMs = Date.now() - faceDetectionLostTimeRef.current;
+      const remainingSeconds = Math.ceil((FACE_DETECTION_LOST_TIMEOUT_MS - elapsedMs) / 1000);
+
+      if (remainingSeconds <= 0) {
+        // Countdown finished - session will be closed by the effect
+        setFaceLostCountdown(0);
       } else {
-        // Check if timeout has passed
-        if (Date.now() - faceDetectionLostTimeRef.current > FACE_DETECTION_LOST_TIMEOUT_MS) {
-          setIsFaceDetected(false);
-        }
+        setFaceLostCountdown(remainingSeconds);
       }
     }
 
@@ -573,22 +585,21 @@ export function SessionProvider({ children }: SessionProviderProps) {
   useEffect(() => {
     if (isTracking && isFaceDetected && !activeSession) {
       startSession();
-    } else if (!isFaceDetected && activeSession) {
-      // Only stop session if face has been lost for more than the timeout period
-      if (
-        faceDetectionLostTimeRef.current &&
-        Date.now() - faceDetectionLostTimeRef.current > FACE_DETECTION_LOST_TIMEOUT_MS
-      ) {
-        stopSession();
-      }
+    } else if (!isFaceDetected && activeSession && faceLostCountdown === 0) {
+      // Stop session when countdown reaches 0
+      stopSession();
+      // Reset countdown and face detection lost time after session stops
+      setFaceLostCountdown(null);
+      faceDetectionLostTimeRef.current = null;
     }
-  }, [isTracking, isFaceDetected, activeSession, startSession, stopSession]);
+  }, [isTracking, isFaceDetected, activeSession, faceLostCountdown, startSession, stopSession]);
 
   const contextValue: SessionContextType = {
     sessions,
     activeSession,
     isTracking,
     isFaceDetected,
+    faceLostCountdown,
     toggleTracking,
     videoRef,
     canvasRef,

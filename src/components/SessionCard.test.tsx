@@ -13,6 +13,20 @@ vi.mock('../contexts/CalibrationContext', () => ({
   }),
 }));
 
+// Mock SessionContext
+vi.mock('../contexts/SessionContext', () => ({
+  useSession: () => ({
+    isFaceDetected: true,
+    faceLostCountdown: null,
+    sessions: [],
+    activeSession: null,
+    isTracking: true,
+    toggleTracking: vi.fn(),
+    videoRef: { current: null },
+    canvasRef: { current: null },
+  }),
+}));
+
 // Mock d3
 vi.mock('d3', () => ({
   select: vi.fn(() => ({
@@ -126,8 +140,8 @@ describe('SessionCard', () => {
   it('shows active badge for active sessions', () => {
     const activeSession = { ...mockSession, isActive: true, endTime: undefined };
     render(<SessionCard session={activeSession} />);
-    
-    const activeBadge = screen.getByText('• Active');
+
+    const activeBadge = screen.getByText('- Active');
     expect(activeBadge).toBeInTheDocument();
     expect(activeBadge).toHaveClass('pulse');
   });

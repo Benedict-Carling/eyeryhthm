@@ -6,12 +6,10 @@ import {
   Heading,
   Text,
   Flex,
-  Badge,
   Callout,
 } from "@radix-ui/themes";
 import { useSession } from "../contexts/SessionContext";
 import { SessionCard } from "./SessionCard";
-import { FaceIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
 
 export function SessionsView() {
@@ -19,7 +17,6 @@ export function SessionsView() {
     sessions,
     activeSession,
     isTracking,
-    isFaceDetected,
   } = useSession();
 
   return (
@@ -34,18 +31,6 @@ export function SessionsView() {
             Monitor your screen time and eye fatigue patterns
           </Text>
         </Box>
-
-        {/* Controls */}
-        <Flex gap="3" align="center">
-          {/* Face detection status */}
-          <Badge
-            color={isFaceDetected ? "green" : "gray"}
-            variant="soft"
-          >
-            <FaceIcon />
-            {isFaceDetected ? "Face Detected" : "No Face Detected"}
-          </Badge>
-        </Flex>
       </Flex>
 
       {/* Tracking disabled callout */}

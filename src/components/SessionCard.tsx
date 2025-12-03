@@ -4,9 +4,10 @@ import React, { useEffect, useRef, useMemo } from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
 import * as d3 from "d3";
 import { SessionData, formatSessionDuration, BlinkRatePoint } from "../lib/sessions/types";
-import { ClockIcon } from "@radix-ui/react-icons";
+import { ClockIcon, FaceIcon } from "@radix-ui/react-icons";
 import { Bell, BellOff, Eye, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { useCalibration } from "../contexts/CalibrationContext";
+import { useSession } from "../contexts/SessionContext";
 import Link from "next/link";
 import "./SessionCard.css";
 
@@ -17,6 +18,7 @@ interface SessionCardProps {
 export function SessionCard({ session }: SessionCardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const { calibrations } = useCalibration();
+  const { isFaceDetected, faceLostCountdown } = useSession();
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -205,8 +207,24 @@ export function SessionCard({ session }: SessionCardProps) {
             </Text>
             {session.isActive && (
               <Badge color="green" size="2" className="pulse">
-                • Active
+                - Active
               </Badge>
+            )}
+            {/* Face detection status - only for active sessions */}
+            {session.isActive && (
+              isFaceDetected ? (
+                <Badge color="green" variant="soft">
+                  <FaceIcon /> Face Detected
+                </Badge>
+              ) : faceLostCountdown !== null && faceLostCountdown > 0 ? (
+                <Badge color="orange" variant="soft">
+                  <FaceIcon /> Face lost - closing in {faceLostCountdown}s
+                </Badge>
+              ) : (
+                <Badge color="gray" variant="soft">
+                  <FaceIcon /> No Face Detected
+                </Badge>
+              )
             )}
           </Flex>
 
