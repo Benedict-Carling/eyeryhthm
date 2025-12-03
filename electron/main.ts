@@ -7,6 +7,10 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let powerSaveBlockerId: number | null = null;
 
+// Tracking state managed by main process (synced with renderer)
+let isTrackingEnabled = false;
+let launchAtLoginEnabled = false;
+
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 const outDir = path.resolve(__dirname, "../out");
 
@@ -51,34 +55,139 @@ function registerAppProtocol() {
   });
 }
 
-function createTray() {
-  // Use a simple icon for the tray (you can replace with a custom icon)
-  const icon = nativeImage.createEmpty();
-  tray = new Tray(icon);
+// Get the tray icon path based on environment
+function getTrayIconPath(): string {
+  if (isDev) {
+    // In development, use the build-resources directory
+    return path.join(__dirname, '../build-resources/trayIconTemplate.png');
+  } else {
+    // In production, the icon is bundled with the app
+    // On macOS, resources are in Contents/Resources
+    if (process.platform === 'darwin') {
+      return path.join(process.resourcesPath, 'trayIconTemplate.png');
+    }
+    return path.join(__dirname, '../build-resources/trayIconTemplate.png');
+  }
+}
+
+// Update the tray context menu based on current state
+function updateTrayMenu() {
+  if (!tray) return;
 
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: isTrackingEnabled ? 'Stop Tracking' : 'Start Tracking',
+      click: () => {
+        toggleTracking();
+      }
+    },
+    { type: 'separator' },
     {
       label: 'Show BlinkTrack',
       click: () => {
         mainWindow?.show();
         mainWindow?.focus();
+        // Show dock icon when window is shown (macOS)
+        if (process.platform === 'darwin' && app.dock) {
+          app.dock.show();
+        }
       }
     },
+    { type: 'separator' },
     {
-      label: 'Quit',
+      label: 'Launch at Login',
+      type: 'checkbox',
+      checked: launchAtLoginEnabled,
+      click: (menuItem) => {
+        setLaunchAtLogin(menuItem.checked);
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit BlinkTrack',
       click: () => {
         app.quit();
       }
     }
   ]);
 
-  tray.setToolTip('BlinkTrack - Eye Movement Tracking');
   tray.setContextMenu(contextMenu);
 
+  // Update tooltip to show current status
+  const status = isTrackingEnabled ? 'Tracking Active' : 'Tracking Paused';
+  tray.setToolTip(`BlinkTrack - ${status}`);
+}
+
+// Toggle tracking state and notify renderer
+function toggleTracking() {
+  isTrackingEnabled = !isTrackingEnabled;
+  updateTrayMenu();
+
+  // Notify renderer process to toggle tracking
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('toggle-tracking', isTrackingEnabled);
+  }
+}
+
+// Set launch at login preference
+function setLaunchAtLogin(enabled: boolean) {
+  launchAtLoginEnabled = enabled;
+
+  if (process.platform === 'darwin' || process.platform === 'win32') {
+    // Note: openAsHidden is deprecated on macOS 13+ (Ventura/Sonoma)
+    // The app will launch normally, but our window close handler will keep it in tray
+    // For true hidden launch on macOS 13+, consider using LSUIElement in Info.plist
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+    });
+  }
+
+  updateTrayMenu();
+}
+
+// Initialize launch at login state from system settings
+function initLaunchAtLoginState() {
+  if (process.platform === 'darwin' || process.platform === 'win32') {
+    const settings = app.getLoginItemSettings();
+    launchAtLoginEnabled = settings.openAtLogin;
+  }
+}
+
+function createTray() {
+  // Load the template image for macOS (automatically handles dark/light mode)
+  // Icon sizes follow Apple HIG: 18x18 (1x) and 36x36 (@2x for Retina)
+  const iconPath = getTrayIconPath();
+  let icon: Electron.NativeImage;
+
+  try {
+    icon = nativeImage.createFromPath(iconPath);
+    // Mark as template image for macOS (enables automatic dark/light mode inversion)
+    if (process.platform === 'darwin') {
+      icon.setTemplateImage(true);
+    }
+
+    if (icon.isEmpty()) {
+      console.warn('[Tray] Icon loaded but is empty, check icon path:', iconPath);
+    }
+  } catch (error) {
+    console.error('[Tray] Failed to load tray icon, using empty icon:', error);
+    icon = nativeImage.createEmpty();
+  }
+
+  tray = new Tray(icon);
+
+  // Initialize menu
+  updateTrayMenu();
+
+  // Single click to show menu (default behavior)
   // Double-click to show window
   tray.on('double-click', () => {
     mainWindow?.show();
     mainWindow?.focus();
+    // Show dock icon when window is shown (macOS)
+    if (process.platform === 'darwin' && app.dock) {
+      app.dock.show();
+    }
   });
 }
 
@@ -168,6 +277,25 @@ function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+
+  // On macOS, hide window to tray instead of closing (unless quitting the app)
+  // This allows the app to continue running in the background
+  let isQuitting = false;
+
+  app.on('before-quit', () => {
+    isQuitting = true;
+  });
+
+  mainWindow.on('close', (event) => {
+    if (!isQuitting && process.platform === 'darwin') {
+      event.preventDefault();
+      mainWindow?.hide();
+      // Hide dock icon when window is hidden
+      if (app.dock) {
+        app.dock.hide();
+      }
+    }
+  });
 }
 
 // CRITICAL: Prevent background throttling - these flags must be set BEFORE app.ready
@@ -204,6 +332,9 @@ protocol.registerSchemesAsPrivileged([
 app.whenReady().then(() => {
   // Register custom protocol before creating window
   registerAppProtocol();
+
+  // Initialize launch at login state from system settings
+  initLaunchAtLoginState();
 
   // Create system tray for background operation
   createTray();
@@ -352,4 +483,34 @@ ipcMain.on("maximize-window", () => {
 
 ipcMain.on("close-window", () => {
   mainWindow?.close();
+});
+
+// Tracking state synchronization handlers
+
+// Renderer reports its tracking state to main process (to sync tray menu)
+ipcMain.on("tracking-state-changed", (_event, enabled: boolean) => {
+  isTrackingEnabled = enabled;
+  updateTrayMenu();
+});
+
+// Renderer requests current tracking state (e.g., on startup)
+ipcMain.handle("get-tracking-state", () => {
+  return isTrackingEnabled;
+});
+
+// Renderer requests to toggle tracking (alternative to tray menu)
+ipcMain.handle("toggle-tracking-from-renderer", () => {
+  toggleTracking();
+  return isTrackingEnabled;
+});
+
+// Get launch at login state
+ipcMain.handle("get-launch-at-login", () => {
+  return launchAtLoginEnabled;
+});
+
+// Set launch at login state
+ipcMain.handle("set-launch-at-login", (_event, enabled: boolean) => {
+  setLaunchAtLogin(enabled);
+  return launchAtLoginEnabled;
 });

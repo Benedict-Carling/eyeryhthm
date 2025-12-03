@@ -30,6 +30,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.removeListener("update-status", listener);
     };
   },
+
+  // Tracking state synchronization (for tray menu integration)
+  notifyTrackingStateChanged: (enabled: boolean) => {
+    ipcRenderer.send("tracking-state-changed", enabled);
+  },
+  getTrackingState: () => ipcRenderer.invoke("get-tracking-state"),
+  onToggleTracking: (callback: (enabled: boolean) => void) => {
+    const listener = (_event: IpcRendererEvent, enabled: boolean) => {
+      callback(enabled);
+    };
+    ipcRenderer.on("toggle-tracking", listener);
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener("toggle-tracking", listener);
+    };
+  },
+
+  // Launch at login settings
+  getLaunchAtLogin: () => ipcRenderer.invoke("get-launch-at-login"),
+  setLaunchAtLogin: (enabled: boolean) => ipcRenderer.invoke("set-launch-at-login", enabled),
 });
 
 // Update status type (mirrors the one in updater.ts)

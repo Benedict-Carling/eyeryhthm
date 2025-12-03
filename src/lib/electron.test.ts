@@ -44,6 +44,11 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        notifyTrackingStateChanged: vi.fn(),
+        getTrackingState: vi.fn(),
+        onToggleTracking: vi.fn(),
+        getLaunchAtLogin: vi.fn(),
+        setLaunchAtLogin: vi.fn(),
       };
 
       vi.stubGlobal("window", {
@@ -98,6 +103,11 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        notifyTrackingStateChanged: vi.fn(),
+        getTrackingState: vi.fn(),
+        onToggleTracking: vi.fn(),
+        getLaunchAtLogin: vi.fn(),
+        setLaunchAtLogin: vi.fn(),
       };
 
       vi.stubGlobal("window", {
@@ -125,6 +135,11 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        notifyTrackingStateChanged: vi.fn(),
+        getTrackingState: vi.fn(),
+        onToggleTracking: vi.fn(),
+        getLaunchAtLogin: vi.fn(),
+        setLaunchAtLogin: vi.fn(),
       };
 
       vi.stubGlobal("window", {
@@ -173,6 +188,11 @@ describe("electron utilities", () => {
         downloadUpdate: vi.fn(),
         installUpdate: vi.fn(),
         onUpdateStatus: vi.fn(),
+        notifyTrackingStateChanged: vi.fn(),
+        getTrackingState: vi.fn(),
+        onToggleTracking: vi.fn(),
+        getLaunchAtLogin: vi.fn(),
+        setLaunchAtLogin: vi.fn(),
       };
 
       vi.stubGlobal("window", {

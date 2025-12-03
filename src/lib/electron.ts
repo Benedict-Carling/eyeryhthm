@@ -44,6 +44,13 @@ export interface ElectronAPI {
   downloadUpdate: () => Promise<void>;
   installUpdate: () => Promise<void>;
   onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
+  // Tracking state synchronization (for tray menu integration)
+  notifyTrackingStateChanged: (enabled: boolean) => void;
+  getTrackingState: () => Promise<boolean>;
+  onToggleTracking: (callback: (enabled: boolean) => void) => () => void;
+  // Launch at login settings
+  getLaunchAtLogin: () => Promise<boolean>;
+  setLaunchAtLogin: (enabled: boolean) => Promise<boolean>;
 }
 
 declare global {

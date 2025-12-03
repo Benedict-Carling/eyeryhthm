@@ -51,7 +51,17 @@ const config = {
   ],
 
   // Extra resources (MediaPipe models if needed offline)
-  extraResources: [],
+  // Include tray icons for macOS menu bar
+  extraResources: [
+    {
+      from: "build-resources/trayIconTemplate.png",
+      to: "trayIconTemplate.png",
+    },
+    {
+      from: "build-resources/trayIconTemplate@2x.png",
+      to: "trayIconTemplate@2x.png",
+    },
+  ],
 
   // macOS configuration
   mac: {

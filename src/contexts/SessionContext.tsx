@@ -18,6 +18,7 @@ import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
 import { useCalibration } from "./CalibrationContext";
 import { AlertService } from "../lib/alert-service";
+import { getElectronAPI } from "../lib/electron";
 
 interface SessionContextType {
   sessions: SessionData[];
@@ -548,11 +549,19 @@ export function SessionProvider({ children }: SessionProviderProps) {
     );
   }, [activeSession]); // blinkCount read from ref
 
-  const toggleTracking = useCallback(async () => {
-    const newTrackingState = !isTracking;
-    setIsTracking(newTrackingState);
+  // Internal function to set tracking state (used by both toggle and Electron IPC)
+  const setTrackingState = useCallback(async (enabled: boolean) => {
+    if (enabled === isTracking) return; // No change needed
 
-    if (newTrackingState) {
+    setIsTracking(enabled);
+
+    // Notify Electron main process of state change (for tray menu sync)
+    const electronAPI = getElectronAPI();
+    if (electronAPI) {
+      electronAPI.notifyTrackingStateChanged(enabled);
+    }
+
+    if (enabled) {
       // Start camera when enabling tracking
       try {
         await startCamera();
@@ -564,6 +573,10 @@ export function SessionProvider({ children }: SessionProviderProps) {
       } catch (error) {
         console.error("Failed to start camera:", error);
         setIsTracking(false);
+        // Notify Electron of failed state
+        if (electronAPI) {
+          electronAPI.notifyTrackingStateChanged(false);
+        }
       }
     } else {
       // Stop everything when disabling tracking
@@ -588,6 +601,24 @@ export function SessionProvider({ children }: SessionProviderProps) {
     stopSession,
     handleFatigueAlert,
   ]);
+
+  const toggleTracking = useCallback(async () => {
+    await setTrackingState(!isTracking);
+  }, [isTracking, setTrackingState]);
+
+  // Listen for tracking toggle commands from Electron main process (tray menu)
+  useEffect(() => {
+    const electronAPI = getElectronAPI();
+    if (!electronAPI) return;
+
+    // Subscribe to toggle-tracking events from main process
+    const cleanup = electronAPI.onToggleTracking((enabled: boolean) => {
+      console.log('[SessionContext] Received toggle-tracking from main process:', enabled);
+      setTrackingState(enabled);
+    });
+
+    return cleanup;
+  }, [setTrackingState]);
 
   // Start session when tracking is enabled and face is detected
   useEffect(() => {
