@@ -19,6 +19,7 @@ import {
   CheckIcon,
   Cross2Icon,
   DownloadIcon,
+  InfoCircledIcon,
 } from "@radix-ui/react-icons";
 import { useCalibration } from "../contexts/CalibrationContext";
 import { Calibration } from "../lib/blink-detection/types";
@@ -116,7 +117,9 @@ export function CalibrationList() {
       <Flex direction="column" gap="3">
         {activeCalibration?.isDefault && (
           <Callout.Root color="blue">
-            <Callout.Icon>ℹ️</Callout.Icon>
+            <Callout.Icon>
+              <InfoCircledIcon />
+            </Callout.Icon>
             <Callout.Text>
               Using factory default threshold (0.25). Run a calibration for
               personalized detection based on your unique blink patterns.
@@ -222,21 +225,23 @@ export function CalibrationList() {
               <Flex direction="column" gap="2">
                 <Flex justify="between" align="center">
                   <Text size="2">
-                    Created: {formatDate(calibration.createdAt)}
+                    <Text color="gray">Created</Text>{" "}
+                    <Text weight="bold">{formatDate(calibration.createdAt)}</Text>
                   </Text>
                   <Text size="2">
-                    EAR Threshold: {calibration.earThreshold.toFixed(3)}
+                    <Text color="gray">EAR Threshold</Text>{" "}
+                    <Text weight="bold">{calibration.earThreshold.toFixed(3)}</Text>
                   </Text>
                 </Flex>
 
                 <Flex justify="between" align="center">
                   <Text size="2">
-                    Accuracy: {(calibration.metadata.accuracy * 100).toFixed(1)}
-                    %
+                    <Text color="gray">Accuracy</Text>{" "}
+                    <Text weight="bold">{(calibration.metadata.accuracy * 100).toFixed(1)}%</Text>
                   </Text>
                   <Text size="2">
-                    Blinks: {calibration.metadata.totalBlinksDetected}/
-                    {calibration.metadata.totalBlinksRequested}
+                    <Text color="gray">Blinks</Text>{" "}
+                    <Text weight="bold">{calibration.metadata.totalBlinksDetected}/{calibration.metadata.totalBlinksRequested}</Text>
                   </Text>
                 </Flex>
               </Flex>

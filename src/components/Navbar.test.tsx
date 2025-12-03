@@ -10,6 +10,14 @@ vi.mock('next/navigation', () => ({
   usePathname: vi.fn(() => '/'),
 }));
 
+// Mock SessionContext
+vi.mock('../contexts/SessionContext', () => ({
+  useSession: () => ({
+    isTracking: true,
+    toggleTracking: vi.fn(),
+  }),
+}));
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
@@ -68,8 +76,8 @@ describe('Navbar', () => {
 
   it('shows theme toggle button', () => {
     renderNavbar();
-    
-    const themeButton = screen.getByRole('button');
+
+    const themeButton = screen.getByRole('button', { name: /theme/i });
     expect(themeButton).toBeInTheDocument();
   });
 
@@ -77,7 +85,7 @@ describe('Navbar', () => {
     const user = userEvent.setup();
     renderNavbar();
 
-    const themeButton = screen.getByRole('button');
+    const themeButton = screen.getByRole('button', { name: /theme/i });
 
     // Initial theme should be system
     expect(themeButton).toHaveAttribute('title', expect.stringContaining('system'));
@@ -91,7 +99,7 @@ describe('Navbar', () => {
     const user = userEvent.setup();
     renderNavbar();
 
-    const themeButton = screen.getByRole('button');
+    const themeButton = screen.getByRole('button', { name: /theme/i });
     await user.click(themeButton);
 
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith('theme', 'light');

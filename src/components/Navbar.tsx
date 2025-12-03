@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Flex, Text, IconButton, Badge } from "@radix-ui/themes";
+import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
 import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
+import { Eye, EyeOff } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
+import { useSession } from "../contexts/SessionContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import packageJson from "../../package.json";
@@ -31,6 +33,7 @@ function TitleBar() {
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
+  const { isTracking, toggleTracking } = useSession();
   const pathname = usePathname();
   const isElectronMac = useIsElectronMac();
 
@@ -100,14 +103,37 @@ export function Navbar() {
               </Flex>
             </Flex>
 
-            <IconButton
-              size="2"
-              variant="ghost"
-              onClick={handleThemeCycle}
-              title={`Theme: ${theme} (click to cycle)`}
-            >
-              {getThemeIcon()}
-            </IconButton>
+            <Flex align="center" gap="3">
+              {/* Tracking toggle */}
+              <Tooltip content={isTracking ? "Click to pause session tracking" : "Click to enable session tracking"}>
+                <Badge
+                  size="2"
+                  color={isTracking ? "green" : "gray"}
+                  variant="soft"
+                  style={{ cursor: "pointer", padding: "4px 10px" }}
+                  onClick={toggleTracking}
+                >
+                  {isTracking ? <Eye size={14} /> : <EyeOff size={14} />}
+                  <span style={{ minWidth: "58px", display: "inline-block", textAlign: "center" }}>
+                    {isTracking ? "Tracking" : "Paused"}
+                  </span>
+                  <Switch
+                    size="1"
+                    checked={isTracking}
+                    onCheckedChange={toggleTracking}
+                  />
+                </Badge>
+              </Tooltip>
+
+              <IconButton
+                size="2"
+                variant="ghost"
+                onClick={handleThemeCycle}
+                title={`Theme: ${theme} (click to cycle)`}
+              >
+                {getThemeIcon()}
+              </IconButton>
+            </Flex>
           </Flex>
         </Container>
       </div>

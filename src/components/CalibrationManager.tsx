@@ -55,7 +55,7 @@ export function CalibrationManager() {
             <Heading size="6">Calibration Management</Heading>
             <Text size="3">Manage your blink detection calibrations</Text>
           </Box>
-          <Button size="3" onClick={handleStartNewCalibration}>
+          <Button size="3" variant="ghost" onClick={handleStartNewCalibration}>
             <PlusIcon />
             New Calibration
           </Button>

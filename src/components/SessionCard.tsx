@@ -234,8 +234,8 @@ export function SessionCard({ session }: SessionCardProps) {
         <Flex gap="4" wrap="wrap">
           {/* Duration - show for both active (calculated) and completed (stored) sessions */}
           <Flex align="center" gap="2">
-            <ClockIcon />
-            <Text size="2">
+            <Text color="gray"><ClockIcon /></Text>
+            <Text size="2" color="gray">
               {session.isActive
                 ? formatSessionDuration(Math.floor(sessionDurationMinutes * 60))
                 : session.duration
@@ -246,16 +246,15 @@ export function SessionCard({ session }: SessionCardProps) {
 
           {session.totalBlinks !== undefined && (
             <Flex align="center" gap="2">
-              <Eye size={14} />
-              <Text size="2">{session.totalBlinks} total blinks</Text>
+              <Text color="gray"><Eye size={14} /></Text>
+              <Text size="2" color="gray">{session.totalBlinks} total blinks</Text>
             </Flex>
           )}
 
           {session.calibrationId && (
             <Flex align="center" gap="2">
-              <Text size="2" color="gray">
-                Calibration: {getCalibrationName(session.calibrationId)}
-              </Text>
+              <Text size="2" color="gray">Using</Text>
+              <Text size="2" color="gray" weight="bold">{getCalibrationName(session.calibrationId)}</Text>
             </Flex>
           )}
         </Flex>

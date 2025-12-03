@@ -6,7 +6,6 @@ import {
   Heading,
   Text,
   Flex,
-  Switch,
   Badge,
   Callout,
 } from "@radix-ui/themes";
@@ -21,7 +20,6 @@ export function SessionsView() {
     activeSession,
     isTracking,
     isFaceDetected,
-    toggleTracking,
   } = useSession();
 
   return (
@@ -41,24 +39,28 @@ export function SessionsView() {
         <Flex gap="3" align="center">
           {/* Face detection status */}
           <Badge
-            // size="2"
             color={isFaceDetected ? "green" : "gray"}
             variant="soft"
           >
             <FaceIcon />
             {isFaceDetected ? "Face Detected" : "No Face Detected"}
           </Badge>
-
-          {/* Tracking toggle */}
-          <Flex align="center" gap="2">
-            <Switch checked={isTracking} onCheckedChange={toggleTracking} />
-            {isTracking ? <Eye size={16} /> : <EyeOff size={16} />}
-            <Text size="2" weight="medium">
-              {isTracking ? "Tracking Enabled" : "Tracking Disabled"}
-            </Text>
-          </Flex>
         </Flex>
       </Flex>
+
+      {/* Tracking disabled callout */}
+      {!isTracking && (
+        <Box mb="6">
+          <Callout.Root color="orange">
+            <Callout.Icon>
+              <EyeOff size={16} />
+            </Callout.Icon>
+            <Callout.Text>
+              Tracking is disabled. Enable tracking in the navigation bar to record sessions.
+            </Callout.Text>
+          </Callout.Root>
+        </Box>
+      )}
 
       {/* Active Session */}
       {activeSession && (

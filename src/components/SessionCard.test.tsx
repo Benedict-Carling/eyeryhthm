@@ -148,25 +148,29 @@ describe('SessionCard', () => {
 
   it('displays calibration name when calibrationId is present', () => {
     render(<SessionCard session={mockSession} />);
-    
-    const calibrationText = screen.getByText('Calibration: Morning Calibration');
-    expect(calibrationText).toBeInTheDocument();
+
+    const usingText = screen.getByText('Using');
+    const calibrationName = screen.getByText('Morning Calibration');
+    expect(usingText).toBeInTheDocument();
+    expect(calibrationName).toBeInTheDocument();
   });
 
   it('does not show calibration when calibrationId is missing', () => {
     const sessionNoCalibration = { ...mockSession, calibrationId: undefined };
     render(<SessionCard session={sessionNoCalibration} />);
-    
-    const calibrationText = screen.queryByText(/Calibration:/);
-    expect(calibrationText).not.toBeInTheDocument();
+
+    const usingText = screen.queryByText('Using');
+    expect(usingText).not.toBeInTheDocument();
   });
 
   it('shows "Unknown calibration" for invalid calibrationId', () => {
     const sessionInvalidCalibration = { ...mockSession, calibrationId: 'invalid-id' };
     render(<SessionCard session={sessionInvalidCalibration} />);
-    
-    const calibrationText = screen.getByText('Calibration: Unknown calibration');
-    expect(calibrationText).toBeInTheDocument();
+
+    const usingText = screen.getByText('Using');
+    const unknownCalibration = screen.getByText('Unknown calibration');
+    expect(usingText).toBeInTheDocument();
+    expect(unknownCalibration).toBeInTheDocument();
   });
 
   it('renders chart container for sessions with data', () => {
