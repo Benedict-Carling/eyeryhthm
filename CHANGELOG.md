@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.4.0...v1.4.1) (2025-12-03)
+
+
+### Bug Fixes
+
+* **build:** use static manifest for Next.js static export ([5aecfaf](https://github.com/Benedict-Carling/eyeryhthm/commit/5aecfaf56b5539fba5cd422714ef3e98516b44e9))
+
 ## [1.4.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.3.0...v1.4.0) (2025-12-03)
 
 
