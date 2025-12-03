@@ -58,8 +58,8 @@ jobs:
       - name: Compile Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
 
-      - name: Build and Publish Electron (macOS)
-        run: npx electron-builder --mac --universal --publish always
+      - name: Build Electron (macOS)
+        run: npx electron-builder --mac --universal --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -75,3 +75,14 @@ jobs:
             release/*.zip
             release/*.yml
           if-no-files-found: error
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: |
+            release/*.dmg
+            release/*.zip
+            release/latest-mac.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
