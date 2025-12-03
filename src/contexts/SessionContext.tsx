@@ -43,7 +43,7 @@ interface SessionProviderProps {
 
 // Constants for session tracking
 const FPS_LOG_INTERVAL_MS = 5000; // Log FPS every 5 seconds
-const FACE_DETECTION_LOST_TIMEOUT_MS = 20000; // Stop session if face lost for 20 seconds
+const FACE_DETECTION_LOST_TIMEOUT_MS = 60000; // Stop session if face lost for 60 seconds
 const CAMERA_STABILIZATION_DELAY_MS = 200; // Wait for stable camera feed before processing
 const BLINK_RATE_UPDATE_INTERVAL_MS = 5000; // Update blink rate every 5 seconds
 

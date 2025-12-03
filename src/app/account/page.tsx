@@ -117,7 +117,7 @@ export default function AccountPage() {
               Notification Settings
             </Heading>
 
-            <Card size="2">
+            <Card size="2" style={{ opacity: 0.6 }}>
               <Flex direction="column">
                 <Flex
                   justify="between"
@@ -139,6 +139,7 @@ export default function AccountPage() {
                     checked={notificationsEnabled}
                     onCheckedChange={handleNotificationsChange}
                     size="2"
+                    disabled
                   />
                 </Flex>
 
@@ -165,10 +166,16 @@ export default function AccountPage() {
                   <Switch
                     checked={soundEnabled}
                     onCheckedChange={handleSoundChange}
-                    disabled={!notificationsEnabled}
+                    disabled
                     size="2"
                   />
                 </Flex>
+
+                <Box style={{ padding: "14px 16px", paddingTop: "0" }}>
+                  <Text size="2" color="gray" style={{ fontStyle: "italic" }}>
+                    Notifications are currently in development
+                  </Text>
+                </Box>
               </Flex>
             </Card>
           </Box>
