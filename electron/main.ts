@@ -84,7 +84,7 @@ function updateTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: 'Show BlinkTrack',
+      label: 'Show EyeRhythm',
       click: () => {
         mainWindow?.show();
         mainWindow?.focus();
@@ -105,7 +105,7 @@ function updateTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: 'Quit BlinkTrack',
+      label: 'Quit EyeRhythm',
       click: () => {
         app.quit();
       }
@@ -116,7 +116,7 @@ function updateTrayMenu() {
 
   // Update tooltip to show current status
   const status = isTrackingEnabled ? 'Tracking Active' : 'Tracking Paused';
-  tray.setToolTip(`BlinkTrack - ${status}`);
+  tray.setToolTip(`EyeRhythm - ${status}`);
 }
 
 // Toggle tracking state and notify renderer

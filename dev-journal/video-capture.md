@@ -1,4 +1,4 @@
-# BlinkTrack Camera Setup - Lightweight Testing Strategy
+# EyeRhythm Camera Setup - Lightweight Testing Strategy
 
 ## Minimal Testing Approach for Rapid Iteration
 

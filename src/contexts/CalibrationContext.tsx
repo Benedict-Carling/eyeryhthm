@@ -80,7 +80,7 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
           cal.isActive = false;
           cal.updatedAt = new Date();
         });
-        localStorage.setItem('blinktrack_calibrations', JSON.stringify(allCalibrations));
+        localStorage.setItem('eyerhythm_calibrations', JSON.stringify(allCalibrations));
       }
 
       CalibrationService.saveCalibration(newCalibration);
@@ -188,7 +188,7 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
         });
         
         // Save the deactivated calibrations
-        localStorage.setItem('blinktrack_calibrations', JSON.stringify(allCalibrations));
+        localStorage.setItem('eyerhythm_calibrations', JSON.stringify(allCalibrations));
       }
 
       // Save the new active calibration

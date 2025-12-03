@@ -81,7 +81,7 @@ export function Navbar() {
               <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
                 <Flex align="center" gap="2">
                   <Text size="5" weight="bold" style={{ color: "var(--mauve-12)" }}>
-                    BlinkTrack
+                    EyeRhythm
                   </Text>
                   <Badge size="1" color="gray" variant="soft">
                     v{packageJson.version}

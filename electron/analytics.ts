@@ -1,7 +1,7 @@
 /**
  * Aptabase Analytics Module
  *
- * Privacy-first analytics for BlinkTrack.
+ * Privacy-first analytics for EyeRhythm.
  * - No personal data collected
  * - No cookies or persistent identifiers
  * - Aggregated counts only

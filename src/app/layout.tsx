@@ -6,7 +6,7 @@ import { ClientLayout } from "./client-layout";
 import "@radix-ui/themes/styles.css";
 
 export const metadata: Metadata = {
-  title: "BlinkTrack",
+  title: "EyeRhythm",
   description:
     "Privacy-focused real-time eye movement tracking application that monitors blink patterns to detect fatigue and improve screen time awareness.",
   icons: {

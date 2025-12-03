@@ -82,7 +82,7 @@ describe('Navbar', () => {
   it('renders the navbar with all navigation links', () => {
     renderNavbar();
 
-    expect(screen.getByText('BlinkTrack')).toBeInTheDocument();
+    expect(screen.getByText('EyeRhythm')).toBeInTheDocument();
     expect(screen.getByText('Sessions')).toBeInTheDocument();
     expect(screen.getByText('Calibration')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();

@@ -1,6 +1,6 @@
 import { Calibration, CalibrationRawData } from '../blink-detection/types';
 
-const CALIBRATIONS_STORAGE_KEY = 'blinktrack_calibrations';
+const CALIBRATIONS_STORAGE_KEY = 'eyerhythm_calibrations';
 
 export class CalibrationService {
   static getAllCalibrations(): Calibration[] {

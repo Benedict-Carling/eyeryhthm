@@ -1,12 +1,12 @@
 # ImageCapture Architecture for Desktop Electron App
 
 ## Overview
-This document outlines the ImageCapture-based architecture for decoupling session tracking from UI rendering in BlinkTrack (Electron desktop app).
+This document outlines the ImageCapture-based architecture for decoupling session tracking from UI rendering in EyeRhythm (Electron desktop app).
 
 ## Why ImageCapture for Desktop?
 
 ### Electron Context
-- **App:** BlinkTrack v1.2.5
+- **App:** EyeRhythm v1.2.5
 - **Electron:** 39.2.3 (Chromium 142)
 - **ImageCapture Support:** Full (since Chrome 59, 2017)
 - **Target:** Desktop (macOS/Windows/Linux)

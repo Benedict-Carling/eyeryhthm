@@ -32,9 +32,9 @@
  * For more information: https://www.electron.build/code-signing
  */
 const config = {
-  appId: "com.blinktrack.app",
-  productName: "BlinkTrack",
-  copyright: "Copyright © 2024 BlinkTrack",
+  appId: "com.eyerhythm.app",
+  productName: "EyeRhythm",
+  copyright: "Copyright © 2024 EyeRhythm",
 
   // Directory configuration
   directories: {
@@ -116,7 +116,7 @@ const config = {
      * - Notarization: For macOS 10.15+, also notarize the app after signing
      *   Set APPLE_ID and APPLE_APP_SPECIFIC_PASSWORD environment variables
      *
-     * Verify signing: codesign -dv --verbose=4 path/to/BlinkTrack.app
+     * Verify signing: codesign -dv --verbose=4 path/to/EyeRhythm.app
      */
     // identity: null, // Auto-detect from Keychain (or set to certificate name)
     // certificateFile: undefined, // Alternative: path to .p12 certificate file
@@ -125,9 +125,9 @@ const config = {
     // Camera permission
     extendInfo: {
       NSCameraUsageDescription:
-        "BlinkTrack needs camera access to detect eye movements and blinks for fatigue monitoring.",
+        "EyeRhythm needs camera access to detect eye movements and blinks for fatigue monitoring.",
       NSMicrophoneUsageDescription:
-        "BlinkTrack may use the microphone for future audio-based features.",
+        "EyeRhythm may use the microphone for future audio-based features.",
     },
   },
 
@@ -206,7 +206,7 @@ const config = {
      * - Use different certificates for development and production
      * - Consider using Azure Key Vault or similar for certificate management in CI/CD
      *
-     * Verify signing: signtool verify /pa /v path\to\BlinkTrack-Setup.exe
+     * Verify signing: signtool verify /pa /v path\to\EyeRhythm-Setup.exe
      */
     // certificateFile: undefined, // Path to .pfx or .p12 certificate file
     // certificatePassword: undefined, // Certificate password (use CSC_KEY_PASSWORD env var)
@@ -224,7 +224,7 @@ const config = {
     deleteAppDataOnUninstall: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: "BlinkTrack",
+    shortcutName: "EyeRhythm",
   },
 
   // Linux configuration

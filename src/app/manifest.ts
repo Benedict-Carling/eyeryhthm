@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "BlinkTrack",
-    short_name: "BlinkTrack",
+    name: "EyeRhythm",
+    short_name: "EyeRhythm",
     description:
       "Privacy-focused real-time eye movement tracking application that monitors blink patterns to detect fatigue and improve screen time awareness.",
     start_url: "/",

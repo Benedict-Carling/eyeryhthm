@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-EyeRhythm (branded as "BlinkTrack" in the UI) is a privacy-focused real-time eye movement tracking desktop application that monitors blink patterns to detect fatigue and improve screen time awareness. Built as both a Next.js web app and an Electron desktop application, with all video processing happening client-side for maximum privacy.
+EyeRhythm is a privacy-focused real-time eye movement tracking desktop application that monitors blink patterns to detect fatigue and improve screen time awareness. Built as both a Next.js web app and an Electron desktop application, with all video processing happening client-side for maximum privacy.
 
 **Current Version:** 1.3.0
 
@@ -74,9 +74,9 @@ When you run `npm run electron:build:mac` (or win/linux):
 5. Runs `electron-builder` (outputs to `/release`)
 
 **Build Outputs:**
-- macOS: `BlinkTrack-{version}-universal.dmg` and `.zip`
-- Windows: `BlinkTrack Setup {version}.exe` (NSIS installer)
-- Linux: `BlinkTrack-{version}.AppImage` and `.deb`
+- macOS: `EyeRhythm-{version}-universal.dmg` and `.zip`
+- Windows: `EyeRhythm Setup {version}.exe` (NSIS installer)
+- Linux: `EyeRhythm-{version}.AppImage` and `.deb`
 
 ### Key Electron Configuration
 
