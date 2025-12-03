@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.4.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.3.0...v1.4.0) (2025-12-03)
+
+
+### Features
+
+* **analytics:** add Aptabase for privacy-first usage tracking ([5fdc381](https://github.com/Benedict-Carling/eyeryhthm/commit/5fdc381582ea74d51183e91484b79f005e8926d1))
+* **branding:** replace default icons with custom BlinkTrack logo ([ef3a026](https://github.com/Benedict-Carling/eyeryhthm/commit/ef3a0263f6f70781a6378ce7a8d2ebc464457f04))
+* **calibration:** add notification dot and warning for factory default ([1a858f7](https://github.com/Benedict-Carling/eyeryhthm/commit/1a858f728fc7496d2c2676412f9169633676c882))
+* **electron:** add macOS menu bar tray with tracking controls ([4da9bbd](https://github.com/Benedict-Carling/eyeryhthm/commit/4da9bbd2c4fa066780ec5b78480d9adfd9ae151e))
+* enforce default calibration to always exist ([f78e498](https://github.com/Benedict-Carling/eyeryhthm/commit/f78e4989a1bada099b2af6e1f5f83f9bf7f3d170))
+* implement ImageCapture API for UI-independent session tracking ([bd961b3](https://github.com/Benedict-Carling/eyeryhthm/commit/bd961b3f861ceb582c8812526bde865abb74af5f))
+* implement robust background processing with MediaStreamTrackProcessor ([ce0d2c5](https://github.com/Benedict-Carling/eyeryhthm/commit/ce0d2c5d8d88b031b2ce6bde096e7f779a748e00))
+* remove video element dependency and optimize frame processing ([30cad18](https://github.com/Benedict-Carling/eyeryhthm/commit/30cad1821cb05d54533b5fbc1d5e8af2cfb51ce6))
+* **session:** add live duration and improved chart styling ([057c932](https://github.com/Benedict-Carling/eyeryhthm/commit/057c932b9cb5013eeca066e034d3f5bf6e035646))
+* **sessions:** add example badge to demo sessions ([9f28167](https://github.com/Benedict-Carling/eyeryhthm/commit/9f28167c5bbb324ac3e08649e2856ca49d920e71))
+* **sessions:** improve face detection UX with countdown and face lost tracking ([9a7b7b2](https://github.com/Benedict-Carling/eyeryhthm/commit/9a7b7b2ba4d6189e75fadc84b214be11703d8564))
+* **sessions:** instant blink count updates with debounced chart rendering ([39f5606](https://github.com/Benedict-Carling/eyeryhthm/commit/39f56064367635b132f71a62ca1a8e7d2931531e))
+* **settings:** disable notifications (in development) and extend face timeout ([f8a8f82](https://github.com/Benedict-Carling/eyeryhthm/commit/f8a8f82c9926875ee324907194dd2146428cf092))
+* track face lost periods and fix VideoFrame detection ([491fedf](https://github.com/Benedict-Carling/eyeryhthm/commit/491fedf4174ecce92cd1f6617316e1bba7123be4))
+* **updater:** add auto-update UI and enable background downloads ([9628aa1](https://github.com/Benedict-Carling/eyeryhthm/commit/9628aa12ad0daf5396a6b83d09597f64bc0fd2f5))
+
+
+### Bug Fixes
+
+* improve type safety and event listener cleanup in ImageCapture implementation ([194f7dc](https://github.com/Benedict-Carling/eyeryhthm/commit/194f7dc0f3c4d2a66ee0544ebf8260db4811abcb))
+* prevent ImageCapture processing loop from restarting on every render ([1b8b593](https://github.com/Benedict-Carling/eyeryhthm/commit/1b8b593807b658cee7a3b2b985f79da1020e2edd))
+* resolve cascading re-renders and negative blink counts in session tracking ([9aee9ec](https://github.com/Benedict-Carling/eyeryhthm/commit/9aee9ec9e7d059dc121187f3c0a03df4e420e3c9))
+* **theme:** resolve dark edges in light mode on Electron ([ce803a9](https://github.com/Benedict-Carling/eyeryhthm/commit/ce803a99cd1c90eed836a8efd415b3585877d8bb))
+* **tray:** use transparent background for macOS menu bar icons ([69384e7](https://github.com/Benedict-Carling/eyeryhthm/commit/69384e75a6dd1e9ec51e3da9218bb2521a8d9225))
+
+
+### Performance Improvements
+
+* **mediapipe:** add permission-aware background preloading ([d94270b](https://github.com/Benedict-Carling/eyeryhthm/commit/d94270bbf9235cd7ec3c8b6fb2b9cd8165a8598c))
+
 ## [1.3.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.2.5...v1.3.0) (2025-11-26)
 
 
