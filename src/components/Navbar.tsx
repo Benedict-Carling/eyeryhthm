@@ -6,6 +6,7 @@ import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSession } from "../contexts/SessionContext";
+import { useCalibration } from "../contexts/CalibrationContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import packageJson from "../../package.json";
@@ -34,8 +35,10 @@ function TitleBar() {
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const { isTracking, toggleTracking } = useSession();
+  const { hasOnlyFactoryDefault } = useCalibration();
   const pathname = usePathname();
   const isElectronMac = useIsElectronMac();
+  const showCalibrationNotification = hasOnlyFactoryDefault();
 
   const getThemeIcon = () => {
     if (theme === "system") return <LaptopIcon />;
@@ -97,7 +100,12 @@ export function Navbar() {
                           : "var(--gray-11)",
                     }}
                   >
-                    <Text size="3">{link.label}</Text>
+                    <span style={{ position: "relative" }}>
+                      <Text size="3">{link.label}</Text>
+                      {link.href === "/calibration" && showCalibrationNotification && (
+                        <span className={styles.notificationDot} />
+                      )}
+                    </span>
                   </Link>
                 ))}
               </Flex>

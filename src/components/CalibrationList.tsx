@@ -10,8 +10,8 @@ import {
   Badge,
   IconButton,
   TextField,
-  Callout,
   AlertDialog,
+  Callout,
 } from "@radix-ui/themes";
 import {
   TrashIcon,
@@ -19,7 +19,6 @@ import {
   CheckIcon,
   Cross2Icon,
   DownloadIcon,
-  InfoCircledIcon,
 } from "@radix-ui/react-icons";
 import { useCalibration } from "../contexts/CalibrationContext";
 import { Calibration } from "../lib/blink-detection/types";
@@ -27,7 +26,6 @@ import { Calibration } from "../lib/blink-detection/types";
 export function CalibrationList() {
   const {
     calibrations,
-    activeCalibration,
     setActiveCalibration,
     deleteCalibration,
     updateCalibrationName,
@@ -115,17 +113,6 @@ export function CalibrationList() {
   return (
     <Box>
       <Flex direction="column" gap="3">
-        {activeCalibration?.isDefault && (
-          <Callout.Root color="blue">
-            <Callout.Icon>
-              <InfoCircledIcon />
-            </Callout.Icon>
-            <Callout.Text>
-              Using factory default threshold (0.25). Run a calibration for
-              personalized detection based on your unique blink patterns.
-            </Callout.Text>
-          </Callout.Root>
-        )}
         {calibrations.map((calibration) => (
           <Card key={calibration.id} style={{ padding: "16px" }}>
             <Flex direction="column" gap="3">

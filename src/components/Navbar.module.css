@@ -26,3 +26,14 @@
 .navbarWithTitleBar {
   top: 38px;
 }
+
+/* Notification dot for calibration reminder */
+.notificationDot {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--orange-9);
+  border-radius: 50%;
+}

@@ -28,6 +28,7 @@ interface CalibrationContextType {
   hasActiveCalibration: () => boolean;
   canStartDetection: () => boolean;
   exportCalibration: (id: string) => string;
+  hasOnlyFactoryDefault: () => boolean;
 }
 
 const CalibrationContext = createContext<CalibrationContextType | undefined>(undefined);
@@ -212,6 +213,10 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
     return CalibrationService.exportCalibration(id);
   };
 
+  const hasOnlyFactoryDefault = (): boolean => {
+    return calibrations.length === 1 && calibrations[0]?.isDefault === true;
+  };
+
   const contextValue: CalibrationContextType = {
     // Data
     calibrations,
@@ -234,6 +239,7 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
     hasActiveCalibration,
     canStartDetection,
     exportCalibration,
+    hasOnlyFactoryDefault,
   };
 
   return (

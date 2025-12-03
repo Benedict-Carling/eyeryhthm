@@ -11,13 +11,13 @@ import {
   Card,
   Callout,
 } from "@radix-ui/themes";
-import { PlusIcon, EyeOpenIcon } from "@radix-ui/react-icons";
+import { PlusIcon, EyeOpenIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { useCalibration } from "../contexts/CalibrationContext";
 import { CalibrationList } from "./CalibrationList";
 import { CalibrationFlow } from "./CalibrationFlow";
 
 export function CalibrationManager() {
-  const { calibrations, hasActiveCalibration, isCalibrating } =
+  const { calibrations, hasActiveCalibration, isCalibrating, activeCalibration } =
     useCalibration();
   const [showCalibrationFlow, setShowCalibrationFlow] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
@@ -55,7 +55,7 @@ export function CalibrationManager() {
             <Heading size="6">Calibration Management</Heading>
             <Text size="3">Manage your blink detection calibrations</Text>
           </Box>
-          <Button size="3" variant="ghost" onClick={handleStartNewCalibration}>
+          <Button size="3" variant="soft" onClick={handleStartNewCalibration}>
             <PlusIcon />
             New Calibration
           </Button>
@@ -63,17 +63,31 @@ export function CalibrationManager() {
 
         {/* Status indicator */}
         {hasActiveCalibration() ? (
-          <Callout.Root color="green">
-            <Callout.Icon>
-              <EyeOpenIcon />
-            </Callout.Icon>
-            <Callout.Text>
-              Blink detection is calibrated and ready to use.
-            </Callout.Text>
-          </Callout.Root>
+          activeCalibration?.isDefault ? (
+            <Callout.Root color="orange">
+              <Callout.Icon>
+                <InfoCircledIcon />
+              </Callout.Icon>
+              <Callout.Text>
+                Using factory default threshold (0.25). Run a calibration for
+                personalized detection based on your unique blink patterns.
+              </Callout.Text>
+            </Callout.Root>
+          ) : (
+            <Callout.Root color="green">
+              <Callout.Icon>
+                <EyeOpenIcon />
+              </Callout.Icon>
+              <Callout.Text>
+                Blink detection is calibrated and ready to use.
+              </Callout.Text>
+            </Callout.Root>
+          )
         ) : (
           <Callout.Root color="orange">
-            <Callout.Icon>⚠️</Callout.Icon>
+            <Callout.Icon>
+              <InfoCircledIcon />
+            </Callout.Icon>
             <Callout.Text>
               No active calibration. Create a calibration to start using blink
               detection.

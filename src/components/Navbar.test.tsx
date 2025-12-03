@@ -18,6 +18,13 @@ vi.mock('../contexts/SessionContext', () => ({
   }),
 }));
 
+// Mock CalibrationContext
+vi.mock('../contexts/CalibrationContext', () => ({
+  useCalibration: () => ({
+    hasOnlyFactoryDefault: () => false,
+  }),
+}));
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
