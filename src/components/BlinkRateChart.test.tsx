@@ -3,35 +3,28 @@ import { render } from '@testing-library/react';
 import { BlinkRateChart } from './BlinkRateChart';
 import { BlinkRatePoint } from '../lib/sessions/types';
 
+// Create chainable mock for d3 selections
+const createChainableMock = () => {
+  const chainable: Record<string, unknown> = {};
+  const methods = ['attr', 'append', 'datum', 'data', 'enter', 'call', 'text', 'style', 'selectAll', 'select', 'remove'];
+  methods.forEach(method => {
+    chainable[method] = vi.fn(() => chainable);
+  });
+  return chainable;
+};
+
 // Mock d3
 vi.mock('d3', () => ({
-  select: vi.fn(() => ({
-    selectAll: vi.fn(() => ({
-      remove: vi.fn(),
-    })),
-    node: vi.fn(() => ({
+  select: vi.fn(() => {
+    const chainable = createChainableMock();
+    chainable.node = vi.fn(() => ({
       getBoundingClientRect: vi.fn(() => ({
         width: 800,
         height: 400,
       })),
-    })),
-    append: vi.fn(() => ({
-      attr: vi.fn().mockReturnThis(),
-      append: vi.fn().mockReturnThis(),
-      datum: vi.fn().mockReturnThis(),
-      data: vi.fn().mockReturnThis(),
-      enter: vi.fn().mockReturnThis(),
-      call: vi.fn().mockReturnThis(),
-      text: vi.fn().mockReturnThis(),
-      style: vi.fn().mockReturnThis(),
-      selectAll: vi.fn(() => ({
-        data: vi.fn().mockReturnThis(),
-        enter: vi.fn().mockReturnThis(),
-        append: vi.fn().mockReturnThis(),
-        attr: vi.fn().mockReturnThis(),
-      })),
-    })),
-  })),
+    }));
+    return chainable;
+  }),
   scaleTime: vi.fn(() => ({
     domain: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -64,10 +57,12 @@ vi.mock('d3', () => ({
     return Math.max(...values);
   }),
   axisBottom: vi.fn(() => ({
+    ticks: vi.fn().mockReturnThis(),
     tickFormat: vi.fn().mockReturnThis(),
     tickSize: vi.fn().mockReturnThis(),
   })),
   axisLeft: vi.fn(() => ({
+    ticks: vi.fn().mockReturnThis(),
     tickSize: vi.fn().mockReturnThis(),
     tickFormat: vi.fn().mockReturnThis(),
   })),

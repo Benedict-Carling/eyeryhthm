@@ -81,43 +81,15 @@ describe('AccountPage', () => {
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith('fatigueThreshold', '9');
   });
 
-  it('toggles notifications and saves to localStorage', async () => {
-    const user = userEvent.setup();
+  it('notification switches are disabled (feature in development)', () => {
     render(<AccountPage />);
 
     const switches = screen.getAllByRole('switch');
-    const notificationSwitch = switches[0]!; // First switch is notifications
+    const notificationSwitch = switches[0]!;
+    const soundSwitch = switches[1]!;
 
-    await user.click(notificationSwitch);
-
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('notificationsEnabled', 'false');
-  });
-
-  it('toggles sound alerts and saves to localStorage', async () => {
-    const user = userEvent.setup();
-    render(<AccountPage />);
-
-    const switches = screen.getAllByRole('switch');
-    const soundSwitch = switches[1]!; // Second switch is sound
-
-    await user.click(soundSwitch);
-
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('soundEnabled', 'true');
-  });
-
-  it('disables sound switch when notifications are disabled', async () => {
-    const user = userEvent.setup();
-    render(<AccountPage />);
-
-    const switches = screen.getAllByRole('switch');
-    const notificationSwitch = switches[0]!; // First switch is notifications
-    const soundSwitch = switches[1]!; // Second switch is sound
-
-    expect(soundSwitch).not.toBeDisabled();
-
-    // Disable notifications
-    await user.click(notificationSwitch);
-
+    // Both switches are disabled since notifications are in development
+    expect(notificationSwitch).toBeDisabled();
     expect(soundSwitch).toBeDisabled();
   });
 

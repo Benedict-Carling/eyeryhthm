@@ -3,7 +3,6 @@
 import React from "react";
 import {
   Box,
-  Heading,
   Text,
   Flex,
   Callout,
@@ -22,18 +21,6 @@ export function SessionsView() {
 
   return (
     <Box>
-      {/* Header */}
-      <Flex justify="between" align="center" mb="6">
-        <Box>
-          <Heading size="6" mb="2">
-            Screen Session Tracking
-          </Heading>
-          <Text size="3">
-            Monitor your screen time and eye fatigue patterns
-          </Text>
-        </Box>
-      </Flex>
-
       {/* Tracking disabled callout */}
       {!isTracking && (
         <Box mb="6">

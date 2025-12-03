@@ -48,6 +48,9 @@ const mockSessions: SessionData[] = [
 vi.mock('../../contexts/SessionContext', () => ({
   useSession: () => ({
     sessions: mockSessions,
+    currentBlinkCount: 0,
+    sessionBaselineBlinkCount: 0,
+    sessionStartTime: Date.now(),
   }),
 }));
 
@@ -77,7 +80,7 @@ describe('SessionDetailPage', () => {
     expect(screen.getByText('Session Details')).toBeInTheDocument();
     expect(screen.getByText(/Monday, January 15, 2024/)).toBeInTheDocument();
     expect(screen.getByText('1h 30m 0s')).toBeInTheDocument();
-    expect(screen.getByText('7 blinks/min')).toBeInTheDocument();
+    expect(screen.getByText('7/min')).toBeInTheDocument();
     expect(screen.getByText('Poor')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
@@ -107,11 +110,12 @@ describe('SessionDetailPage', () => {
     expect(chart).toHaveAttribute('data-points', '3');
   });
 
-  it('shows "In progress" for active sessions', () => {
+  it('shows live duration for active sessions', () => {
     mockSearchParams.set('id', 'session-2');
     render(<SessionDetailPage />);
 
-    expect(screen.getByText('In progress')).toBeInTheDocument();
+    // Active sessions show live elapsed time starting from 0s
+    expect(screen.getByText('0s')).toBeInTheDocument();
   });
 
   it('shows "Session not found" for invalid session ID', () => {

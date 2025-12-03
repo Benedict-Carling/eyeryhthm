@@ -47,6 +47,21 @@ function SessionDetailContent() {
   const displayBlinkCount = session?.isActive ? liveBlinkCount : session?.totalBlinks;
   const displayBlinkRate = session?.isActive ? Math.round(liveBlinkRate) : Math.round(session?.averageBlinkRate ?? 0);
 
+  // Live elapsed time for active sessions
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+
+  useEffect(() => {
+    if (!session?.isActive || !sessionStartTime) return;
+
+    const updateElapsed = () => {
+      setElapsedTime(Math.floor((Date.now() - sessionStartTime) / 1000));
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [session?.isActive, sessionStartTime]);
+
   // Debounce chart history updates to prevent aggressive re-rendering
   useEffect(() => {
     if (!session) return;
@@ -155,7 +170,7 @@ function SessionDetailContent() {
             <Flex direction="column" gap="2">
               <Text size="2" color="gray">Duration</Text>
               <Text size="5" weight="medium">
-                {session.duration ? formatDuration(session.duration) : "In progress"}
+                {session.isActive ? formatDuration(elapsedTime) : session.duration ? formatDuration(session.duration) : "0s"}
               </Text>
             </Flex>
           </Card>
@@ -164,16 +179,16 @@ function SessionDetailContent() {
             <Flex direction="column" gap="2">
               <Text size="2" color="gray">Total Blinks</Text>
               <Text size="5" weight="medium">
-                {displayBlinkCount} blinks
+                {displayBlinkCount}
               </Text>
             </Flex>
           </Card>
 
           <Card>
             <Flex direction="column" gap="2">
-              <Text size="2" color="gray">Average Blink Rate</Text>
+              <Text size="2" color="gray">Blink Rate</Text>
               <Text size="5" weight="medium">
-                {displayBlinkRate} blinks/min
+                {displayBlinkRate}/min
               </Text>
             </Flex>
           </Card>

@@ -71,6 +71,19 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
       .attr("stop-color", "var(--indigo-7)")
       .attr("stop-opacity", 1);
 
+    // Add green "good" zone above 12 blinks/min
+    const goodThreshold = 12;
+    const yMax = yScale.domain()[1] || 20;
+    if (yMax > goodThreshold) {
+      g.append("rect")
+        .attr("x", 0)
+        .attr("y", yScale(yMax))
+        .attr("width", innerWidth)
+        .attr("height", yScale(goodThreshold) - yScale(yMax))
+        .attr("fill", "var(--green-3)")
+        .attr("opacity", 0.5);
+    }
+
     // Add orange bars for face lost periods (behind the chart)
     if (faceLostPeriods && faceLostPeriods.length > 0) {
       const xDomain = xScale.domain();
@@ -114,8 +127,8 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
 
     g.append("path")
       .datum(data)
-      .attr("fill", "url(#line-gradient)")
-      .attr("fill-opacity", 0.1)
+      .attr("fill", "var(--indigo-3)")
+      .attr("fill-opacity", 0.4)
       .attr("d", area);
 
     // Add the line
@@ -126,66 +139,42 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
       .attr("stroke-width", 2)
       .attr("d", line);
 
-    // Add dots
-    g.selectAll(".dot")
-      .data(data)
-      .enter()
-      .append("circle")
-      .attr("class", "dot")
-      .attr("cx", (d) => xScale(new Date(d.timestamp)))
-      .attr("cy", (d) => yScale(d.rate))
-      .attr("r", 4)
-      .attr("fill", "var(--indigo-9)");
 
-    // Add the X Axis
-    g.append("g")
+    // Add the X Axis - limit ticks for cleaner display
+    const timeExtent = xScale.domain();
+    const startTime = timeExtent[0];
+    const endTime = timeExtent[1];
+    const timeDiffMs = startTime && endTime ? endTime.getTime() - startTime.getTime() : 60000;
+    const xTickCount = Math.min(Math.max(Math.floor(timeDiffMs / 120000), 2), 6); // 1 tick per 2 minutes, min 2, max 6
+
+    const xAxis = g.append("g")
       .attr("transform", `translate(0,${innerHeight})`)
       .call(
         d3
           .axisBottom(xScale)
+          .ticks(xTickCount)
           .tickFormat((d) => d3.timeFormat("%H:%M")(d as Date))
-      )
-      .append("text")
-      .attr("x", innerWidth / 2)
-      .attr("y", 35)
-      .attr("fill", "currentColor")
-      .style("text-anchor", "middle")
-      .text("Time");
+      );
 
-    // Add the Y Axis
-    g.append("g")
-      .call(d3.axisLeft(yScale))
-      .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", -35)
-      .attr("x", -innerHeight / 2)
-      .attr("fill", "currentColor")
-      .style("text-anchor", "middle")
-      .text("Blink Rate (blinks/min)");
+    // Style x-axis to match Radix theme
+    xAxis.selectAll("text")
+      .style("font-family", "var(--default-font-family)")
+      .style("font-size", "12px")
+      .style("fill", "var(--mauve-11)");
+    xAxis.selectAll("line, path")
+      .style("stroke", "var(--mauve-6)");
 
-    // Add grid lines
-    g.append("g")
-      .attr("class", "grid")
-      .attr("transform", `translate(0,${innerHeight})`)
-      .call(
-        d3
-          .axisBottom(xScale)
-          .tickSize(-innerHeight)
-          .tickFormat(() => "")
-      )
-      .style("stroke-dasharray", "3,3")
-      .style("opacity", 0.3);
+    // Add the Y Axis with fewer ticks
+    const yAxis = g.append("g")
+      .call(d3.axisLeft(yScale).ticks(5));
 
-    g.append("g")
-      .attr("class", "grid")
-      .call(
-        d3
-          .axisLeft(yScale)
-          .tickSize(-innerWidth)
-          .tickFormat(() => "")
-      )
-      .style("stroke-dasharray", "3,3")
-      .style("opacity", 0.3);
+    // Style y-axis to match Radix theme
+    yAxis.selectAll("text")
+      .style("font-family", "var(--default-font-family)")
+      .style("font-size", "12px")
+      .style("fill", "var(--mauve-11)");
+    yAxis.selectAll("line, path")
+      .style("stroke", "var(--mauve-6)");
 
     // Add threshold line at 8 blinks/min
     const thresholdValue = parseInt(localStorage.getItem("fatigueThreshold") || "8", 10);
@@ -194,7 +183,7 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
       .attr("x2", innerWidth)
       .attr("y1", yScale(thresholdValue))
       .attr("y2", yScale(thresholdValue))
-      .attr("stroke", "#EF4444")
+      .attr("stroke", "var(--red-9)")
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "5,5");
 
@@ -202,9 +191,51 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
       .attr("x", innerWidth - 5)
       .attr("y", yScale(thresholdValue) - 5)
       .attr("text-anchor", "end")
-      .attr("fill", "#EF4444")
-      .style("font-size", "12px")
+      .attr("fill", "var(--red-9)")
+      .style("font-family", "var(--default-font-family)")
+      .style("font-size", "11px")
       .text("Fatigue Threshold");
+
+    // Add legend
+    const legend = svg
+      .append("g")
+      .attr("transform", `translate(${margin.left + 10}, ${margin.top})`);
+
+    // Good zone legend
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", 12)
+      .attr("height", 12)
+      .attr("fill", "var(--green-3)")
+      .attr("opacity", 0.7)
+      .attr("rx", 2);
+    legend.append("text")
+      .attr("x", 18)
+      .attr("y", 10)
+      .attr("fill", "var(--mauve-11)")
+      .style("font-family", "var(--default-font-family)")
+      .style("font-size", "11px")
+      .text("Good (12+/min)");
+
+    // Face lost legend (only show if there are periods)
+    if (faceLostPeriods && faceLostPeriods.length > 0) {
+      legend.append("rect")
+        .attr("x", 110)
+        .attr("y", 0)
+        .attr("width", 12)
+        .attr("height", 12)
+        .attr("fill", "var(--orange-4)")
+        .attr("opacity", 0.7)
+        .attr("rx", 2);
+      legend.append("text")
+        .attr("x", 128)
+        .attr("y", 10)
+        .attr("fill", "var(--mauve-11)")
+        .style("font-family", "var(--default-font-family)")
+        .style("font-size", "11px")
+        .text("Face not detected");
+    }
 
   }, [data, faceLostPeriods, sessionEndTime]);
 
