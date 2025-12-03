@@ -141,9 +141,8 @@ describe('SessionCard', () => {
     const activeSession = { ...mockSession, isActive: true, endTime: undefined };
     render(<SessionCard session={activeSession} />);
 
-    const activeBadge = screen.getByText('- Active');
+    const activeBadge = screen.getByText('Active');
     expect(activeBadge).toBeInTheDocument();
-    expect(activeBadge).toHaveClass('pulse');
   });
 
   it('displays average blink rate', () => {

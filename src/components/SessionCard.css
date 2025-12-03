@@ -1,17 +1,55 @@
-@keyframes pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
+/* Radar ripple effect for active indicator */
+.radar-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
 }
 
-.pulse {
-  animation: pulse 2s ease-in-out infinite;
+.radar-dot {
+  width: 6px;
+  height: 6px;
+  background-color: currentColor;
+  border-radius: 50%;
+  position: relative;
+  z-index: 2;
+}
+
+.radar-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: radarRipple 1.5s ease-out infinite;
+  opacity: 0;
+}
+
+.radar-ripple:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.radar-ripple:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes radarRipple {
+  0% {
+    width: 6px;
+    height: 6px;
+    opacity: 0.8;
+  }
+  100% {
+    width: 20px;
+    height: 20px;
+    opacity: 0;
+  }
 }
 
 .session-card {
