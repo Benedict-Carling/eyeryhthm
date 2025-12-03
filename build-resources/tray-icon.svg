@@ -1,0 +1,22 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simple eye icon for tray - black on transparent for macOS template -->
+
+  <!-- Outer eye shape (almond) -->
+  <path
+    d="M16 6C8 6 3 16 3 16C3 16 8 26 16 26C24 26 29 16 29 16C29 16 24 6 16 6Z"
+    stroke="black"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- Inner curve (like a smile/blink indicator) -->
+  <path
+    d="M10 18C12 21 20 21 22 18"
+    stroke="black"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    fill="none"
+  />
+</svg>
