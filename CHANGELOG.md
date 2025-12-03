@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.4.1...v1.4.2) (2025-12-03)
+
+
+### Bug Fixes
+
+* **tray:** redesign tray icon for better visibility ([b48e492](https://github.com/Benedict-Carling/eyeryhthm/commit/b48e492bd99ca2f6c08f964441f88ba6a3d58c95))
+
 ## [1.4.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.4.0...v1.4.1) (2025-12-03)
 
 
