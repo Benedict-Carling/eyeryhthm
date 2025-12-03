@@ -48,6 +48,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         radixTheme.classList.remove("light", "dark");
         radixTheme.classList.add(newResolvedTheme);
       }
+
+      // Update body background color to match theme (prevents dark edges in Electron)
+      document.body.style.backgroundColor =
+        newResolvedTheme === "dark" ? "#111113" : "#ffffff";
     };
 
     updateResolvedTheme();

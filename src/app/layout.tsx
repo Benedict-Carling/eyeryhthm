@@ -19,13 +19,29 @@ export const metadata: Metadata = {
   },
 };
 
+// Script to set initial theme before React hydrates (prevents flash)
+const themeScript = `
+(function() {
+  try {
+    var theme = localStorage.getItem('theme');
+    var isDark = theme === 'dark' ||
+      (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.body.style.backgroundColor = isDark ? '#111113' : '#ffffff';
+    document.documentElement.classList.add(isDark ? 'dark' : 'light');
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <ThemeProvider>
           <CalibrationProvider>
