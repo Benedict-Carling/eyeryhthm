@@ -270,6 +270,11 @@ export function SessionCard({ session }: SessionCardProps) {
             <Text size="5" weight="medium" style={{ color: "var(--mauve-12)" }}>
               {formatTime(session.startTime)}
             </Text>
+            {session.isExample && (
+              <Badge color="gray" variant="soft">
+                Example
+              </Badge>
+            )}
             {session.isActive && (
               <Badge color="green">
                 Active

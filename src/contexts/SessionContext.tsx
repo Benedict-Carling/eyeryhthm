@@ -63,6 +63,7 @@ const generateMockSessions = (): SessionData[] => {
       fatigueAlertCount: 2,
       duration: 5400, // 1h 30m
       totalBlinks: 630, // ~90 minutes * 7 blinks/min
+      isExample: true,
     },
     {
       id: "session-2",
@@ -75,6 +76,7 @@ const generateMockSessions = (): SessionData[] => {
       fatigueAlertCount: 0,
       duration: 5400, // 1h 30m
       totalBlinks: 990, // ~90 minutes * 11 blinks/min
+      isExample: true,
     },
   ];
 };

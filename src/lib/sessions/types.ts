@@ -16,6 +16,7 @@ export interface SessionData {
   calibrationId?: string;
   totalBlinks: number;
   faceLostPeriods?: FaceLostPeriod[]; // Periods when face was not detected
+  isExample?: boolean; // Indicates this is a demo/example session
 }
 
 export interface BlinkRatePoint {
