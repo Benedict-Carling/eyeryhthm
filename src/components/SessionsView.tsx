@@ -9,13 +9,14 @@ import {
 } from "@radix-ui/themes";
 import { useSession } from "../contexts/SessionContext";
 import { SessionCard } from "./SessionCard";
-import { EyeOff, UserX } from "lucide-react";
+import { EyeOff, UserX, Loader2 } from "lucide-react";
 
 export function SessionsView() {
   const {
     sessions,
     activeSession,
     isTracking,
+    isInitializing,
     isFaceDetected,
   } = useSession();
 
@@ -35,8 +36,22 @@ export function SessionsView() {
         </Box>
       )}
 
-      {/* Face not detected callout - only show when no active session */}
-      {isTracking && !isFaceDetected && !activeSession && (
+      {/* Initializing tracking callout */}
+      {isTracking && isInitializing && (
+        <Box mb="6">
+          <Callout.Root color="blue">
+            <Callout.Icon>
+              <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+            </Callout.Icon>
+            <Callout.Text>
+              Initializing camera...
+            </Callout.Text>
+          </Callout.Root>
+        </Box>
+      )}
+
+      {/* Face not detected callout - only show when initialized and no active session */}
+      {isTracking && !isInitializing && !isFaceDetected && !activeSession && (
         <Box mb="6">
           <Callout.Root color="yellow">
             <Callout.Icon>

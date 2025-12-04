@@ -24,6 +24,7 @@ interface SessionContextType {
   sessions: SessionData[];
   activeSession: SessionData | null;
   isTracking: boolean;
+  isInitializing: boolean; // true when tracking is enabled but MediaPipe/camera stack is still loading
   isFaceDetected: boolean;
   faceLostCountdown: number | null; // seconds remaining before session closes, null if face is detected
   toggleTracking: () => void;
@@ -655,6 +656,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     sessions,
     activeSession,
     isTracking,
+    isInitializing: isTracking && !isInitialized,
     isFaceDetected,
     faceLostCountdown,
     toggleTracking,
