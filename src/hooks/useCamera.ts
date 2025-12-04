@@ -96,9 +96,7 @@ export function useCamera(options: CameraOptions = {}) {
     // Use ref to avoid stale closure - streamRef always has current stream
     const stream = streamRef.current;
     if (stream) {
-      console.log('[Camera] Stopping camera, tracks:', stream.getTracks().length);
       stream.getTracks().forEach(track => {
-        console.log('[Camera] Stopping track:', track.kind, track.readyState);
         track.stop();
       });
 
@@ -115,9 +113,6 @@ export function useCamera(options: CameraOptions = {}) {
         stream: null,
         hasPermission: false,
       }));
-      console.log('[Camera] Camera stopped successfully');
-    } else {
-      console.log('[Camera] stopCamera called but no stream in ref');
     }
   }, []); // No dependencies - uses ref for stream access
 

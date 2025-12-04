@@ -118,12 +118,18 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const faceDetectionLostTimeRef = useRef<number | null>(null);
   const currentFaceLostPeriodStartRef = useRef<number | null>(null); // Track start of current idle period
   const alertServiceRef = useRef<AlertService>(new AlertService());
+  // Track the last state we sent to main process to detect if incoming toggle is a response to our change
+  const lastSentStateRef = useRef<boolean | null>(null);
 
   const { activeCalibration } = useCalibration();
 
   // Camera and blink detection hooks
   const { stream, videoRef, startCamera, stopCamera } =
     useCamera();
+
+  // Keep camera functions in refs to avoid stale closures
+  const stopCameraRef = useRef(stopCamera);
+  stopCameraRef.current = stopCamera;
 
   const {
     blinkCount,
@@ -561,6 +567,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
     // Notify Electron main process of state change (for tray menu sync)
     const electronAPI = getElectronAPI();
     if (electronAPI) {
+      // Track what state we're sending so we can ignore the echo from main
+      lastSentStateRef.current = enabled;
       electronAPI.notifyTrackingStateChanged(enabled);
     }
 
@@ -589,7 +597,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
       setIsInitialized(false);
       stopDetection();
       stopTrackProcessor(); // Stop MediaStreamTrackProcessor
-      stopCamera();
+      // Use ref to ensure we call the current stopCamera, not a stale closure
+      stopCameraRef.current();
       setIsFaceDetected(false);
       // Stop alert monitoring
       alertServiceRef.current.stopMonitoring();
@@ -598,7 +607,6 @@ export function SessionProvider({ children }: SessionProviderProps) {
     isTracking,
     activeSession,
     startCamera,
-    stopCamera,
     stopDetection,
     stopTrackProcessor,
     stopSession,
@@ -616,7 +624,15 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
     // Subscribe to toggle-tracking events from main process
     const cleanup = electronAPI.onToggleTracking((enabled: boolean) => {
-      console.log('[SessionContext] Received toggle-tracking from main process:', enabled);
+      // Ignore if this is an echo of a state we just sent (prevents feedback loop)
+      // But only ignore if it matches what we sent - a different state means tray initiated it
+      if (lastSentStateRef.current === enabled) {
+        // This is likely an echo from our own change, ignore it
+        lastSentStateRef.current = null; // Reset so next toggle works
+        return;
+      }
+      // This is a new toggle from tray menu
+      lastSentStateRef.current = null;
       setTrackingState(enabled);
     });
 

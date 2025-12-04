@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Card,
@@ -113,18 +113,16 @@ export function CalibrationFlow({
   }, [stream, phase, startDetection, isInitialized]);
 
   // Handle frame processing with EAR data recording
-  const handleFrameData = useCallback(
-    (data: { currentEAR: number }) => {
-      if (isRecording && data.currentEAR > 0) {
-        const currentTime = Date.now() - recordingStartTime;
-        setEarData((prev) => [
-          ...prev,
-          { time: currentTime, ear: data.currentEAR },
-        ]);
-      }
-    },
-    [isRecording, recordingStartTime]
-  );
+  // React Compiler auto-memoizes this handler
+  const handleFrameData = (data: { currentEAR: number }) => {
+    if (isRecording && data.currentEAR > 0) {
+      const currentTime = Date.now() - recordingStartTime;
+      setEarData((prev) => [
+        ...prev,
+        { time: currentTime, ear: data.currentEAR },
+      ]);
+    }
+  };
 
   // Use the shared frame processor hook
   useFrameProcessor({
@@ -135,7 +133,8 @@ export function CalibrationFlow({
     isEnabled: isInitialized && phase !== "setup",
   });
 
-  const initializeCalibration = useCallback(async () => {
+  // React Compiler auto-memoizes these handlers
+  const initializeCalibration = async () => {
     try {
       if (!stream) {
         await startCamera();
@@ -144,23 +143,23 @@ export function CalibrationFlow({
     } catch (error) {
       console.error("Failed to initialize calibration:", error);
     }
-  }, [stream, startCamera]);
+  };
 
-  const startRecording = useCallback(() => {
+  const startRecording = () => {
     setEarData([]);
     setRecordingStartTime(Date.now());
     setIsRecording(true);
-  }, []);
+  };
 
-  const restartRecording = useCallback(() => {
+  const restartRecording = () => {
     setIsRecording(false);
     setEarData([]);
     setTimeout(() => {
       startRecording();
     }, 100);
-  }, [startRecording]);
+  };
 
-  const confirmCalibration = useCallback(() => {
+  const confirmCalibration = () => {
     setIsRecording(false);
     setPhase("analyzing");
 
@@ -227,22 +226,22 @@ export function CalibrationFlow({
       // Not exactly 10 blinks found
       setPhase("failed");
     }
-  }, [earData, completeCalibration, onComplete]);
+  };
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = () => {
     setIsRecording(false);
     setIsInitialized(false);
     stopCalibration();
     stopDetection();
     stopCamera();
     onCancel?.();
-  }, [stopCalibration, stopDetection, stopCamera, onCancel]);
+  };
 
-  const retryCalibration = useCallback(() => {
+  const retryCalibration = () => {
     setPhase("recording");
     setEarData([]);
     setIsRecording(false);
-  }, []);
+  };
 
   // Set video stream
   useEffect(() => {

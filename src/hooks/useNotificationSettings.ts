@@ -46,8 +46,10 @@ export function useNotificationSettings() {
     loadSettings();
   }, [isElectron]);
 
+  // React Compiler auto-memoizes these handlers
+
   // Update a single setting
-  const updateSetting = useCallback(async <K extends keyof NotificationSettings>(
+  const updateSetting = async <K extends keyof NotificationSettings>(
     key: K,
     value: NotificationSettings[K]
   ) => {
@@ -61,10 +63,10 @@ export function useNotificationSettings() {
     } catch (error) {
       console.error(`Failed to update notification setting ${key}:`, error);
     }
-  }, []);
+  };
 
   // Update multiple settings at once
-  const updateSettings = useCallback(async (newSettings: Partial<NotificationSettings>) => {
+  const updateSettings = async (newSettings: Partial<NotificationSettings>) => {
     if (!window.electronAPI?.setNotificationSettings) return;
 
     try {
@@ -73,10 +75,10 @@ export function useNotificationSettings() {
     } catch (error) {
       console.error("Failed to update notification settings:", error);
     }
-  }, []);
+  };
 
   // Send a test notification
-  const testNotification = useCallback(async (): Promise<TestNotificationResult> => {
+  const testNotification = async (): Promise<TestNotificationResult> => {
     if (!window.electronAPI?.testNotification) {
       return { success: false, reason: "not-electron" };
     }
@@ -87,10 +89,10 @@ export function useNotificationSettings() {
       console.error("Failed to send test notification:", error);
       return { success: false, reason: "error" };
     }
-  }, []);
+  };
 
   // Send a fatigue alert
-  const sendFatigueAlert = useCallback(async (blinkRate: number): Promise<boolean> => {
+  const sendFatigueAlert = async (blinkRate: number): Promise<boolean> => {
     if (!window.electronAPI?.sendFatigueAlert) {
       return false;
     }
@@ -101,7 +103,7 @@ export function useNotificationSettings() {
       console.error("Failed to send fatigue alert:", error);
       return false;
     }
-  }, []);
+  };
 
   // Get current notification state
   const refreshNotificationState = useCallback(async () => {
@@ -116,7 +118,7 @@ export function useNotificationSettings() {
   }, []);
 
   // Open system notification settings
-  const openNotificationSettings = useCallback(async () => {
+  const openNotificationSettings = async () => {
     if (!window.electronAPI?.openNotificationSettings) return;
 
     try {
@@ -124,14 +126,14 @@ export function useNotificationSettings() {
     } catch (error) {
       console.error("Failed to open notification settings:", error);
     }
-  }, []);
+  };
 
   // Helper to format hour as 12-hour time
-  const formatHour = useCallback((hour: number): string => {
+  const formatHour = (hour: number): string => {
     const period = hour >= 12 ? "PM" : "AM";
     const displayHour = hour % 12 || 12;
     return `${displayHour}:00 ${period}`;
-  }, []);
+  };
 
   // Load notification state on mount
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { useFaceLandmarker } from './useFaceLandmarker';
 import { FaceMeshVisualizer } from '../lib/blink-detection/face-mesh-visualizer';
 import { extractBothEyeLandmarks } from '../lib/blink-detection/landmark-extractor';
@@ -35,12 +35,13 @@ export function useBlinkDetection(options: UseBlinkDetectionOptions = {}) {
     isCurrentlyBlinking: false,
   });
 
+  // Memoize config to prevent useCallback dependency changes on every render
   const config = useMemo(() => ({
     earThreshold: options.earThreshold ?? activeCalibration?.earThreshold ?? 0.25,
     consecutiveFrames: options.consecutiveFrames ?? 2,
     debounceTime: options.debounceTime ?? 50,
     showDebugOverlay: options.showDebugOverlay ?? true,
-  }), [options, activeCalibration?.earThreshold]);
+  }), [options.earThreshold, options.consecutiveFrames, options.debounceTime, options.showDebugOverlay, activeCalibration?.earThreshold]);
 
   const { isInitialized, initialize, detectForVideo, dispose } = useFaceLandmarker();
 

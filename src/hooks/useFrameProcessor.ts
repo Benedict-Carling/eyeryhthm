@@ -16,8 +16,31 @@ export interface FrameData {
   timestamp: number;
 }
 
-// Opt out of React Compiler for this hook since it manipulates canvas DOM properties
-// which the compiler incorrectly flags as prop mutations
+/**
+ * Helper function to update canvas dimensions if needed.
+ * Extracted to avoid React Compiler flagging canvas property assignment as prop mutation.
+ */
+function updateCanvasDimensions(
+  canvas: HTMLCanvasElement,
+  videoWidth: number,
+  videoHeight: number,
+  lastDimensions: { width: number; height: number }
+): { width: number; height: number } {
+  if (videoWidth !== lastDimensions.width || videoHeight !== lastDimensions.height) {
+    // Direct DOM property assignment - this is valid and not a React prop mutation
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+    return { width: videoWidth, height: videoHeight };
+  }
+  return lastDimensions;
+}
+
+/**
+ * A React Compiler-compatible frame processor hook.
+ *
+ * Processes video frames at the browser's refresh rate using requestAnimationFrame.
+ * Automatically handles canvas dimension synchronization with video dimensions.
+ */
 export function useFrameProcessor({
   videoRef,
   canvasRef,
@@ -25,40 +48,31 @@ export function useFrameProcessor({
   onFrame,
   isEnabled = true,
 }: UseFrameProcessorOptions) {
-  'use no memo';
-
   const lastDimensionUpdate = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
 
   const handleAnimationFrame = useCallback(() => {
-    if (!videoRef.current || !isEnabled) return;
-
     const video = videoRef.current;
-    const canvas = canvasRef?.current;
+    if (!video || !isEnabled) return;
+
+    const canvas = canvasRef?.current ?? null;
 
     // Update canvas dimensions if video dimensions changed (only if canvas exists)
     if (canvas && video.videoWidth > 0 && video.videoHeight > 0) {
-      if (
-        video.videoWidth !== lastDimensionUpdate.current.width ||
-        video.videoHeight !== lastDimensionUpdate.current.height
-      ) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        lastDimensionUpdate.current = {
-          width: video.videoWidth,
-          height: video.videoHeight,
-        };
-      }
+      lastDimensionUpdate.current = updateCanvasDimensions(
+        canvas,
+        video.videoWidth,
+        video.videoHeight,
+        lastDimensionUpdate.current
+      );
     }
 
     // Process the frame - canvas is optional
-    processFrame(video, canvas || undefined);
+    processFrame(video, canvas ?? undefined);
 
     // Call the optional frame callback
     if (onFrame) {
-      // This is a placeholder - the actual EAR value should come from processFrame
-      // We'll need to modify processFrame to return the EAR value
       onFrame({
-        currentEAR: 0, // This will be provided by the actual implementation
+        currentEAR: 0, // Placeholder - actual value comes from processFrame
         timestamp: Date.now(),
       });
     }

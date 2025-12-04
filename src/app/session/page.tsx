@@ -1,82 +1,51 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect, Suspense, useMemo, useRef } from "react";
+import { useState, Suspense, useMemo } from "react";
 import { Container, Flex, Box, Text, Heading, Button, Card } from "@radix-ui/themes";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useSession } from "../../contexts/SessionContext";
 import { SessionData, BlinkRatePoint } from "../../lib/sessions/types";
 import { BlinkRateChart } from "../../components/BlinkRateChart";
+import { useInterval } from "../../hooks/useInterval";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 // Debounce interval for chart updates (ms) - prevents aggressive re-rendering
 const CHART_UPDATE_DEBOUNCE_MS = 3000;
 
-// Custom hook for debounced chart history - opt out of compiler due to interval-based state updates
+/**
+ * Hook to get debounced blink rate history for chart rendering.
+ * Uses useDebouncedValue for compiler compatibility.
+ */
 function useDebouncedHistory(session: SessionData | null): BlinkRatePoint[] {
-  'use no memo';
+  // Get the raw history from session
+  const rawHistory = session?.blinkRateHistory ?? [];
 
-  const [debouncedHistory, setDebouncedHistory] = useState<BlinkRatePoint[]>([]);
-  const lastChartUpdateRef = useRef<number>(0);
-  const initializedForSessionRef = useRef<string | null>(null);
+  // For inactive sessions, return immediately without debouncing
+  // For active sessions, debounce to prevent chart thrashing
+  const shouldDebounce = session?.isActive ?? false;
 
-  useEffect(() => {
-    if (!session) return;
+  // Debounce the history for active sessions
+  const debouncedHistory = useDebouncedValue(rawHistory, CHART_UPDATE_DEBOUNCE_MS);
 
-    // Always show chart immediately on first load for this session
-    if (initializedForSessionRef.current !== session.id) {
-      setDebouncedHistory(session.blinkRateHistory);
-      lastChartUpdateRef.current = Date.now();
-      initializedForSessionRef.current = session.id;
-      return;
-    }
-
-    // For non-active sessions, always sync immediately
-    if (!session.isActive) {
-      setDebouncedHistory(session.blinkRateHistory);
-      return;
-    }
-
-    // For active sessions, debounce subsequent updates
-    const now = Date.now();
-    const timeSinceLastUpdate = now - lastChartUpdateRef.current;
-
-    if (timeSinceLastUpdate >= CHART_UPDATE_DEBOUNCE_MS) {
-      setDebouncedHistory(session.blinkRateHistory);
-      lastChartUpdateRef.current = now;
-    } else {
-      const timeUntilUpdate = CHART_UPDATE_DEBOUNCE_MS - timeSinceLastUpdate;
-      const timeoutId = setTimeout(() => {
-        setDebouncedHistory(session.blinkRateHistory);
-        lastChartUpdateRef.current = Date.now();
-      }, timeUntilUpdate);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [session]);
-
-  return debouncedHistory;
+  // Return debounced for active, immediate for inactive
+  return shouldDebounce ? debouncedHistory : rawHistory;
 }
 
-// Custom hook for elapsed time - opt out of compiler due to interval-based state updates
+/**
+ * Hook to track elapsed time for active sessions.
+ * Uses useInterval for compiler compatibility.
+ */
 function useElapsedTime(isActive: boolean, startTime: number): { elapsedTime: number; currentTime: number } {
-  'use no memo';
-
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 
-  useEffect(() => {
-    if (!isActive || !startTime) return;
-
-    const updateElapsed = () => {
-      const now = Date.now();
-      setElapsedTime(Math.floor((now - startTime) / 1000));
-      setCurrentTime(now);
-    };
-
-    updateElapsed();
-    const interval = setInterval(updateElapsed, 1000);
-    return () => clearInterval(interval);
-  }, [isActive, startTime]);
+  // Use interval hook - passes null to pause when not active
+  useInterval(() => {
+    const now = Date.now();
+    setElapsedTime(Math.floor((now - startTime) / 1000));
+    setCurrentTime(now);
+  }, isActive && startTime ? 1000 : null);
 
   return { elapsedTime, currentTime };
 }

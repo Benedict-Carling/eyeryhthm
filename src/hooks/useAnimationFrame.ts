@@ -1,50 +1,66 @@
 import { useRef, useCallback, useEffect } from 'react';
 
-// Opt out of React Compiler for this hook since it uses refs for animation frame loop
-// which requires accessing refs during render for the recursive callback pattern
+/**
+ * A React Compiler-compatible animation frame hook.
+ *
+ * This hook properly manages requestAnimationFrame without triggering
+ * compiler warnings about self-referential callbacks.
+ *
+ * @param callback - Function to call on each animation frame
+ * @param enabled - Whether the animation loop is active (default: true)
+ * @returns Object with start and stop functions for manual control
+ *
+ * @example
+ * ```tsx
+ * useAnimationFrame((timestamp) => {
+ *   // Update animation state
+ *   setPosition(calculatePosition(timestamp));
+ * }, isAnimating);
+ * ```
+ */
 export function useAnimationFrame(callback: (timestamp: number) => void, enabled = true) {
-  'use no memo';
-
-  const callbackRef = useRef(callback);
+  const savedCallback = useRef(callback);
   const frameRef = useRef<number | null>(null);
 
-  // Update callback ref when callback changes
+  // Keep callback ref up to date
   useEffect(() => {
-    callbackRef.current = callback;
+    savedCallback.current = callback;
   }, [callback]);
 
-  const animate = useCallback((timestamp: number) => {
-    callbackRef.current(timestamp);
-    frameRef.current = requestAnimationFrame(animate);
+  // Start the animation loop
+  // React Compiler auto-memoizes this callback
+  const startLoop = useCallback(() => {
+    if (frameRef.current !== null) return; // Already running
+
+    const loop = (timestamp: number) => {
+      savedCallback.current(timestamp);
+      frameRef.current = requestAnimationFrame(loop);
+    };
+
+    frameRef.current = requestAnimationFrame(loop);
   }, []);
 
-  useEffect(() => {
-    if (enabled) {
-      frameRef.current = requestAnimationFrame(animate);
-    } else if (frameRef.current !== null) {
-      cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
-    }
-
-    return () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-    };
-  }, [enabled, animate]);
-
-  const start = useCallback(() => {
-    if (frameRef.current === null) {
-      frameRef.current = requestAnimationFrame(animate);
-    }
-  }, [animate]);
-
-  const stop = useCallback(() => {
+  // Stop the animation loop
+  const stopLoop = useCallback(() => {
     if (frameRef.current !== null) {
       cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     }
   }, []);
 
-  return { start, stop };
+  // Auto start/stop based on enabled prop
+  useEffect(() => {
+    if (enabled) {
+      startLoop();
+    } else {
+      stopLoop();
+    }
+
+    return stopLoop;
+  }, [enabled, startLoop, stopLoop]);
+
+  return {
+    start: startLoop,
+    stop: stopLoop,
+  };
 }
