@@ -38,6 +38,24 @@ export function useCamera(options: CameraOptions = {}) {
         audio: false,
       });
 
+      // Listen for track ended event (e.g., when OS kills camera during sleep)
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          console.log('[Camera] Video track ended unexpectedly (system suspend or camera disconnect)');
+          setState(prev => ({
+            ...prev,
+            stream: null,
+            hasPermission: false,
+            error: 'Camera disconnected',
+          }));
+          // Clean up video element
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+        };
+      }
+
       setState(prev => ({
         ...prev,
         stream,

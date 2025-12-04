@@ -21,6 +21,8 @@ function createMockElectronAPI(overrides: Partial<ElectronAPI> = {}): ElectronAP
     onToggleTracking: vi.fn(),
     getLaunchAtLogin: vi.fn(),
     setLaunchAtLogin: vi.fn(),
+    onSystemSuspend: vi.fn(),
+    onSystemResume: vi.fn(),
     getNotificationSettings: vi.fn(),
     setNotificationSettings: vi.fn(),
     sendFatigueAlert: vi.fn(),

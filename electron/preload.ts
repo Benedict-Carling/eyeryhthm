@@ -60,6 +60,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getLaunchAtLogin: () => ipcRenderer.invoke("get-launch-at-login"),
   setLaunchAtLogin: (enabled: boolean) => ipcRenderer.invoke("set-launch-at-login", enabled),
 
+  // System power state events (suspend/resume)
+  onSystemSuspend: (callback: () => void) => {
+    const listener = () => {
+      callback();
+    };
+    ipcRenderer.on("system-suspend", listener);
+    return () => {
+      ipcRenderer.removeListener("system-suspend", listener);
+    };
+  },
+  onSystemResume: (callback: () => void) => {
+    const listener = () => {
+      callback();
+    };
+    ipcRenderer.on("system-resume", listener);
+    return () => {
+      ipcRenderer.removeListener("system-resume", listener);
+    };
+  },
+
   // Notification APIs
   getNotificationSettings: () => ipcRenderer.invoke("get-notification-settings"),
   setNotificationSettings: (settings: Partial<NotificationSettings>) =>

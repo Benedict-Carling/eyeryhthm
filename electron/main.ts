@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, Notification } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
@@ -455,6 +455,30 @@ app.whenReady().then(() => {
   if (!isDev && mainWindow) {
     setupAutoUpdater(mainWindow);
   }
+
+  // Handle system suspend/resume to prevent state desync
+  // When system sleeps, camera stream is destroyed by OS but main process state persists
+  powerMonitor.on('suspend', () => {
+    console.log('[PowerMonitor] System suspending');
+    if (isTrackingEnabled) {
+      // Reset tracking state - camera will be dead after resume
+      isTrackingEnabled = false;
+      updateTrayMenu();
+      // Notify renderer to stop tracking gracefully
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('system-suspend');
+      }
+      console.log('[PowerMonitor] Tracking stopped due to system suspend');
+    }
+  });
+
+  powerMonitor.on('resume', () => {
+    console.log('[PowerMonitor] System resumed');
+    // Notify renderer that system has resumed (for any cleanup/reconciliation)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('system-resume');
+    }
+  });
 
   // On macOS, re-create window when dock icon is clicked
   app.on("activate", () => {
