@@ -1,5 +1,14 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 
+// Notification settings type
+export interface NotificationSettings {
+  enabled: boolean;
+  soundEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: number; // Hour in 24h format (0-23)
+  quietHoursEnd: number;   // Hour in 24h format (0-23)
+}
+
 // Expose protected methods that allow the renderer process to use
 // ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld("electronAPI", {
@@ -50,6 +59,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Launch at login settings
   getLaunchAtLogin: () => ipcRenderer.invoke("get-launch-at-login"),
   setLaunchAtLogin: (enabled: boolean) => ipcRenderer.invoke("set-launch-at-login", enabled),
+
+  // Notification APIs
+  getNotificationSettings: () => ipcRenderer.invoke("get-notification-settings"),
+  setNotificationSettings: (settings: Partial<NotificationSettings>) =>
+    ipcRenderer.invoke("set-notification-settings", settings),
+  sendFatigueAlert: (blinkRate: number) => ipcRenderer.invoke("send-fatigue-alert", blinkRate),
+  testNotification: () => ipcRenderer.invoke("test-notification"),
+  getNotificationState: () => ipcRenderer.invoke("get-notification-state"),
+  openNotificationSettings: () => ipcRenderer.invoke("open-notification-settings"),
 });
 
 // Update status type (mirrors the one in updater.ts)

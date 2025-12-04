@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, Notification } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
@@ -11,6 +11,27 @@ let powerSaveBlockerId: number | null = null;
 // Tracking state managed by main process (synced with renderer)
 let isTrackingEnabled = false;
 let launchAtLoginEnabled = false;
+
+// Notification settings and state
+interface NotificationSettings {
+  enabled: boolean;
+  soundEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: number; // Hour in 24h format (0-23)
+  quietHoursEnd: number;   // Hour in 24h format (0-23)
+}
+
+const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  enabled: true,
+  soundEnabled: true,
+  quietHoursEnabled: true,
+  quietHoursStart: 23, // 11 PM - notifications disabled from 11 PM
+  quietHoursEnd: 7,    // 7 AM - notifications enabled again at 7 AM
+};
+
+let notificationSettings: NotificationSettings = { ...DEFAULT_NOTIFICATION_SETTINGS };
+let lastFatigueAlertTime: number = 0;
+const FATIGUE_ALERT_COOLDOWN_MS = 60000; // 1 minute cooldown between alerts
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 const outDir = path.resolve(__dirname, "../out");
@@ -526,4 +547,154 @@ ipcMain.handle("get-launch-at-login", () => {
 ipcMain.handle("set-launch-at-login", (_event, enabled: boolean) => {
   setLaunchAtLogin(enabled);
   return launchAtLoginEnabled;
+});
+
+// Notification helper functions
+
+function isWithinQuietHours(): boolean {
+  if (!notificationSettings.quietHoursEnabled) {
+    return false;
+  }
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  const { quietHoursStart, quietHoursEnd } = notificationSettings;
+
+  // Handle overnight quiet hours (e.g., 11 PM to 7 AM)
+  if (quietHoursStart > quietHoursEnd) {
+    // Quiet hours span midnight
+    return currentHour >= quietHoursStart || currentHour < quietHoursEnd;
+  } else {
+    // Quiet hours within same day
+    return currentHour >= quietHoursStart && currentHour < quietHoursEnd;
+  }
+}
+
+function canSendNotification(): boolean {
+  if (!notificationSettings.enabled) {
+    return false;
+  }
+
+  if (isWithinQuietHours()) {
+    return false;
+  }
+
+  // Check cooldown
+  const now = Date.now();
+  if (now - lastFatigueAlertTime < FATIGUE_ALERT_COOLDOWN_MS) {
+    return false;
+  }
+
+  return true;
+}
+
+function sendFatigueNotification(blinkRate: number): boolean {
+  if (!canSendNotification()) {
+    return false;
+  }
+
+  if (!Notification.isSupported()) {
+    console.warn('[Notification] Notifications not supported on this system');
+    return false;
+  }
+
+  const notification = new Notification({
+    title: 'Eye Fatigue Alert',
+    body: `Your blink rate has dropped to ${blinkRate.toFixed(1)} blinks/min. Consider taking a break.`,
+    silent: !notificationSettings.soundEnabled,
+    icon: isDev
+      ? path.join(__dirname, '../build-resources/icon.png')
+      : path.join(process.resourcesPath, 'icon.png'),
+  });
+
+  notification.on('click', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+      if (process.platform === 'darwin' && app.dock) {
+        app.dock.show();
+      }
+    }
+  });
+
+  notification.show();
+  lastFatigueAlertTime = Date.now();
+
+  trackEvent(AnalyticsEvents.FATIGUE_ALERT_SENT);
+
+  return true;
+}
+
+// Notification IPC handlers
+
+ipcMain.handle("get-notification-settings", () => {
+  return notificationSettings;
+});
+
+ipcMain.handle("set-notification-settings", (_event, settings: Partial<NotificationSettings>) => {
+  notificationSettings = {
+    ...notificationSettings,
+    ...settings,
+  };
+  return notificationSettings;
+});
+
+ipcMain.handle("send-fatigue-alert", (_event, blinkRate: number) => {
+  return sendFatigueNotification(blinkRate);
+});
+
+ipcMain.handle("test-notification", () => {
+  if (!Notification.isSupported()) {
+    return { success: false, reason: 'not-supported' };
+  }
+
+  const notification = new Notification({
+    title: 'EyeRhythm Test Notification',
+    body: 'Notifications are working correctly!',
+    silent: !notificationSettings.soundEnabled,
+    icon: isDev
+      ? path.join(__dirname, '../build-resources/icon.png')
+      : path.join(process.resourcesPath, 'icon.png'),
+  });
+
+  notification.on('click', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+      if (process.platform === 'darwin' && app.dock) {
+        app.dock.show();
+      }
+    }
+  });
+
+  notification.show();
+
+  return { success: true };
+});
+
+ipcMain.handle("get-notification-state", () => {
+  // Note: There's no reliable way to check notification permission on macOS
+  // without using native modules that don't support it. We return 'unknown'
+  // and let users test notifications to verify they work.
+  const permissionStatus: 'not-determined' | 'denied' | 'authorized' | 'unknown' =
+    process.platform !== 'darwin' && Notification.isSupported() ? 'authorized' : 'unknown';
+
+  return {
+    isSupported: Notification.isSupported(),
+    canSend: canSendNotification(),
+    isWithinQuietHours: isWithinQuietHours(),
+    cooldownRemaining: Math.max(0, FATIGUE_ALERT_COOLDOWN_MS - (Date.now() - lastFatigueAlertTime)),
+    permissionStatus,
+  };
+});
+
+ipcMain.handle("open-notification-settings", () => {
+  if (process.platform === 'darwin') {
+    // Open macOS System Preferences > Notifications
+    shell.openExternal('x-apple.systempreferences:com.apple.preference.notifications');
+  } else if (process.platform === 'win32') {
+    // Open Windows Settings > Notifications
+    shell.openExternal('ms-settings:notifications');
+  }
+  return true;
 });

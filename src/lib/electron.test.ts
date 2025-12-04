@@ -2,6 +2,35 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { isElectron, getElectronAPI, getAppVersion, getPlatformInfo } from "./electron";
 import type { ElectronAPI } from "./electron";
 
+// Helper to create a mock ElectronAPI with all required properties
+function createMockElectronAPI(overrides: Partial<ElectronAPI> = {}): ElectronAPI {
+  return {
+    getAppVersion: vi.fn(),
+    getPlatform: vi.fn(),
+    isElectron: vi.fn(),
+    platform: "darwin",
+    minimizeWindow: vi.fn(),
+    maximizeWindow: vi.fn(),
+    closeWindow: vi.fn(),
+    checkForUpdates: vi.fn(),
+    downloadUpdate: vi.fn(),
+    installUpdate: vi.fn(),
+    onUpdateStatus: vi.fn(),
+    notifyTrackingStateChanged: vi.fn(),
+    getTrackingState: vi.fn(),
+    onToggleTracking: vi.fn(),
+    getLaunchAtLogin: vi.fn(),
+    setLaunchAtLogin: vi.fn(),
+    getNotificationSettings: vi.fn(),
+    setNotificationSettings: vi.fn(),
+    sendFatigueAlert: vi.fn(),
+    testNotification: vi.fn(),
+    getNotificationState: vi.fn(),
+    openNotificationSettings: vi.fn(),
+    ...overrides,
+  };
+}
+
 describe("electron utilities", () => {
   beforeEach(() => {
     // Reset window between tests
@@ -32,24 +61,7 @@ describe("electron utilities", () => {
     });
 
     it("returns true when electronAPI is present", () => {
-      const mockAPI: ElectronAPI = {
-        getAppVersion: vi.fn(),
-        getPlatform: vi.fn(),
-        isElectron: vi.fn(),
-        platform: "darwin",
-        minimizeWindow: vi.fn(),
-        maximizeWindow: vi.fn(),
-        closeWindow: vi.fn(),
-        checkForUpdates: vi.fn(),
-        downloadUpdate: vi.fn(),
-        installUpdate: vi.fn(),
-        onUpdateStatus: vi.fn(),
-        notifyTrackingStateChanged: vi.fn(),
-        getTrackingState: vi.fn(),
-        onToggleTracking: vi.fn(),
-        getLaunchAtLogin: vi.fn(),
-        setLaunchAtLogin: vi.fn(),
-      };
+      const mockAPI = createMockElectronAPI();
 
       vi.stubGlobal("window", {
         electronAPI: mockAPI,
@@ -91,24 +103,7 @@ describe("electron utilities", () => {
     });
 
     it("returns the electronAPI when present", () => {
-      const mockAPI: ElectronAPI = {
-        getAppVersion: vi.fn(),
-        getPlatform: vi.fn(),
-        isElectron: vi.fn(),
-        platform: "darwin",
-        minimizeWindow: vi.fn(),
-        maximizeWindow: vi.fn(),
-        closeWindow: vi.fn(),
-        checkForUpdates: vi.fn(),
-        downloadUpdate: vi.fn(),
-        installUpdate: vi.fn(),
-        onUpdateStatus: vi.fn(),
-        notifyTrackingStateChanged: vi.fn(),
-        getTrackingState: vi.fn(),
-        onToggleTracking: vi.fn(),
-        getLaunchAtLogin: vi.fn(),
-        setLaunchAtLogin: vi.fn(),
-      };
+      const mockAPI = createMockElectronAPI();
 
       vi.stubGlobal("window", {
         electronAPI: mockAPI,
@@ -123,24 +118,9 @@ describe("electron utilities", () => {
 
   describe("getAppVersion", () => {
     it("returns version from electronAPI when in Electron", async () => {
-      const mockAPI: ElectronAPI = {
+      const mockAPI = createMockElectronAPI({
         getAppVersion: vi.fn().mockResolvedValue("1.2.3"),
-        getPlatform: vi.fn(),
-        isElectron: vi.fn(),
-        platform: "darwin",
-        minimizeWindow: vi.fn(),
-        maximizeWindow: vi.fn(),
-        closeWindow: vi.fn(),
-        checkForUpdates: vi.fn(),
-        downloadUpdate: vi.fn(),
-        installUpdate: vi.fn(),
-        onUpdateStatus: vi.fn(),
-        notifyTrackingStateChanged: vi.fn(),
-        getTrackingState: vi.fn(),
-        onToggleTracking: vi.fn(),
-        getLaunchAtLogin: vi.fn(),
-        setLaunchAtLogin: vi.fn(),
-      };
+      });
 
       vi.stubGlobal("window", {
         electronAPI: mockAPI,
@@ -176,24 +156,9 @@ describe("electron utilities", () => {
         version: "14.0.0",
       };
 
-      const mockAPI: ElectronAPI = {
-        getAppVersion: vi.fn(),
+      const mockAPI = createMockElectronAPI({
         getPlatform: vi.fn().mockResolvedValue(mockPlatformInfo),
-        isElectron: vi.fn(),
-        platform: "darwin",
-        minimizeWindow: vi.fn(),
-        maximizeWindow: vi.fn(),
-        closeWindow: vi.fn(),
-        checkForUpdates: vi.fn(),
-        downloadUpdate: vi.fn(),
-        installUpdate: vi.fn(),
-        onUpdateStatus: vi.fn(),
-        notifyTrackingStateChanged: vi.fn(),
-        getTrackingState: vi.fn(),
-        onToggleTracking: vi.fn(),
-        getLaunchAtLogin: vi.fn(),
-        setLaunchAtLogin: vi.fn(),
-      };
+      });
 
       vi.stubGlobal("window", {
         electronAPI: mockAPI,

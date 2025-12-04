@@ -14,6 +14,7 @@ import {
   Callout,
   Button,
   Progress,
+  Select,
 } from "@radix-ui/themes";
 import {
   BellIcon,
@@ -22,14 +23,17 @@ import {
   DownloadIcon,
   UpdateIcon,
   RocketIcon,
+  ClockIcon,
+  CheckCircledIcon,
+  CrossCircledIcon,
 } from "@radix-ui/react-icons";
 import { VersionInfo } from "@/components/VersionInfo";
 import { useUpdateStatus } from "@/hooks/useUpdateStatus";
+import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 
 export default function SettingsPage() {
   const [fatigueThreshold, setFatigueThreshold] = useState(8);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
   const {
     isElectron,
     updateStatus,
@@ -38,16 +42,20 @@ export default function SettingsPage() {
     installUpdate,
   } = useUpdateStatus();
 
-  useEffect(() => {
-    // Load saved settings
-    const savedThreshold = localStorage.getItem("fatigueThreshold");
-    const savedNotifications = localStorage.getItem("notificationsEnabled");
-    const savedSound = localStorage.getItem("soundEnabled");
+  const {
+    isElectron: isElectronNotifications,
+    isLoading: isNotificationLoading,
+    settings: notificationSettings,
+    updateSetting,
+    testNotification,
+    openNotificationSettings,
+    formatHour,
+  } = useNotificationSettings();
 
+  useEffect(() => {
+    // Load saved fatigue threshold from localStorage
+    const savedThreshold = localStorage.getItem("fatigueThreshold");
     if (savedThreshold) setFatigueThreshold(parseInt(savedThreshold, 10));
-    if (savedNotifications)
-      setNotificationsEnabled(savedNotifications === "true");
-    if (savedSound) setSoundEnabled(savedSound === "true");
   }, []);
 
   const handleThresholdChange = (value: number[]) => {
@@ -58,15 +66,39 @@ export default function SettingsPage() {
     }
   };
 
-  const handleNotificationsChange = (enabled: boolean) => {
-    setNotificationsEnabled(enabled);
-    localStorage.setItem("notificationsEnabled", enabled.toString());
+  const handleNotificationsChange = async (enabled: boolean) => {
+    await updateSetting("enabled", enabled);
   };
 
-  const handleSoundChange = (enabled: boolean) => {
-    setSoundEnabled(enabled);
-    localStorage.setItem("soundEnabled", enabled.toString());
+  const handleSoundChange = async (enabled: boolean) => {
+    await updateSetting("soundEnabled", enabled);
   };
+
+  const handleQuietHoursChange = async (enabled: boolean) => {
+    await updateSetting("quietHoursEnabled", enabled);
+  };
+
+  const handleQuietHoursStartChange = async (value: string) => {
+    await updateSetting("quietHoursStart", parseInt(value, 10));
+  };
+
+  const handleQuietHoursEndChange = async (value: string) => {
+    await updateSetting("quietHoursEnd", parseInt(value, 10));
+  };
+
+  const handleTestNotification = async () => {
+    setTestStatus("idle");
+    const result = await testNotification();
+    setTestStatus(result.success ? "success" : "error");
+    // Reset status after 3 seconds
+    setTimeout(() => setTestStatus("idle"), 3000);
+  };
+
+  // Generate hour options for quiet hours selects
+  const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+    value: i.toString(),
+    label: formatHour(i),
+  }));
 
   const renderUpdateCallout = () => {
     if (!isElectron || !hasUpdate) return null;
@@ -200,67 +232,186 @@ export default function SettingsPage() {
               Notification Settings
             </Heading>
 
-            <Card size="2" style={{ opacity: 0.6 }}>
-              <Flex direction="column">
-                <Flex
-                  justify="between"
-                  align="center"
-                  style={{ padding: "14px 16px" }}
-                >
-                  <Box style={{ flex: 1, marginRight: "40px" }}>
-                    <Flex align="center" gap="2" mb="1">
-                      <BellIcon />
-                      <Text size="3" weight="medium">
-                        Desktop Notifications
-                      </Text>
-                    </Flex>
-                    <Text size="2" color="gray">
-                      Receive alerts when fatigue is detected
-                    </Text>
-                  </Box>
-                  <Switch
-                    checked={notificationsEnabled}
-                    onCheckedChange={handleNotificationsChange}
-                    size="2"
-                    disabled
-                  />
-                </Flex>
-
-                <Box style={{ padding: "0 16px" }}>
-                  <Separator size="4" />
-                </Box>
-
-                <Flex
-                  justify="between"
-                  align="center"
-                  style={{ padding: "14px 16px" }}
-                >
-                  <Box style={{ flex: 1, marginRight: "40px" }}>
-                    <Flex align="center" gap="2" mb="1">
-                      <SpeakerLoudIcon />
-                      <Text size="3" weight="medium">
-                        Sound Alerts
-                      </Text>
-                    </Flex>
-                    <Text size="2" color="gray">
-                      Play a sound with fatigue notifications
-                    </Text>
-                  </Box>
-                  <Switch
-                    checked={soundEnabled}
-                    onCheckedChange={handleSoundChange}
-                    disabled
-                    size="2"
-                  />
-                </Flex>
-
-                <Box style={{ padding: "14px 16px", paddingTop: "0" }}>
+            {!isElectronNotifications ? (
+              <Card size="2" style={{ opacity: 0.6 }}>
+                <Box style={{ padding: "14px 16px" }}>
                   <Text size="2" color="gray" style={{ fontStyle: "italic" }}>
-                    Notifications are currently in development
+                    Desktop notifications are only available in the EyeRhythm desktop app
                   </Text>
                 </Box>
+              </Card>
+            ) : (
+              <Flex direction="column" gap="3">
+                <Card size="2">
+                <Flex direction="column">
+                  <Flex
+                    justify="between"
+                    align="center"
+                    style={{ padding: "14px 16px" }}
+                  >
+                    <Box style={{ flex: 1, marginRight: "40px" }}>
+                      <Flex align="center" gap="2" mb="1">
+                        <BellIcon />
+                        <Text size="3" weight="medium">
+                          Desktop Notifications
+                        </Text>
+                      </Flex>
+                      <Text size="2" color="gray">
+                        Receive alerts when fatigue is detected
+                      </Text>
+                    </Box>
+                    <Switch
+                      checked={notificationSettings.enabled}
+                      onCheckedChange={handleNotificationsChange}
+                      disabled={isNotificationLoading}
+                      size="2"
+                    />
+                  </Flex>
+
+                  <Box style={{ padding: "0 16px" }}>
+                    <Separator size="4" />
+                  </Box>
+
+                  <Flex
+                    justify="between"
+                    align="center"
+                    style={{ padding: "14px 16px" }}
+                  >
+                    <Box style={{ flex: 1, marginRight: "40px" }}>
+                      <Flex align="center" gap="2" mb="1">
+                        <SpeakerLoudIcon />
+                        <Text size="3" weight="medium">
+                          Sound Alerts
+                        </Text>
+                      </Flex>
+                      <Text size="2" color="gray">
+                        Play a sound with fatigue notifications
+                      </Text>
+                    </Box>
+                    <Switch
+                      checked={notificationSettings.soundEnabled}
+                      onCheckedChange={handleSoundChange}
+                      disabled={isNotificationLoading || !notificationSettings.enabled}
+                      size="2"
+                    />
+                  </Flex>
+
+                  <Box style={{ padding: "0 16px" }}>
+                    <Separator size="4" />
+                  </Box>
+
+                  <Flex
+                    justify="between"
+                    align="center"
+                    style={{ padding: "14px 16px" }}
+                  >
+                    <Box style={{ flex: 1, marginRight: "40px" }}>
+                      <Flex align="center" gap="2" mb="1">
+                        <ClockIcon />
+                        <Text size="3" weight="medium">
+                          Quiet Hours
+                        </Text>
+                      </Flex>
+                      <Text size="2" color="gray">
+                        Disable notifications during specific hours
+                      </Text>
+                    </Box>
+                    <Switch
+                      checked={notificationSettings.quietHoursEnabled}
+                      onCheckedChange={handleQuietHoursChange}
+                      disabled={isNotificationLoading || !notificationSettings.enabled}
+                      size="2"
+                    />
+                  </Flex>
+
+                  {notificationSettings.quietHoursEnabled && notificationSettings.enabled && (
+                    <Flex
+                      align="center"
+                      gap="3"
+                      style={{ padding: "0 16px 14px 16px" }}
+                    >
+                      <Text size="2" color="gray">From</Text>
+                      <Select.Root
+                        value={notificationSettings.quietHoursStart.toString()}
+                        onValueChange={handleQuietHoursStartChange}
+                        disabled={isNotificationLoading}
+                      >
+                        <Select.Trigger style={{ minWidth: "110px" }} />
+                        <Select.Content>
+                          {hourOptions.map((option) => (
+                            <Select.Item key={option.value} value={option.value}>
+                              {option.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Root>
+                      <Text size="2" color="gray">to</Text>
+                      <Select.Root
+                        value={notificationSettings.quietHoursEnd.toString()}
+                        onValueChange={handleQuietHoursEndChange}
+                        disabled={isNotificationLoading}
+                      >
+                        <Select.Trigger style={{ minWidth: "110px" }} />
+                        <Select.Content>
+                          {hourOptions.map((option) => (
+                            <Select.Item key={option.value} value={option.value}>
+                              {option.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Root>
+                    </Flex>
+                  )}
+
+                  <Box style={{ padding: "0 16px" }}>
+                    <Separator size="4" />
+                  </Box>
+
+                  <Flex
+                    justify="between"
+                    align="center"
+                    style={{ padding: "14px 16px" }}
+                  >
+                    <Box style={{ flex: 1, marginRight: "40px" }}>
+                      <Flex align="center" gap="2" mb="1">
+                        <BellIcon />
+                        <Text size="3" weight="medium">
+                          Test Notification
+                        </Text>
+                      </Flex>
+                      <Text size="2" color="gray">
+                        Send a test notification to verify settings.{" "}
+                        <Text
+                          size="2"
+                          color="blue"
+                          style={{ cursor: "pointer", textDecoration: "underline" }}
+                          onClick={openNotificationSettings}
+                        >
+                          Not working? Check System Settings
+                        </Text>
+                      </Text>
+                    </Box>
+                    <Flex align="center" gap="2">
+                      {testStatus === "success" && (
+                        <CheckCircledIcon color="green" />
+                      )}
+                      {testStatus === "error" && (
+                        <CrossCircledIcon color="red" />
+                      )}
+                      <Button
+                        size="2"
+                        variant="soft"
+                        onClick={handleTestNotification}
+                        disabled={isNotificationLoading || !notificationSettings.enabled}
+                      >
+                        Test
+                      </Button>
+                    </Flex>
+                  </Flex>
+                </Flex>
+              </Card>
               </Flex>
-            </Card>
+            )}
           </Box>
 
           <Box mt="3">
