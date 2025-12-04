@@ -14,6 +14,7 @@ import {
   initialize,
   trackEvent as aptabaseTrackEvent,
 } from "@aptabase/electron/main";
+import { log } from "./logger";
 
 // Aptabase App Key - get yours at https://aptabase.com
 const APTABASE_APP_KEY = "A-EU-1500337563";
@@ -22,9 +23,9 @@ const APTABASE_APP_KEY = "A-EU-1500337563";
 // This is required by the Aptabase SDK
 if (APTABASE_APP_KEY) {
   initialize(APTABASE_APP_KEY);
-  console.log("[Analytics] Aptabase initialized");
+  log("[Analytics] Aptabase initialized");
 } else {
-  console.log("[Analytics] Aptabase not configured - analytics disabled");
+  log("[Analytics] Aptabase not configured - analytics disabled");
 }
 
 /**
@@ -45,9 +46,9 @@ export function trackEvent(
     } else {
       aptabaseTrackEvent(eventName);
     }
-    console.log(`[Analytics] Event tracked: ${eventName}`);
-  } catch (error) {
-    console.error(`[Analytics] Failed to track event "${eventName}":`, error);
+    log(`[Analytics] Event tracked: ${eventName}`);
+  } catch {
+    // Silently fail - analytics should never crash the app
   }
 }
 

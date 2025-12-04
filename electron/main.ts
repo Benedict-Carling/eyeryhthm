@@ -4,6 +4,7 @@ import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
 // IMPORTANT: Import analytics early - it initializes Aptabase on import (before app.whenReady)
 import { trackEvent, AnalyticsEvents } from "./analytics";
+import { log, warn, error } from "./logger";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -70,7 +71,7 @@ function registerAppProtocol() {
 
     // Security: Prevent path traversal attacks
     if (!filePath.startsWith(outDir)) {
-      console.error(`[Security] Path traversal attempt blocked: ${urlPath}`);
+      error(`[Security] Path traversal attempt blocked: ${urlPath}`);
       return new Response("Forbidden", { status: 403 });
     }
 
@@ -202,10 +203,10 @@ function createTray() {
     }
 
     if (icon.isEmpty()) {
-      console.warn('[Tray] Icon loaded but is empty, check icon path:', iconPath);
+      warn('[Tray] Icon loaded but is empty, check icon path:', iconPath);
     }
-  } catch (error) {
-    console.error('[Tray] Failed to load tray icon, using empty icon:', error);
+  } catch (err) {
+    error('[Tray] Failed to load tray icon, using empty icon:', err);
     icon = nativeImage.createEmpty();
   }
 
@@ -379,7 +380,7 @@ app.whenReady().then(() => {
 
   // Prevent system from throttling timers (allows tracking when hidden/minimized)
   powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
-  console.log('[PowerSave] Timer throttling prevention enabled:', powerSaveBlockerId);
+  log('[PowerSave] Timer throttling prevention enabled:', powerSaveBlockerId);
 
   createWindow();
 
@@ -465,7 +466,7 @@ app.whenReady().then(() => {
   // Handle system suspend/resume to prevent state desync
   // When system sleeps, camera stream is destroyed by OS but main process state persists
   powerMonitor.on('suspend', () => {
-    console.log('[PowerMonitor] System suspending');
+    log('[PowerMonitor] System suspending');
     if (isTrackingEnabled) {
       // Reset tracking state - camera will be dead after resume
       isTrackingEnabled = false;
@@ -474,12 +475,12 @@ app.whenReady().then(() => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('system-suspend');
       }
-      console.log('[PowerMonitor] Tracking stopped due to system suspend');
+      log('[PowerMonitor] Tracking stopped due to system suspend');
     }
   });
 
   powerMonitor.on('resume', () => {
-    console.log('[PowerMonitor] System resumed');
+    log('[PowerMonitor] System resumed');
     // Notify renderer that system has resumed (for any cleanup/reconciliation)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('system-resume');
@@ -513,7 +514,7 @@ app.on('before-quit', () => {
 
   if (powerSaveBlockerId !== null) {
     powerSaveBlocker.stop(powerSaveBlockerId);
-    console.log('[PowerSave] Timer throttling prevention disabled');
+    log('[PowerSave] Timer throttling prevention disabled');
   }
 });
 
@@ -632,7 +633,7 @@ function sendFatigueNotification(blinkRate: number): boolean {
   }
 
   if (!Notification.isSupported()) {
-    console.warn('[Notification] Notifications not supported on this system');
+    warn('[Notification] Notifications not supported on this system');
     return false;
   }
 
