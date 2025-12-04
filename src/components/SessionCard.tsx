@@ -34,6 +34,20 @@ export function SessionCard({ session }: SessionCardProps) {
   const [debouncedHistory, setDebouncedHistory] = useState<BlinkRatePoint[]>(session.blinkRateHistory);
   const lastChartUpdateRef = useRef<number>(Date.now()); // Set to now since we already initialized with data
 
+  // Timer tick for active session duration updates (updates every minute)
+  const [durationTick, setDurationTick] = useState(0);
+
+  // Update duration display every 30 seconds for active sessions
+  useEffect(() => {
+    if (!session.isActive) return;
+
+    const intervalId = setInterval(() => {
+      setDurationTick(tick => tick + 1);
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [session.isActive]);
+
   // Derive live blink count and rate from source of truth (only for active sessions)
   const liveBlinkCount = session.isActive ? currentBlinkCount - sessionBaselineBlinkCount : 0;
   const liveBlinkRate = useMemo(() => {
@@ -96,10 +110,12 @@ export function SessionCard({ session }: SessionCardProps) {
   }, [session.isActive, session.blinkRateHistory, liveBlinkRate]);
 
   // Check if session is 3+ minutes old (show current rate)
+  // durationTick dependency ensures this recalculates periodically for active sessions
   const sessionDurationMinutes = useMemo(() => {
     const endTime = session.endTime || new Date();
     return (endTime.getTime() - session.startTime.getTime()) / 1000 / 60;
-  }, [session.startTime, session.endTime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.startTime, session.endTime, durationTick]);
 
   const showCurrentRate = session.isActive && sessionDurationMinutes >= 3 && currentBlinkRate !== null;
 
