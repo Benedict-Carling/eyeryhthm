@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.5.0...v1.6.0) (2025-12-04)
+
+
+### Features
+
+* **navbar:** add beta badge next to version indicator ([46fefe6](https://github.com/Benedict-Carling/eyeryhthm/commit/46fefe62bc18abbc6d791b21d23a24e7bd390225))
+* **sessions:** add initializing camera callout state ([47586e0](https://github.com/Benedict-Carling/eyeryhthm/commit/47586e0784bea9ba1f5b6c1b7cebc7ece1dffd17))
+
+
+### Bug Fixes
+
+* **analytics:** initialize Aptabase SDK before app ready ([2ff094f](https://github.com/Benedict-Carling/eyeryhthm/commit/2ff094fc336e004eca36e654b135725caf26045e))
+* **electron:** prevent duplicate tray icons on hot reload and quit ([1da296a](https://github.com/Benedict-Carling/eyeryhthm/commit/1da296a165e53251cf2c31f563aee3c10cefe60c))
+* **electron:** prevent EPIPE crashes from console logging in packaged apps ([8231ef6](https://github.com/Benedict-Carling/eyeryhthm/commit/8231ef604728bf7df61a4cc92b1e135467304417))
+* **session-card:** update duration display periodically for active sessions ([a1bbd00](https://github.com/Benedict-Carling/eyeryhthm/commit/a1bbd00fb11e7d36ac8c71843692abc41d85dae8))
+
 ## [1.5.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.4.2...v1.5.0) (2025-12-04)
 
 
