@@ -182,6 +182,12 @@ function initLaunchAtLoginState() {
 }
 
 function createTray() {
+  // Destroy existing tray if present (prevents duplicate icons on hot reload)
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
+
   // Load the template image for macOS (automatically handles dark/light mode)
   // Icon sizes follow Apple HIG: 18x18 (1x) and 36x36 (@2x for Retina)
   const iconPath = getTrayIconPath();
@@ -498,6 +504,12 @@ app.on("window-all-closed", () => {
 // Cleanup on quit
 app.on('before-quit', () => {
   trackEvent(AnalyticsEvents.APP_QUIT);
+
+  // Destroy tray to prevent orphaned icons
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
 
   if (powerSaveBlockerId !== null) {
     powerSaveBlocker.stop(powerSaveBlockerId);
