@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
 import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
@@ -14,17 +14,15 @@ import packageJson from "../../package.json";
 import styles from "./Navbar.module.css";
 
 // Check if running in Electron on macOS
+function getIsElectronMac(): boolean {
+  if (typeof window === "undefined") return false;
+  const isElectron = window.navigator.userAgent.includes("Electron");
+  const isMac = navigator.userAgent.includes("Mac");
+  return isElectron && isMac;
+}
+
 function useIsElectronMac() {
-  const [isElectronMac, setIsElectronMac] = useState(false);
-
-  useEffect(() => {
-    const isElectron = typeof window !== "undefined" &&
-      window.navigator.userAgent.includes("Electron");
-    const isMac = typeof window !== "undefined" &&
-      navigator.userAgent.includes("Mac");
-    setIsElectronMac(isElectron && isMac);
-  }, []);
-
+  const [isElectronMac] = useState(getIsElectronMac);
   return isElectronMac;
 }
 

@@ -4,6 +4,9 @@ import type { NextConfig } from "next";
 const isElectronBuild = process.env.ELECTRON_BUILD === "true";
 
 const nextConfig: NextConfig = {
+  // Enable React Compiler for automatic memoization
+  reactCompiler: true,
+
   // Enable static export for Electron
   output: isElectronBuild ? "export" : undefined,
 

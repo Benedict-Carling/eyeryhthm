@@ -16,6 +16,8 @@ export interface FrameData {
   timestamp: number;
 }
 
+// Opt out of React Compiler for this hook since it manipulates canvas DOM properties
+// which the compiler incorrectly flags as prop mutations
 export function useFrameProcessor({
   videoRef,
   canvasRef,
@@ -23,6 +25,8 @@ export function useFrameProcessor({
   onFrame,
   isEnabled = true,
 }: UseFrameProcessorOptions) {
+  'use no memo';
+
   const lastDimensionUpdate = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
 
   const handleAnimationFrame = useCallback(() => {

@@ -15,15 +15,17 @@ interface CameraOptions {
 
 export function useCamera(options: CameraOptions = {}) {
   const { facingMode = 'user' } = options;
-  
+
   const [state, setState] = useState<CameraState>({
     stream: null,
     isLoading: false,
     error: null,
     hasPermission: false,
   });
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Keep a ref to the stream to avoid stale closure issues in stopCamera
+  const streamRef = useRef<MediaStream | null>(null);
 
   const startCamera = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -43,6 +45,8 @@ export function useCamera(options: CameraOptions = {}) {
       if (videoTrack) {
         videoTrack.onended = () => {
           console.log('[Camera] Video track ended unexpectedly (system suspend or camera disconnect)');
+          // Clear the ref
+          streamRef.current = null;
           setState(prev => ({
             ...prev,
             stream: null,
@@ -55,6 +59,9 @@ export function useCamera(options: CameraOptions = {}) {
           }
         };
       }
+
+      // Store stream in ref for reliable access in stopCamera
+      streamRef.current = stream;
 
       setState(prev => ({
         ...prev,
@@ -86,21 +93,33 @@ export function useCamera(options: CameraOptions = {}) {
   }, [facingMode]);
 
   const stopCamera = useCallback(() => {
-    if (state.stream) {
-      state.stream.getTracks().forEach(track => track.stop());
-      
+    // Use ref to avoid stale closure - streamRef always has current stream
+    const stream = streamRef.current;
+    if (stream) {
+      console.log('[Camera] Stopping camera, tracks:', stream.getTracks().length);
+      stream.getTracks().forEach(track => {
+        console.log('[Camera] Stopping track:', track.kind, track.readyState);
+        track.stop();
+      });
+
+      // Clear the ref
+      streamRef.current = null;
+
       // Clean up video element
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-      
+
       setState(prev => ({
         ...prev,
         stream: null,
         hasPermission: false,
       }));
+      console.log('[Camera] Camera stopped successfully');
+    } else {
+      console.log('[Camera] stopCamera called but no stream in ref');
     }
-  }, [state.stream]);
+  }, []); // No dependencies - uses ref for stream access
 
   return {
     ...state,

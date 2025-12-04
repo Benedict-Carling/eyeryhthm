@@ -11,58 +11,14 @@ import { BlinkRateChart } from "../../components/BlinkRateChart";
 // Debounce interval for chart updates (ms) - prevents aggressive re-rendering
 const CHART_UPDATE_DEBOUNCE_MS = 3000;
 
-function SessionDetailContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const {
-    sessions,
-    currentBlinkCount,
-    sessionBaselineBlinkCount,
-    sessionStartTime,
-  } = useSession();
-  const [session, setSession] = useState<SessionData | null>(null);
+// Custom hook for debounced chart history - opt out of compiler due to interval-based state updates
+function useDebouncedHistory(session: SessionData | null): BlinkRatePoint[] {
+  'use no memo';
 
-  // Debounced chart history - only updates every CHART_UPDATE_DEBOUNCE_MS for active sessions
   const [debouncedHistory, setDebouncedHistory] = useState<BlinkRatePoint[]>([]);
-  const lastChartUpdateRef = useRef<number>(0); // Start at 0 to ensure first update is immediate
+  const lastChartUpdateRef = useRef<number>(0);
   const initializedForSessionRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    const sessionId = searchParams.get("id");
-    if (sessionId) {
-      const foundSession = sessions.find(s => s.id === sessionId);
-      setSession(foundSession || null);
-    }
-  }, [searchParams, sessions]);
-
-  // Derive live blink count and rate from source of truth (only for active sessions)
-  const liveBlinkCount = session?.isActive ? currentBlinkCount - sessionBaselineBlinkCount : 0;
-  const liveBlinkRate = useMemo(() => {
-    if (!session?.isActive || sessionStartTime === 0) return 0;
-    const timeElapsedMinutes = (Date.now() - sessionStartTime) / 1000 / 60;
-    return timeElapsedMinutes > 0 ? liveBlinkCount / timeElapsedMinutes : 0;
-  }, [session?.isActive, sessionStartTime, liveBlinkCount]);
-
-  // Get display values - use live values for active sessions
-  const displayBlinkCount = session?.isActive ? liveBlinkCount : session?.totalBlinks;
-  const displayBlinkRate = session?.isActive ? Math.round(liveBlinkRate) : Math.round(session?.averageBlinkRate ?? 0);
-
-  // Live elapsed time for active sessions
-  const [elapsedTime, setElapsedTime] = useState<number>(0);
-
-  useEffect(() => {
-    if (!session?.isActive || !sessionStartTime) return;
-
-    const updateElapsed = () => {
-      setElapsedTime(Math.floor((Date.now() - sessionStartTime) / 1000));
-    };
-
-    updateElapsed();
-    const interval = setInterval(updateElapsed, 1000);
-    return () => clearInterval(interval);
-  }, [session?.isActive, sessionStartTime]);
-
-  // Debounce chart history updates to prevent aggressive re-rendering
   useEffect(() => {
     if (!session) return;
 
@@ -85,11 +41,9 @@ function SessionDetailContent() {
     const timeSinceLastUpdate = now - lastChartUpdateRef.current;
 
     if (timeSinceLastUpdate >= CHART_UPDATE_DEBOUNCE_MS) {
-      // Enough time has passed, update immediately
       setDebouncedHistory(session.blinkRateHistory);
       lastChartUpdateRef.current = now;
     } else {
-      // Schedule an update for when debounce period ends
       const timeUntilUpdate = CHART_UPDATE_DEBOUNCE_MS - timeSinceLastUpdate;
       const timeoutId = setTimeout(() => {
         setDebouncedHistory(session.blinkRateHistory);
@@ -99,6 +53,71 @@ function SessionDetailContent() {
       return () => clearTimeout(timeoutId);
     }
   }, [session]);
+
+  return debouncedHistory;
+}
+
+// Custom hook for elapsed time - opt out of compiler due to interval-based state updates
+function useElapsedTime(isActive: boolean, startTime: number): { elapsedTime: number; currentTime: number } {
+  'use no memo';
+
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!isActive || !startTime) return;
+
+    const updateElapsed = () => {
+      const now = Date.now();
+      setElapsedTime(Math.floor((now - startTime) / 1000));
+      setCurrentTime(now);
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [isActive, startTime]);
+
+  return { elapsedTime, currentTime };
+}
+
+function SessionDetailContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const {
+    sessions,
+    currentBlinkCount,
+    sessionBaselineBlinkCount,
+    sessionStartTime,
+  } = useSession();
+
+  // Derive session from URL params - use useMemo instead of useState + useEffect
+  const sessionId = searchParams.get("id");
+  const session = useMemo(() => {
+    if (!sessionId) return null;
+    return sessions.find(s => s.id === sessionId) || null;
+  }, [sessionId, sessions]);
+
+  // Use custom hooks for time-based state
+  const { elapsedTime, currentTime } = useElapsedTime(
+    session?.isActive ?? false,
+    sessionStartTime
+  );
+  const debouncedHistory = useDebouncedHistory(session);
+
+  // Derive live blink count and rate from source of truth (only for active sessions)
+  const liveBlinkCount = session?.isActive ? currentBlinkCount - sessionBaselineBlinkCount : 0;
+
+  // Calculate live blink rate based on elapsed time state
+  const liveBlinkRate = useMemo(() => {
+    if (!session?.isActive || sessionStartTime === 0) return 0;
+    const timeElapsedMinutes = (currentTime - sessionStartTime) / 1000 / 60;
+    return timeElapsedMinutes > 0 ? liveBlinkCount / timeElapsedMinutes : 0;
+  }, [session?.isActive, sessionStartTime, liveBlinkCount, currentTime]);
+
+  // Get display values - use live values for active sessions
+  const displayBlinkCount = session?.isActive ? liveBlinkCount : session?.totalBlinks;
+  const displayBlinkRate = session?.isActive ? Math.round(liveBlinkRate) : Math.round(session?.averageBlinkRate ?? 0);
 
   if (!session) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Container,
   Flex,
@@ -31,8 +31,14 @@ import { VersionInfo } from "@/components/VersionInfo";
 import { useUpdateStatus } from "@/hooks/useUpdateStatus";
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 
+function getInitialFatigueThreshold(): number {
+  if (typeof window === "undefined") return 8;
+  const savedThreshold = localStorage.getItem("fatigueThreshold");
+  return savedThreshold ? parseInt(savedThreshold, 10) : 8;
+}
+
 export default function SettingsPage() {
-  const [fatigueThreshold, setFatigueThreshold] = useState(8);
+  const [fatigueThreshold, setFatigueThreshold] = useState(getInitialFatigueThreshold);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
   const {
     isElectron,
@@ -51,12 +57,6 @@ export default function SettingsPage() {
     openNotificationSettings,
     formatHour,
   } = useNotificationSettings();
-
-  useEffect(() => {
-    // Load saved fatigue threshold from localStorage
-    const savedThreshold = localStorage.getItem("fatigueThreshold");
-    if (savedThreshold) setFatigueThreshold(parseInt(savedThreshold, 10));
-  }, []);
 
   const handleThresholdChange = (value: number[]) => {
     const threshold = value[0];

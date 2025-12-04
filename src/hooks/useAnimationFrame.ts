@@ -1,6 +1,10 @@
 import { useRef, useCallback, useEffect } from 'react';
 
+// Opt out of React Compiler for this hook since it uses refs for animation frame loop
+// which requires accessing refs during render for the recursive callback pattern
 export function useAnimationFrame(callback: (timestamp: number) => void, enabled = true) {
+  'use no memo';
+
   const callbackRef = useRef(callback);
   const frameRef = useRef<number | null>(null);
 

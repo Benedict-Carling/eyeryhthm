@@ -3,15 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import type { UpdateStatus } from "@/lib/electron";
 
-export function useUpdateStatus() {
-  const [isElectron, setIsElectron] = useState(false);
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+function getIsElectron(): boolean {
+  return typeof window !== "undefined" && !!window.electronAPI;
+}
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.electronAPI) {
-      setIsElectron(true);
-    }
-  }, []);
+export function useUpdateStatus() {
+  const [isElectron] = useState(getIsElectron);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
 
   useEffect(() => {
     if (!isElectron || !window.electronAPI?.onUpdateStatus) return;
