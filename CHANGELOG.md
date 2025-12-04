@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.4.2...v1.5.0) (2025-12-04)
+
+
+### Features
+
+* **notifications:** add fatigue alert notification system ([6fa904d](https://github.com/Benedict-Carling/eyeryhthm/commit/6fa904d252d435a778869a49308ceb78c7ddfe2e))
+* **notifications:** add fatigue alert notification system ([a078e82](https://github.com/Benedict-Carling/eyeryhthm/commit/a078e82df54e8f830a36957e28088b17d3fd09d0))
+
+
+### Bug Fixes
+
+* **tracking:** prevent state desync after sleep/wake cycle ([b34f6df](https://github.com/Benedict-Carling/eyeryhthm/commit/b34f6dfe7842d79671a1c95bc7e8ec283584cfbc))
+* **tracking:** prevent state desync after sleep/wake cycle ([980874b](https://github.com/Benedict-Carling/eyeryhthm/commit/980874b88e4239ea3ab0f00b6f9a5476d9561b70))
+
 ## [1.4.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.4.1...v1.4.2) (2025-12-03)
 
 
