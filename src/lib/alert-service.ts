@@ -1,4 +1,5 @@
 import { SessionData, BlinkRatePoint } from "./sessions/types";
+import { getElectronAPI } from "./electron";
 
 export interface AlertServiceConfig {
   fatigueThreshold: number;
@@ -9,7 +10,7 @@ export interface AlertServiceConfig {
 export class AlertService {
   private intervalId: NodeJS.Timeout | null = null;
   private lastAlertTime: number = 0;
-  private alertCooldown = 300000; // 5 minute cooldown between alerts
+  private alertCooldown = 300000; // 5 minute cooldown between alerts (web fallback)
   private belowThresholdSince: number | null = null;
   private sustainedThresholdDuration = 30000; // 30 seconds below threshold before alerting
   private movingWindowDuration = 120000; // 2 minute moving window for blink rate calculation
@@ -65,9 +66,35 @@ export class AlertService {
     return false;
   }
 
-  private async showNotification(title: string, body: string, soundEnabled: boolean) {
+  /**
+   * Send a fatigue alert notification.
+   * Uses Electron native notifications when available, falls back to web notifications.
+   */
+  private async sendFatigueAlert(blinkRate: number, sessionDurationMinutes: number, soundEnabled: boolean): Promise<boolean> {
+    const electronAPI = getElectronAPI();
+
+    // Use Electron native notifications if available
+    if (electronAPI?.sendFatigueAlert) {
+      try {
+        const sent = await electronAPI.sendFatigueAlert(blinkRate);
+        return sent;
+      } catch (error) {
+        console.error('[AlertService] Failed to send Electron notification:', error);
+        // Fall through to web notification
+      }
+    }
+
+    // Fallback to web notification
+    return this.showWebNotification(blinkRate, sessionDurationMinutes, soundEnabled);
+  }
+
+  private async showWebNotification(blinkRate: number, sessionDurationMinutes: number, soundEnabled: boolean): Promise<boolean> {
     const hasPermission = await this.requestNotificationPermission();
-    if (!hasPermission) return;
+    if (!hasPermission) return false;
+
+    const durationMinutes = Math.round(sessionDurationMinutes);
+    const title = "Time for a break?";
+    const body = `You've been focused for ${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}. Your blink rate (${Math.round(blinkRate)}/min) suggests your eyes could use a rest. Try the 20-20-20 rule.`;
 
     const notification = new Notification(title, {
       body,
@@ -82,13 +109,13 @@ export class AlertService {
       const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       oscillator.frequency.value = 800; // Frequency in Hz
       gainNode.gain.value = 0.3; // Volume
-      
+
       oscillator.start();
       oscillator.stop(audioContext.currentTime + 0.2); // Play for 200ms
     }
@@ -100,6 +127,8 @@ export class AlertService {
 
     // Auto close after 10 seconds
     setTimeout(() => notification.close(), 10000);
+
+    return true;
   }
 
   checkForFatigue(session: SessionData | null, onAlert?: () => void): boolean {
@@ -136,15 +165,9 @@ export class AlertService {
 
       this.lastAlertTime = now;
 
-      // Format session duration for display
-      const durationMinutes = Math.round(sessionDuration);
-
       if (config.notificationsEnabled) {
-        this.showNotification(
-          "Time for a break?",
-          `You've been focused for ${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}. Your blink rate (${Math.round(currentBlinkRate)}/min) suggests your eyes could use a rest. Try the 20-20-20 rule.`,
-          config.soundEnabled
-        );
+        // Send fatigue alert (uses Electron when available, web fallback otherwise)
+        this.sendFatigueAlert(currentBlinkRate, sessionDuration, config.soundEnabled);
       }
 
       // Call the alert callback if provided

@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Theme } from '@radix-ui/themes';
 import SettingsPage from './page';
+
+// Helper to render with Theme provider
+const renderWithTheme = (ui: React.ReactElement) => {
+  return render(<Theme>{ui}</Theme>);
+};
 
 // Mock useUpdateStatus hook
 vi.mock('@/hooks/useUpdateStatus', () => ({
@@ -13,6 +19,41 @@ vi.mock('@/hooks/useUpdateStatus', () => ({
     downloadUpdate: vi.fn(),
     installUpdate: vi.fn(),
   }),
+}));
+
+// Mock useNotificationSettings hook
+const mockNotificationSettings = {
+  isElectron: false,
+  isLoading: false,
+  settings: {
+    enabled: true,
+    soundEnabled: true,
+    quietHoursEnabled: true,
+    quietHoursStart: 23,
+    quietHoursEnd: 7,
+  },
+  notificationState: {
+    isSupported: true,
+    canSend: true,
+    isWithinQuietHours: false,
+    cooldownRemaining: 0,
+    permissionStatus: 'authorized' as const,
+  },
+  updateSetting: vi.fn(),
+  updateSettings: vi.fn(),
+  testNotification: vi.fn().mockResolvedValue({ success: true }),
+  sendFatigueAlert: vi.fn(),
+  refreshNotificationState: vi.fn(),
+  openNotificationSettings: vi.fn(),
+  formatHour: (hour: number) => {
+    const period = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:00 ${period}`;
+  },
+};
+
+vi.mock('@/hooks/useNotificationSettings', () => ({
+  useNotificationSettings: () => mockNotificationSettings,
 }));
 
 // Mock ResizeObserver
@@ -39,10 +80,10 @@ describe('SettingsPage', () => {
     vi.clearAllMocks();
     mockLocalStorage.getItem.mockImplementation((key) => {
       if (key === 'fatigueThreshold') return '8';
-      if (key === 'notificationsEnabled') return 'true';
-      if (key === 'soundEnabled') return 'false';
       return null;
     });
+    // Reset to non-Electron mode by default
+    mockNotificationSettings.isElectron = false;
   });
 
   it('renders settings page', () => {
@@ -54,11 +95,9 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Notification Settings')).toBeInTheDocument();
   });
 
-  it('loads saved settings from localStorage', () => {
+  it('loads saved fatigue threshold from localStorage', () => {
     mockLocalStorage.getItem.mockImplementation((key) => {
       if (key === 'fatigueThreshold') return '10';
-      if (key === 'notificationsEnabled') return 'false';
-      if (key === 'soundEnabled') return 'true';
       return null;
     });
 
@@ -67,14 +106,24 @@ describe('SettingsPage', () => {
     // Check that threshold input has the correct value
     const thresholdInput = screen.getByRole('spinbutton');
     expect(thresholdInput).toHaveValue(10);
-    // Notifications switch should be off
+  });
+
+  it('shows notification switches when in Electron mode', () => {
+    mockNotificationSettings.isElectron = true;
+
+    renderWithTheme(<SettingsPage />);
+
+    // In Electron mode, notification switches should be visible
     const switches = screen.getAllByRole('switch');
-    const notificationSwitch = switches[0]; // First switch is notifications
-    expect(notificationSwitch).toHaveAttribute('aria-checked', 'false');
-    // Sound switch should be on but disabled (since notifications are off)
-    const soundSwitch = switches[1]; // Second switch is sound
-    expect(soundSwitch).toHaveAttribute('aria-checked', 'true');
-    expect(soundSwitch).toBeDisabled();
+    expect(switches.length).toBeGreaterThanOrEqual(3); // notifications, sound, quiet hours
+  });
+
+  it('shows message about desktop app when not in Electron', () => {
+    mockNotificationSettings.isElectron = false;
+
+    render(<SettingsPage />);
+
+    expect(screen.getByText('Desktop notifications are only available in the EyeRhythm desktop app')).toBeInTheDocument();
   });
 
   it('updates fatigue threshold and saves to localStorage', async () => {
@@ -93,16 +142,16 @@ describe('SettingsPage', () => {
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith('fatigueThreshold', '9');
   });
 
-  it('notification switches are disabled (feature in development)', () => {
-    render(<SettingsPage />);
+  it('notification switches are enabled in Electron mode', () => {
+    mockNotificationSettings.isElectron = true;
+
+    renderWithTheme(<SettingsPage />);
 
     const switches = screen.getAllByRole('switch');
     const notificationSwitch = switches[0]!;
-    const soundSwitch = switches[1]!;
 
-    // Both switches are disabled since notifications are in development
-    expect(notificationSwitch).toBeDisabled();
-    expect(soundSwitch).toBeDisabled();
+    // Notification switch should be enabled in Electron mode
+    expect(notificationSwitch).not.toBeDisabled();
   });
 
   it('shows threshold input with correct min/max attributes', () => {

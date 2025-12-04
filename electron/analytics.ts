@@ -92,4 +92,7 @@ export const AnalyticsEvents = {
   UPDATE_AVAILABLE: "update_available",
   UPDATE_DOWNLOADED: "update_downloaded",
   UPDATE_INSTALLED: "update_installed",
+
+  // Notifications
+  FATIGUE_ALERT_SENT: "fatigue_alert_sent",
 } as const;

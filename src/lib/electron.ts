@@ -27,6 +27,27 @@ export interface UpdateStatus {
   };
 }
 
+export interface NotificationSettings {
+  enabled: boolean;
+  soundEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: number; // Hour in 24h format (0-23)
+  quietHoursEnd: number;   // Hour in 24h format (0-23)
+}
+
+export interface NotificationState {
+  isSupported: boolean;
+  canSend: boolean;
+  isWithinQuietHours: boolean;
+  cooldownRemaining: number;
+  permissionStatus: 'not-determined' | 'denied' | 'authorized' | 'unknown';
+}
+
+export interface TestNotificationResult {
+  success: boolean;
+  reason?: string;
+}
+
 export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   getPlatform: () => Promise<{
@@ -51,6 +72,13 @@ export interface ElectronAPI {
   // Launch at login settings
   getLaunchAtLogin: () => Promise<boolean>;
   setLaunchAtLogin: (enabled: boolean) => Promise<boolean>;
+  // Notification APIs
+  getNotificationSettings: () => Promise<NotificationSettings>;
+  setNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<NotificationSettings>;
+  sendFatigueAlert: (blinkRate: number) => Promise<boolean>;
+  testNotification: () => Promise<TestNotificationResult>;
+  getNotificationState: () => Promise<NotificationState>;
+  openNotificationSettings: () => Promise<boolean>;
 }
 
 declare global {
