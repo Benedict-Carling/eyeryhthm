@@ -622,6 +622,22 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return cleanup;
   }, [setTrackingState]);
 
+  // Listen for system suspend event to gracefully stop tracking
+  // This prevents state desync when the OS kills the camera during sleep
+  useEffect(() => {
+    const electronAPI = getElectronAPI();
+    if (!electronAPI?.onSystemSuspend) return;
+
+    const cleanup = electronAPI.onSystemSuspend(() => {
+      console.log('[SessionContext] System suspending - stopping tracking');
+      if (isTracking) {
+        setTrackingState(false);
+      }
+    });
+
+    return cleanup;
+  }, [isTracking, setTrackingState]);
+
   // Start session when tracking is enabled and face is detected
   useEffect(() => {
     if (isTracking && isFaceDetected && !activeSession) {

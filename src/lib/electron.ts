@@ -72,6 +72,9 @@ export interface ElectronAPI {
   // Launch at login settings
   getLaunchAtLogin: () => Promise<boolean>;
   setLaunchAtLogin: (enabled: boolean) => Promise<boolean>;
+  // System power state events (suspend/resume)
+  onSystemSuspend: (callback: () => void) => () => void;
+  onSystemResume: (callback: () => void) => () => void;
   // Notification APIs
   getNotificationSettings: () => Promise<NotificationSettings>;
   setNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<NotificationSettings>;
