@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.6.0...v1.7.0) (2025-12-04)
+
+
+### Features
+
+* integrate React Compiler and fix camera stop bug ([283d493](https://github.com/Benedict-Carling/eyeryhthm/commit/283d4936db21db419989583eb38396a2b62a0baa))
+
+
+### Bug Fixes
+
+* resolve React Compiler purity errors and tray toggle issues ([#47](https://github.com/Benedict-Carling/eyeryhthm/issues/47)) ([8d1b67c](https://github.com/Benedict-Carling/eyeryhthm/commit/8d1b67c030800e1c5d042682ec95d92c4b497e1a))
+
 ## [1.6.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.5.0...v1.6.0) (2025-12-04)
 
 
