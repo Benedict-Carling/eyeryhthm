@@ -1,0 +1,124 @@
+---
+title: "Download"
+description: "Get EyeRhythm for your Mac"
+---
+
+import { EmailSignupForm } from '/snippets/email-signup.jsx';
+
+# Download EyeRhythm
+
+<Card title="Download for macOS" icon="apple" href="https://github.com/Benedict-Carling/eyeryhthm/releases/latest">
+  **Latest Release** - Universal binary (Intel + Apple Silicon)
+</Card>
+
+<Info>
+  **Current version:** Check the [GitHub releases page](https://github.com/Benedict-Carling/eyeryhthm/releases) for the latest version and release notes.
+</Info>
+
+## Installation
+
+<Steps>
+  <Step title="Download the .dmg file">
+    Click the download button above or visit the [releases page](https://github.com/Benedict-Carling/eyeryhthm/releases/latest) to get the latest version
+  </Step>
+  <Step title="Open the disk image">
+    Double-click the downloaded `.dmg` file to mount it
+  </Step>
+  <Step title="Drag to Applications">
+    Drag the EyeRhythm app to your Applications folder
+  </Step>
+  <Step title="First launch (important)">
+    **Right-click** the app and select **"Open"** to bypass Gatekeeper on first launch. Click "Open" in the dialog that appears.
+  </Step>
+  <Step title="Grant camera permission">
+    When prompted, click "Allow" to grant camera access. EyeRhythm needs this to detect your blinks.
+  </Step>
+  <Step title="Run calibration">
+    Follow the on-screen calibration wizard to personalize blink detection to your eyes
+  </Step>
+</Steps>
+
+## System requirements
+
+| Requirement | Minimum |
+|-------------|---------|
+| **macOS** | 11.0 (Big Sur) or later |
+| **Camera** | Built-in or external webcam |
+| **Processor** | Intel or Apple Silicon (M1/M2/M3) |
+| **RAM** | 4GB minimum |
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="'EyeRhythm' cannot be opened because the developer cannot be verified">
+    This is normal for apps downloaded outside the Mac App Store. To fix:
+
+    1. **Right-click** (or Control-click) the app in Finder
+    2. Select **"Open"** from the context menu
+    3. Click **"Open"** in the dialog
+
+    Alternatively:
+    1. Go to **System Settings > Privacy & Security**
+    2. Scroll down to find the message about EyeRhythm
+    3. Click **"Open Anyway"**
+  </Accordion>
+
+  <Accordion title="Camera not detected or 'No camera access'">
+    EyeRhythm needs camera permission to function:
+
+    1. Open **System Settings > Privacy & Security > Camera**
+    2. Find EyeRhythm in the list
+    3. Toggle the switch to **ON**
+    4. Restart EyeRhythm
+
+    If EyeRhythm isn't in the list, try launching it again - macOS should prompt you for permission.
+  </Accordion>
+
+  <Accordion title="App crashes on launch">
+    Try resetting the app's data:
+
+    1. Quit EyeRhythm completely (check Activity Monitor if needed)
+    2. Open Finder and press **Cmd+Shift+G**
+    3. Enter: `~/Library/Application Support/`
+    4. Delete the `EyeRhythm` folder
+    5. Relaunch the app
+
+    Still having issues? [Open an issue on GitHub](https://github.com/Benedict-Carling/eyeryhthm/issues/new)
+  </Accordion>
+
+  <Accordion title="Face not detected">
+    For best results:
+
+    - Ensure good lighting on your face (avoid backlighting)
+    - Position yourself at arm's length from the camera
+    - Make sure your full face is visible in the preview
+    - Remove glasses with heavy reflections if possible
+  </Accordion>
+
+  <Accordion title="Auto-update not working">
+    EyeRhythm checks for updates automatically. If updates aren't installing:
+
+    1. Check if you have the latest version on the [releases page](https://github.com/Benedict-Carling/eyeryhthm/releases)
+    2. Download and install the latest `.dmg` manually
+    3. The app will auto-update from then on
+  </Accordion>
+</AccordionGroup>
+
+## Other platforms
+
+<CardGroup cols={2}>
+  <Card title="Windows" icon="windows">
+    **Coming soon** - Star the [GitHub repo](https://github.com/Benedict-Carling/eyeryhthm) to get notified
+  </Card>
+  <Card title="Linux" icon="linux">
+    **Coming soon** - AppImage and .deb packages planned
+  </Card>
+</CardGroup>
+
+---
+
+## Stay updated
+
+Get notified when Windows and Linux versions are released:
+
+<EmailSignupForm />

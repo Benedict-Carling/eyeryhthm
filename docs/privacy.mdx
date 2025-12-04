@@ -1,0 +1,89 @@
+---
+title: "Privacy"
+description: "How EyeRhythm protects your data"
+---
+
+# Privacy
+
+<Tip>
+  **TL;DR:** Your video never leaves your device. We can't see it. No one can. Period.
+</Tip>
+
+EyeRhythm was built from the ground up with privacy as a core principle. Unlike cloud-based eye tracking solutions, all processing happens entirely on your device.
+
+## Our privacy promise
+
+<CardGroup cols={2}>
+  <Card title="No video uploads" icon="cloud-arrow-up">
+    Your webcam feed is processed locally and **never transmitted** anywhere
+  </Card>
+  <Card title="No recordings" icon="video-slash">
+    We **don't record** video, images, or screenshots - ever
+  </Card>
+</CardGroup>
+
+## What data stays on your device
+
+EyeRhythm stores minimal data locally to provide its features:
+
+| Data | Purpose | Storage |
+|------|---------|---------|
+| **Session data** | Blink counts and timestamps for each tracking session | Browser localStorage |
+| **Calibration settings** | Your personalized EAR threshold for accurate detection | Browser localStorage |
+| **Preferences** | App settings like notification preferences and theme | Browser localStorage |
+
+<Note>
+  All this data stays on your computer. You can clear it anytime by deleting `~/Library/Application Support/EyeRhythm` on macOS.
+</Note>
+
+## How blink detection works (privately)
+
+<Steps>
+  <Step title="Camera feed capture">
+    Your webcam provides a live video stream directly to the app
+  </Step>
+  <Step title="On-device AI processing">
+    [MediaPipe](https://developers.google.com/mediapipe) (Google's on-device ML framework) analyzes each frame to detect 468 facial landmarks
+  </Step>
+  <Step title="Eye Aspect Ratio calculation">
+    6 eye landmarks per eye are used to calculate EAR - a mathematical ratio that indicates whether eyes are open or closed
+  </Step>
+  <Step title="Blink detection">
+    When EAR drops below your calibrated threshold then rises above it, a blink is registered
+  </Step>
+  <Step title="Only numbers are stored">
+    Only the blink timestamp and count are saved - **no images, no video frames, no facial data**
+  </Step>
+</Steps>
+
+## What we explicitly don't do
+
+- **Upload video** anywhere - not to our servers, not to the cloud, not anywhere
+- **Store video** on your device - the feed is processed in real-time and immediately discarded
+- **Capture screenshots** or save frames from your camera
+- **Require internet** for core functionality - blink tracking works completely offline
+- **Sell data** - we don't have any data to sell
+
+## Network requests
+
+EyeRhythm makes minimal network requests:
+
+| Request | Purpose | Can be disabled? |
+|---------|---------|------------------|
+| **MediaPipe model download** | Downloads ML models on first launch (~5MB) | No (required for detection) |
+| **Auto-update check** | Checks GitHub for new versions | App works offline after install |
+
+<Info>
+  After the initial model download, EyeRhythm works completely offline. No internet connection required.
+</Info>
+
+## Questions?
+
+Have privacy concerns or questions? We're happy to answer:
+
+- [Open a GitHub issue](https://github.com/Benedict-Carling/eyeryhthm/issues/new)
+- Review [our source code](https://github.com/Benedict-Carling/eyeryhthm)
+
+---
+
+*Last updated: December 2024*
