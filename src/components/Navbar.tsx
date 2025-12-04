@@ -86,6 +86,9 @@ export function Navbar() {
                   <Badge size="1" color="gray" variant="soft">
                     v{packageJson.version}
                   </Badge>
+                  <Badge size="1" color="indigo" variant="solid">
+                    Beta
+                  </Badge>
                 </Flex>
               </Link>
 
