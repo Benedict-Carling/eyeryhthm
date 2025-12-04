@@ -28,12 +28,31 @@
     "name": "Download",
     "url": "/download"
   },
-  "tabs": [],
+  "tabs": [
+    {
+      "name": "Home",
+      "url": "/"
+    },
+    {
+      "name": "Science",
+      "url": "blog"
+    }
+  ],
   "anchors": [],
   "navigation": [
     {
       "group": "",
       "pages": ["index", "download", "privacy"]
+    },
+    {
+      "group": "Articles",
+      "pages": [
+        "blog/computer-vision-syndrome",
+        "blog/blink-rate-science",
+        "blog/20-20-20-rule",
+        "blog/blue-light-facts",
+        "blog/productivity-eye-health"
+      ]
     }
   ],
   "footerSocials": {
