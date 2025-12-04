@@ -52,7 +52,7 @@ Object.defineProperty(window, 'AudioContext', {
 
 describe('AlertService', () => {
   let alertService: AlertService;
-  
+
   beforeEach(() => {
     alertService = new AlertService();
     vi.clearAllMocks();
@@ -68,14 +68,15 @@ describe('AlertService', () => {
     alertService.stopMonitoring();
   });
 
-  // Helper to create blink rate history with recent points
+  // Helper to create blink rate history within the 3-minute rolling window
   const createBlinkRateHistory = (rate: number, now: number = Date.now()) => {
-    // Create points spanning the last 2 minutes (moving window duration)
+    // Create points spanning the last 3 minutes (rolling window duration)
     return [
-      { timestamp: now - 90000, rate }, // 1.5 min ago
-      { timestamp: now - 60000, rate }, // 1 min ago
-      { timestamp: now - 30000, rate }, // 30 sec ago
-      { timestamp: now - 5000, rate },  // 5 sec ago
+      { timestamp: now - 150000, rate }, // 2.5 min ago
+      { timestamp: now - 120000, rate }, // 2 min ago
+      { timestamp: now - 60000, rate },  // 1 min ago
+      { timestamp: now - 30000, rate },  // 30 sec ago
+      { timestamp: now - 5000, rate },   // 5 sec ago
     ];
   };
 
@@ -83,13 +84,14 @@ describe('AlertService', () => {
     const now = Date.now();
     return {
       id: 'test-session',
-      startTime: new Date(now - 6 * 60 * 1000), // 6 minutes ago
+      startTime: new Date(now - 6 * 60 * 1000), // 6 minutes ago (past 5-min grace period)
       isActive: true,
       averageBlinkRate: 7,
       blinkRateHistory: createBlinkRateHistory(7, now),
       quality: 'poor',
       fatigueAlertCount: 0,
       totalBlinks: 42,
+      faceLostPeriods: [], // No face loss by default
       ...overrides,
     };
   };
@@ -106,9 +108,9 @@ describe('AlertService', () => {
       expect(result).toBe(false);
     });
 
-    it('returns false when session duration is less than 3 minutes', () => {
+    it('returns false when session duration is less than 5 minutes (grace period)', () => {
       const session = createMockSession({
-        startTime: new Date(Date.now() - 2 * 60 * 1000) // 2 minutes ago
+        startTime: new Date(Date.now() - 4 * 60 * 1000) // 4 minutes ago
       });
       const result = alertService.checkForFatigue(session);
       expect(result).toBe(false);
@@ -127,39 +129,120 @@ describe('AlertService', () => {
       expect(result).toBe(false);
     });
 
-    it('returns false on first check when blink rate is below threshold (needs sustained period)', () => {
+    it('returns true immediately when all conditions are met', () => {
       const now = Date.now();
       const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
       const onAlert = vi.fn();
 
-      // First check should return false (sustained threshold not met yet)
+      const result = alertService.checkForFatigue(session, onAlert);
+
+      expect(result).toBe(true);
+      expect(onAlert).toHaveBeenCalled();
+    });
+
+    it('returns false when face loss in window exceeds 5 seconds', () => {
+      const now = Date.now();
+      const session = createMockSession({
+        blinkRateHistory: createBlinkRateHistory(6, now),
+        faceLostPeriods: [
+          { start: now - 60000, end: now - 50000 } // 10 seconds of face loss
+        ]
+      });
+      const onAlert = vi.fn();
+
       const result = alertService.checkForFatigue(session, onAlert);
 
       expect(result).toBe(false);
       expect(onAlert).not.toHaveBeenCalled();
     });
 
-    it('returns true and triggers notification after sustained period below threshold', async () => {
+    it('returns true when face loss in window is under 5 seconds', () => {
+      const now = Date.now();
+      const session = createMockSession({
+        blinkRateHistory: createBlinkRateHistory(6, now),
+        faceLostPeriods: [
+          { start: now - 60000, end: now - 57000 } // 3 seconds of face loss
+        ]
+      });
+      const onAlert = vi.fn();
+
+      const result = alertService.checkForFatigue(session, onAlert);
+
+      expect(result).toBe(true);
+      expect(onAlert).toHaveBeenCalled();
+    });
+
+    it('ignores face loss periods outside the rolling window', () => {
+      const now = Date.now();
+      const session = createMockSession({
+        blinkRateHistory: createBlinkRateHistory(6, now),
+        faceLostPeriods: [
+          { start: now - 300000, end: now - 290000 } // 10 seconds, but 5 mins ago (outside window)
+        ]
+      });
+      const onAlert = vi.fn();
+
+      const result = alertService.checkForFatigue(session, onAlert);
+
+      expect(result).toBe(true);
+      expect(onAlert).toHaveBeenCalled();
+    });
+
+    it('respects 3-minute cooldown period between alerts', () => {
       vi.useFakeTimers();
       const now = Date.now();
       const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
       const onAlert = vi.fn();
 
-      // First check starts the sustained threshold timer
+      // First alert should trigger
       alertService.checkForFatigue(session, onAlert);
-      expect(onAlert).not.toHaveBeenCalled();
+      expect(onAlert).toHaveBeenCalledTimes(1);
 
-      // Advance time by 30 seconds (sustained threshold duration)
-      vi.advanceTimersByTime(30000);
+      // Second alert within cooldown (3 min) should not trigger
+      vi.advanceTimersByTime(60000); // 1 minute later
+      alertService.checkForFatigue(session, onAlert);
+      expect(onAlert).toHaveBeenCalledTimes(1);
 
-      // Second check after sustained period should trigger
+      // After 3 minutes, should trigger again
+      vi.advanceTimersByTime(120000); // 2 more minutes (total 3 min)
+      alertService.checkForFatigue(session, onAlert);
+      expect(onAlert).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
+
+    it('uses 3-minute rolling window average for blink rate', () => {
+      const now = Date.now();
+
+      // Create a session with high early rates but low recent rates
+      // Points outside the 3-min window should be ignored
+      const mixedHistory = [
+        { timestamp: now - 240000, rate: 15 }, // 4 min ago (outside window)
+        { timestamp: now - 200000, rate: 15 }, // ~3.3 min ago (outside window)
+        { timestamp: now - 150000, rate: 6 },  // 2.5 min ago (inside window)
+        { timestamp: now - 90000, rate: 6 },   // 1.5 min ago (inside window)
+        { timestamp: now - 30000, rate: 6 },   // 30 sec ago (inside window)
+      ];
+
+      const session = createMockSession({
+        averageBlinkRate: 9.6, // Session average is above threshold
+        blinkRateHistory: mixedHistory,
+      });
+      const onAlert = vi.fn();
+
+      // Should trigger alert based on rolling window (avg 6), not session average
       const result = alertService.checkForFatigue(session, onAlert);
-
       expect(result).toBe(true);
       expect(onAlert).toHaveBeenCalled();
+    });
+
+    it('sends notification with correct content', async () => {
+      const now = Date.now();
+      const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
+
+      alertService.checkForFatigue(session);
 
       // Wait for async showNotification to complete
-      vi.useRealTimers();
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(mockNotification).toHaveBeenCalledWith(
@@ -173,94 +256,6 @@ describe('AlertService', () => {
         })
       );
     });
-
-    it('resets sustained threshold timer when blink rate recovers', () => {
-      vi.useFakeTimers();
-      const now = Date.now();
-      const sessionLowRate = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
-      const sessionHighRate = createMockSession({ blinkRateHistory: createBlinkRateHistory(10, now) });
-      const onAlert = vi.fn();
-
-      // First check with low blink rate starts timer
-      alertService.checkForFatigue(sessionLowRate, onAlert);
-
-      // Advance time by 15 seconds
-      vi.advanceTimersByTime(15000);
-
-      // Blink rate recovers - should reset the timer
-      alertService.checkForFatigue(sessionHighRate, onAlert);
-
-      // Advance time by another 20 seconds
-      vi.advanceTimersByTime(20000);
-
-      // Check with low rate again - should not trigger (timer was reset)
-      const result = alertService.checkForFatigue(sessionLowRate, onAlert);
-
-      expect(result).toBe(false);
-      expect(onAlert).not.toHaveBeenCalled();
-
-      vi.useRealTimers();
-    });
-
-    it('respects cooldown period between alerts', () => {
-      vi.useFakeTimers();
-      const now = Date.now();
-      const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
-      const onAlert = vi.fn();
-
-      // First check starts sustained threshold timer
-      alertService.checkForFatigue(session, onAlert);
-
-      // Advance past sustained threshold (30 seconds)
-      vi.advanceTimersByTime(30000);
-
-      // First alert should trigger
-      alertService.checkForFatigue(session, onAlert);
-      expect(onAlert).toHaveBeenCalledTimes(1);
-
-      // Second alert within cooldown (5 min) should not trigger
-      vi.advanceTimersByTime(60000); // 1 minute later
-      alertService.checkForFatigue(session, onAlert);
-      expect(onAlert).toHaveBeenCalledTimes(1);
-
-      vi.useRealTimers();
-    });
-
-    it('uses moving window average instead of session average', () => {
-      vi.useFakeTimers();
-      const now = Date.now();
-
-      // Create a session with high early rates but low recent rates
-      // The session average would be (12+12+12+6+6+6)/6 = 9 (above threshold of 8)
-      // But the moving window (last 2 min) average should be 6 (below threshold)
-      const mixedHistory = [
-        { timestamp: now - 180000, rate: 12 }, // 3 min ago (outside window)
-        { timestamp: now - 150000, rate: 12 }, // 2.5 min ago (outside window)
-        { timestamp: now - 130000, rate: 12 }, // ~2.2 min ago (outside window)
-        { timestamp: now - 90000, rate: 6 },   // 1.5 min ago (inside window)
-        { timestamp: now - 60000, rate: 6 },   // 1 min ago (inside window)
-        { timestamp: now - 30000, rate: 6 },   // 30 sec ago (inside window)
-      ];
-
-      const session = createMockSession({
-        averageBlinkRate: 9, // Session average is above threshold
-        blinkRateHistory: mixedHistory,
-      });
-      const onAlert = vi.fn();
-
-      // First check should start sustained timer (moving window shows fatigue)
-      alertService.checkForFatigue(session, onAlert);
-
-      // Advance past sustained threshold
-      vi.advanceTimersByTime(30000);
-
-      // Should trigger alert based on moving window, not session average
-      const result = alertService.checkForFatigue(session, onAlert);
-      expect(result).toBe(true);
-      expect(onAlert).toHaveBeenCalled();
-
-      vi.useRealTimers();
-    });
   });
 
   describe('requestNotificationPermission', () => {
@@ -273,9 +268,9 @@ describe('AlertService', () => {
     it('requests permission when not yet granted', async () => {
       mockNotification.permission = 'default';
       mockNotification.requestPermission.mockResolvedValue('granted');
-      
+
       const result = await alertService.requestNotificationPermission();
-      
+
       expect(mockNotification.requestPermission).toHaveBeenCalled();
       expect(result).toBe(true);
     });
@@ -296,16 +291,19 @@ describe('AlertService', () => {
 
       alertService.startMonitoring(getActiveSession, onAlert);
 
-      // Should check immediately (but won't alert - sustained threshold not met)
+      // Should check immediately and alert (conditions met)
       expect(getActiveSession).toHaveBeenCalledTimes(1);
-      expect(onAlert).not.toHaveBeenCalled();
+      expect(onAlert).toHaveBeenCalledTimes(1);
 
-      // Should check again after 1 minute
+      // Should check again after 1 minute but cooldown prevents alert
       vi.advanceTimersByTime(60000);
       expect(getActiveSession).toHaveBeenCalledTimes(2);
+      expect(onAlert).toHaveBeenCalledTimes(1); // Still 1 due to cooldown
 
-      // After 1 minute (60 seconds > 30 second sustained threshold), alert should trigger
-      expect(onAlert).toHaveBeenCalledTimes(1);
+      // After 3 minutes total (past cooldown), should alert again
+      vi.advanceTimersByTime(120000);
+      expect(getActiveSession).toHaveBeenCalledTimes(4); // 3 more checks
+      expect(onAlert).toHaveBeenCalledTimes(2);
 
       vi.useRealTimers();
     });
@@ -315,14 +313,14 @@ describe('AlertService', () => {
     it('stops the monitoring interval', () => {
       vi.useFakeTimers();
       const getActiveSession = vi.fn(() => createMockSession());
-      
+
       alertService.startMonitoring(getActiveSession);
       alertService.stopMonitoring();
-      
+
       // Advance time and verify no more checks
       vi.advanceTimersByTime(120000);
       expect(getActiveSession).toHaveBeenCalledTimes(1); // Only initial check
-      
+
       vi.useRealTimers();
     });
   });

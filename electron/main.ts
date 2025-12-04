@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeIm
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
-import { initAnalytics, trackEvent, AnalyticsEvents } from "./analytics";
+// IMPORTANT: Import analytics early - it initializes Aptabase on import (before app.whenReady)
+import { trackEvent, AnalyticsEvents } from "./analytics";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -364,8 +365,7 @@ protocol.registerSchemesAsPrivileged([
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
-  // Initialize analytics (privacy-first, no personal data collected)
-  initAnalytics();
+  // Track app started (analytics already initialized on module import)
   trackEvent(AnalyticsEvents.APP_STARTED);
 
   // Register custom protocol before creating window
@@ -561,6 +561,8 @@ ipcMain.on("close-window", () => {
 ipcMain.on("tracking-state-changed", (_event, enabled: boolean) => {
   isTrackingEnabled = enabled;
   updateTrayMenu();
+  // Track analytics event when tracking is toggled from renderer (navbar)
+  trackEvent(enabled ? AnalyticsEvents.TRACKING_STARTED : AnalyticsEvents.TRACKING_STOPPED);
 });
 
 // Renderer requests current tracking state (e.g., on startup)

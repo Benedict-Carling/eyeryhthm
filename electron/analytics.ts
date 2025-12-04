@@ -6,10 +6,8 @@
  * - No cookies or persistent identifiers
  * - Aggregated counts only
  *
- * To enable analytics:
- * 1. Create an account at https://aptabase.com
- * 2. Create a new app and get your App Key
- * 3. Replace the placeholder below with your key
+ * IMPORTANT: This module must be imported BEFORE app.whenReady() is called.
+ * The Aptabase SDK requires synchronous initialization before the app is ready.
  */
 
 import {
@@ -17,30 +15,16 @@ import {
   trackEvent as aptabaseTrackEvent,
 } from "@aptabase/electron/main";
 
-// TODO: Replace with your Aptabase App Key from https://aptabase.com
-// The key looks like: A-US-1234567890 or A-EU-1234567890
+// Aptabase App Key - get yours at https://aptabase.com
 const APTABASE_APP_KEY = "A-EU-1500337563";
 
-let isInitialized = false;
-
-/**
- * Initialize Aptabase analytics.
- * Call this once when the app starts.
- */
-export async function initAnalytics(): Promise<void> {
-  if (!APTABASE_APP_KEY) {
-    console.log("[Analytics] Aptabase not configured - analytics disabled");
-    console.log("[Analytics] Get your App Key at https://aptabase.com");
-    return;
-  }
-
-  try {
-    await initialize(APTABASE_APP_KEY);
-    isInitialized = true;
-    console.log("[Analytics] Aptabase initialized");
-  } catch (error) {
-    console.error("[Analytics] Failed to initialize Aptabase:", error);
-  }
+// Initialize Aptabase synchronously at module load time (BEFORE app.whenReady)
+// This is required by the Aptabase SDK
+if (APTABASE_APP_KEY) {
+  initialize(APTABASE_APP_KEY);
+  console.log("[Analytics] Aptabase initialized");
+} else {
+  console.log("[Analytics] Aptabase not configured - analytics disabled");
 }
 
 /**
@@ -51,7 +35,7 @@ export function trackEvent(
   eventName: string,
   properties?: Record<string, string | number | boolean>
 ): void {
-  if (!isInitialized) {
+  if (!APTABASE_APP_KEY) {
     return;
   }
 
@@ -61,6 +45,7 @@ export function trackEvent(
     } else {
       aptabaseTrackEvent(eventName);
     }
+    console.log(`[Analytics] Event tracked: ${eventName}`);
   } catch (error) {
     console.error(`[Analytics] Failed to track event "${eventName}":`, error);
   }

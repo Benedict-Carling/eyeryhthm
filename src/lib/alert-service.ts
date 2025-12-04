@@ -1,4 +1,4 @@
-import { SessionData, BlinkRatePoint } from "./sessions/types";
+import { SessionData, BlinkRatePoint, FaceLostPeriod } from "./sessions/types";
 import { getElectronAPI } from "./electron";
 
 export interface AlertServiceConfig {
@@ -7,26 +7,28 @@ export interface AlertServiceConfig {
   soundEnabled: boolean;
 }
 
+// Smart notification constants
+const GRACE_PERIOD_MINUTES = 5; // Session must be at least 5 minutes old
+const ROLLING_WINDOW_MS = 180000; // 3 minute rolling window
+const ALERT_COOLDOWN_MS = 180000; // 3 minute cooldown between alerts
+const MAX_FACE_LOSS_MS = 5000; // Max 5 seconds face loss allowed in window
+
 export class AlertService {
   private intervalId: NodeJS.Timeout | null = null;
   private lastAlertTime: number = 0;
-  private alertCooldown = 300000; // 5 minute cooldown between alerts (web fallback)
-  private belowThresholdSince: number | null = null;
-  private sustainedThresholdDuration = 30000; // 30 seconds below threshold before alerting
-  private movingWindowDuration = 120000; // 2 minute moving window for blink rate calculation
 
   /**
-   * Calculate the average blink rate over a moving window (last 2 minutes).
+   * Calculate the average blink rate over the rolling window (last 3 minutes).
    * This is more responsive to fatigue than using the full session average,
    * which can be diluted by early healthy blink rates.
    */
-  private getMovingWindowBlinkRate(blinkRateHistory: BlinkRatePoint[]): number | null {
+  private getWindowBlinkRate(blinkRateHistory: BlinkRatePoint[]): number | null {
     if (blinkRateHistory.length === 0) return null;
 
     const now = Date.now();
-    const windowStart = now - this.movingWindowDuration;
+    const windowStart = now - ROLLING_WINDOW_MS;
 
-    // Get points within the moving window
+    // Get points within the rolling window
     const recentPoints = blinkRateHistory.filter(point => point.timestamp >= windowStart);
 
     if (recentPoints.length === 0) {
@@ -38,6 +40,34 @@ export class AlertService {
     // Calculate average of recent points
     const sum = recentPoints.reduce((acc, point) => acc + point.rate, 0);
     return sum / recentPoints.length;
+  }
+
+  /**
+   * Calculate total face loss time within the rolling window.
+   * Only counts time where face was lost during the window period.
+   */
+  private getWindowFaceLossMs(faceLostPeriods: FaceLostPeriod[] | undefined): number {
+    if (!faceLostPeriods || faceLostPeriods.length === 0) return 0;
+
+    const now = Date.now();
+    const windowStart = now - ROLLING_WINDOW_MS;
+
+    return faceLostPeriods.reduce((total, period) => {
+      const periodStart = period.start;
+      const periodEnd = period.end ?? now;
+
+      // Check if this period overlaps with our window
+      if (periodEnd <= windowStart || periodStart >= now) {
+        // Period is entirely outside the window
+        return total;
+      }
+
+      // Calculate overlap with window
+      const overlapStart = Math.max(periodStart, windowStart);
+      const overlapEnd = Math.min(periodEnd, now);
+
+      return total + (overlapEnd - overlapStart);
+    }, 0);
   }
 
   private getConfig(): AlertServiceConfig {
@@ -131,57 +161,65 @@ export class AlertService {
     return true;
   }
 
+  /**
+   * Smart notification check for fatigue detection.
+   *
+   * Triggers an alert when ALL conditions are met:
+   * 1. Session is active and at least 5 minutes old (grace period)
+   * 2. Rolling 3-minute window has less than 5 seconds of face loss (valid data)
+   * 3. Average blink rate in the window is below user's threshold
+   * 4. At least 3 minutes have passed since the last alert (cooldown)
+   */
   checkForFatigue(session: SessionData | null, onAlert?: () => void): boolean {
     if (!session || !session.isActive) return false;
 
     const config = this.getConfig();
-    const sessionDuration = (Date.now() - session.startTime.getTime()) / 1000 / 60; // in minutes
+    const sessionDurationMinutes = (Date.now() - session.startTime.getTime()) / 1000 / 60;
 
-    // Only check after 3 minutes
-    if (sessionDuration < 3) return false;
-
-    // Use moving window blink rate (last 2 minutes) for more responsive fatigue detection
-    const currentBlinkRate = this.getMovingWindowBlinkRate(session.blinkRateHistory);
-    if (currentBlinkRate === null) return false;
-
-    const now = Date.now();
-
-    if (currentBlinkRate < config.fatigueThreshold) {
-      // Track when we first went below threshold
-      if (this.belowThresholdSince === null) {
-        this.belowThresholdSince = now;
-      }
-
-      // Check if we've been below threshold for sustained duration (30 seconds)
-      const belowThresholdDuration = now - this.belowThresholdSince;
-      if (belowThresholdDuration < this.sustainedThresholdDuration) {
-        return false;
-      }
-
-      // Check cooldown
-      if (now - this.lastAlertTime < this.alertCooldown) {
-        return false;
-      }
-
-      this.lastAlertTime = now;
-
-      if (config.notificationsEnabled) {
-        // Send fatigue alert (uses Electron when available, web fallback otherwise)
-        this.sendFatigueAlert(currentBlinkRate, sessionDuration, config.soundEnabled);
-      }
-
-      // Call the alert callback if provided
-      if (onAlert) {
-        onAlert();
-      }
-
-      return true;
-    } else {
-      // Reset sustained threshold tracking when blink rate recovers
-      this.belowThresholdSince = null;
+    // Check 1: Grace period - session must be at least 5 minutes old
+    if (sessionDurationMinutes < GRACE_PERIOD_MINUTES) {
+      return false;
     }
 
-    return false;
+    // Check 2: Validate the rolling window has reliable data (< 5 seconds face loss)
+    const windowFaceLossMs = this.getWindowFaceLossMs(session.faceLostPeriods);
+    if (windowFaceLossMs >= MAX_FACE_LOSS_MS) {
+      // Too much face loss in the window, data is not reliable
+      return false;
+    }
+
+    // Check 3: Get blink rate in the rolling window
+    const windowBlinkRate = this.getWindowBlinkRate(session.blinkRateHistory);
+    if (windowBlinkRate === null) {
+      return false;
+    }
+
+    // Check 4: Is blink rate below threshold?
+    if (windowBlinkRate >= config.fatigueThreshold) {
+      // Blink rate is healthy, no alert needed
+      return false;
+    }
+
+    // Check 5: Cooldown - at least 3 minutes since last alert
+    const now = Date.now();
+    if (now - this.lastAlertTime < ALERT_COOLDOWN_MS) {
+      return false;
+    }
+
+    // All conditions met - send alert
+    this.lastAlertTime = now;
+
+    if (config.notificationsEnabled) {
+      // Send fatigue alert (uses Electron when available, web fallback otherwise)
+      this.sendFatigueAlert(windowBlinkRate, sessionDurationMinutes, config.soundEnabled);
+    }
+
+    // Call the alert callback if provided
+    if (onAlert) {
+      onAlert();
+    }
+
+    return true;
   }
 
   startMonitoring(

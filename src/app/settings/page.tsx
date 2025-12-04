@@ -9,7 +9,7 @@ import {
   Heading,
   Switch,
   Card,
-  TextField,
+  Slider,
   Separator,
   Callout,
   Button,
@@ -205,22 +205,17 @@ export default function SettingsPage() {
                     threshold
                   </Text>
                 </Box>
-                <Flex align="center" gap="2">
-                  <TextField.Root
-                    type="number"
-                    value={fatigueThreshold.toString()}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value, 10);
-                      if (!isNaN(value) && value >= 4 && value <= 15) {
-                        handleThresholdChange([value]);
-                      }
-                    }}
-                    style={{ width: "80px" }}
-                    min="4"
-                    max="15"
+                <Flex align="center" gap="3" style={{ minWidth: "200px" }}>
+                  <Slider
+                    value={[fatigueThreshold]}
+                    onValueChange={handleThresholdChange}
+                    min={8}
+                    max={100}
+                    step={1}
+                    style={{ flex: 1 }}
                   />
-                  <Text size="2" color="gray">
-                    blinks/min
+                  <Text size="2" style={{ minWidth: "80px" }}>
+                    {fatigueThreshold} blinks/min
                   </Text>
                 </Flex>
               </Flex>
@@ -416,9 +411,9 @@ export default function SettingsPage() {
 
           <Box mt="3">
             <Text size="2" color="gray">
-              Note: Fatigue alerts only trigger after 3 minutes of continuous
-              session time, and only if blink rate stays below threshold for 30
-              seconds
+              Note: Fatigue alerts trigger after 5 minutes of session time when
+              your blink rate in the last 3 minutes is below the threshold.
+              Alerts are limited to once every 3 minutes.
             </Text>
           </Box>
 
