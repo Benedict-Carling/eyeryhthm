@@ -135,6 +135,7 @@ export function Navbar() {
                     size="1"
                     checked={isTracking}
                     onCheckedChange={toggleTracking}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </Badge>
               </Tooltip>

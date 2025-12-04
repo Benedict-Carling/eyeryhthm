@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Button,
@@ -107,19 +107,20 @@ export function Camera() {
     }
   }, [stream, videoRef]);
 
-  const handleStartCamera = useCallback(async () => {
+  // React Compiler auto-memoizes these handlers
+  const handleStartCamera = async () => {
     try {
       await startCamera();
     } catch (error) {
       console.error("Failed to start camera:", error);
     }
-  }, [startCamera]);
+  };
 
-  const handleStopCamera = useCallback(() => {
+  const handleStopCamera = () => {
     setIsInitialized(false);
     stopDetection();
     stopCamera();
-  }, [stopDetection, stopCamera]);
+  };
 
   const showDebugOverlay = true;
   const toggleDebugOverlay = () => {}; // Placeholder

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
 import * as d3 from "d3";
 import { SessionData, formatSessionDuration, BlinkRatePoint } from "../lib/sessions/types";
@@ -8,6 +8,7 @@ import { ClockIcon } from "@radix-ui/react-icons";
 import { Bell, BellOff, Eye, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { useCalibration } from "../contexts/CalibrationContext";
 import { useSession } from "../contexts/SessionContext";
+import { useInterval } from "../hooks/useInterval";
 import Link from "next/link";
 import "./SessionCard.css";
 
@@ -29,32 +30,41 @@ export function SessionCard({ session }: SessionCardProps) {
     sessionStartTime,
   } = useSession();
 
-  // Debounced chart history - only updates every CHART_UPDATE_DEBOUNCE_MS for active sessions
-  // Initialize with session data so chart shows immediately
-  const [debouncedHistory, setDebouncedHistory] = useState<BlinkRatePoint[]>(session.blinkRateHistory);
-  const lastChartUpdateRef = useRef<number>(Date.now()); // Set to now since we already initialized with data
+  // For active sessions: debounced chart history - only updates every CHART_UPDATE_DEBOUNCE_MS
+  // For non-active sessions: use session data directly (no debouncing needed)
+  const [activeSessionHistory, setActiveSessionHistory] = useState<BlinkRatePoint[]>(session.blinkRateHistory);
+  // Track last chart update time in state (not ref with Date.now()) to be React Compiler pure
+  const [lastChartUpdateTime, setLastChartUpdateTime] = useState<number>(() => {
+    // Lazy initializer runs once on mount, not during render
+    return Date.now();
+  });
 
-  // Timer tick for active session duration updates (updates every minute)
+  // Use session data directly for non-active sessions, debounced data for active
+  const debouncedHistory = session.isActive ? activeSessionHistory : session.blinkRateHistory;
+
+  // Timer tick for active session duration updates (updates every 30 seconds)
+  // Also used to trigger blink rate recalculation
   const [durationTick, setDurationTick] = useState(0);
+  // Current timestamp updated by interval - avoids Date.now() during render
+  const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
 
-  // Update duration display every 30 seconds for active sessions
-  useEffect(() => {
-    if (!session.isActive) return;
-
-    const intervalId = setInterval(() => {
+  // Use compiler-compatible interval hook - updates both tick and time
+  useInterval(
+    () => {
       setDurationTick(tick => tick + 1);
-    }, 30000); // Update every 30 seconds
-
-    return () => clearInterval(intervalId);
-  }, [session.isActive]);
+      setCurrentTime(Date.now());
+    },
+    session.isActive ? 1000 : null // Update every second for active sessions
+  );
 
   // Derive live blink count and rate from source of truth (only for active sessions)
+  // React Compiler auto-memoizes these derived values
   const liveBlinkCount = session.isActive ? currentBlinkCount - sessionBaselineBlinkCount : 0;
-  const liveBlinkRate = useMemo(() => {
+  const liveBlinkRate = (() => {
     if (!session.isActive || sessionStartTime === 0) return 0;
-    const timeElapsedMinutes = (Date.now() - sessionStartTime) / 1000 / 60;
+    const timeElapsedMinutes = (currentTime - sessionStartTime) / 1000 / 60;
     return timeElapsedMinutes > 0 ? liveBlinkCount / timeElapsedMinutes : 0;
-  }, [session.isActive, sessionStartTime, liveBlinkCount]);
+  })();
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -82,7 +92,8 @@ export function SessionCard({ session }: SessionCardProps) {
   };
 
   // Calculate current blink rate - use live value for active sessions, history for completed
-  const currentBlinkRate = useMemo(() => {
+  // React Compiler auto-memoizes this derived value
+  const currentBlinkRate = (() => {
     // For active sessions, use the live blink rate from context (updates instantly)
     if (session.isActive) {
       return liveBlinkRate > 0 ? Math.round(liveBlinkRate) : null;
@@ -91,9 +102,10 @@ export function SessionCard({ session }: SessionCardProps) {
     // For completed sessions, calculate from history using 2-minute moving window
     if (session.blinkRateHistory.length === 0) return null;
 
-    const now = Date.now();
+    // For completed sessions, use end time as reference point
+    const referenceTime = session.endTime?.getTime() || session.startTime.getTime();
     const windowDuration = 120000; // 2 minutes
-    const windowStart = now - windowDuration;
+    const windowStart = referenceTime - windowDuration;
 
     const recentPoints = session.blinkRateHistory.filter(
       (point: BlinkRatePoint) => point.timestamp >= windowStart
@@ -107,15 +119,17 @@ export function SessionCard({ session }: SessionCardProps) {
 
     const sum = recentPoints.reduce((acc: number, point: BlinkRatePoint) => acc + point.rate, 0);
     return Math.round(sum / recentPoints.length);
-  }, [session.isActive, session.blinkRateHistory, liveBlinkRate]);
+  })();
 
   // Check if session is 3+ minutes old (show current rate)
-  // durationTick dependency ensures this recalculates periodically for active sessions
-  const sessionDurationMinutes = useMemo(() => {
+  // durationTick triggers re-render for active sessions to update this value
+  // React Compiler auto-memoizes this calculation
+  const sessionDurationMinutes = (() => {
+    // Reference durationTick to ensure recalculation on interval
+    void durationTick;
     const endTime = session.endTime || new Date();
     return (endTime.getTime() - session.startTime.getTime()) / 1000 / 60;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.startTime, session.endTime, durationTick]);
+  })();
 
   const showCurrentRate = session.isActive && sessionDurationMinutes >= 3 && currentBlinkRate !== null;
 
@@ -141,33 +155,27 @@ export function SessionCard({ session }: SessionCardProps) {
     return "orange"; // Lower might indicate fatigue
   };
 
-  // Debounce chart history updates to prevent aggressive re-rendering
+  // Debounce chart history updates for active sessions only
+  // Non-active sessions use session.blinkRateHistory directly via derived value above
   useEffect(() => {
-    // For non-active sessions, always sync immediately
+    // Only debounce for active sessions
     if (!session.isActive) {
-      setDebouncedHistory(session.blinkRateHistory);
       return;
     }
 
-    // For active sessions, debounce updates
+    // Calculate time until next allowed update
     const now = Date.now();
-    const timeSinceLastUpdate = now - lastChartUpdateRef.current;
+    const timeSinceLastUpdate = now - lastChartUpdateTime;
+    const timeUntilUpdate = Math.max(0, CHART_UPDATE_DEBOUNCE_MS - timeSinceLastUpdate);
 
-    if (timeSinceLastUpdate >= CHART_UPDATE_DEBOUNCE_MS) {
-      // Enough time has passed, update immediately
-      setDebouncedHistory(session.blinkRateHistory);
-      lastChartUpdateRef.current = now;
-    } else {
-      // Schedule an update for when debounce period ends
-      const timeUntilUpdate = CHART_UPDATE_DEBOUNCE_MS - timeSinceLastUpdate;
-      const timeoutId = setTimeout(() => {
-        setDebouncedHistory(session.blinkRateHistory);
-        lastChartUpdateRef.current = Date.now();
-      }, timeUntilUpdate);
+    // Always schedule update via setTimeout to avoid synchronous setState in effect body
+    const timeoutId = setTimeout(() => {
+      setActiveSessionHistory(session.blinkRateHistory);
+      setLastChartUpdateTime(Date.now());
+    }, timeUntilUpdate);
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [session.blinkRateHistory, session.isActive]);
+    return () => clearTimeout(timeoutId);
+  }, [session.blinkRateHistory, session.isActive, lastChartUpdateTime]);
 
   // D3 Mini Chart - uses debounced history to prevent aggressive re-rendering
   useEffect(() => {
