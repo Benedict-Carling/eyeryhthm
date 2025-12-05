@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.1...v1.9.2) (2025-12-05)
+
+
+### Bug Fixes
+
+* include electron runtime dependencies in packaged app ([41faf09](https://github.com/Benedict-Carling/eyeryhthm/commit/41faf09451025bcaf896dc0a709d3c04d731138e))
+
 ## [1.9.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.0...v1.9.1) (2025-12-05)
 
 
