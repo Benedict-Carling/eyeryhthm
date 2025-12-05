@@ -123,7 +123,6 @@ export function Camera() {
   };
 
   const showDebugOverlay = true;
-  const toggleDebugOverlay = () => {}; // Placeholder
 
   return (
     <Box>
@@ -240,15 +239,6 @@ export function Camera() {
                   disabled={!isDetectorReady}
                 >
                   Reset Counter
-                </Button>
-
-                <Button
-                  onClick={toggleDebugOverlay}
-                  size="2"
-                  variant="soft"
-                  disabled={!isDetectorReady}
-                >
-                  Toggle Debug: {showDebugOverlay ? "ON" : "OFF"}
                 </Button>
               </Flex>
             </Flex>

@@ -1,13 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
-
-// Notification settings type
-export interface NotificationSettings {
-  enabled: boolean;
-  soundEnabled: boolean;
-  quietHoursEnabled: boolean;
-  quietHoursStart: number; // Hour in 24h format (0-23)
-  quietHoursEnd: number;   // Hour in 24h format (0-23)
-}
+import type { NotificationSettings } from "../shared/types/notifications";
 
 // Expose protected methods that allow the renderer process to use
 // ipcRenderer without exposing the entire object

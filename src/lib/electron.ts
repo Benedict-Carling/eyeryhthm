@@ -5,6 +5,15 @@
  * the Electron environment when running as a desktop app.
  */
 
+import type {
+  NotificationSettings,
+  NotificationState,
+  TestNotificationResult,
+} from "../../shared/types/notifications";
+
+// Re-export notification types for consumers
+export type { NotificationSettings, NotificationState, TestNotificationResult };
+
 export interface UpdateStatus {
   status:
     | "checking"
@@ -25,27 +34,6 @@ export interface UpdateStatus {
     transferred: number;
     total: number;
   };
-}
-
-export interface NotificationSettings {
-  enabled: boolean;
-  soundEnabled: boolean;
-  quietHoursEnabled: boolean;
-  quietHoursStart: number; // Hour in 24h format (0-23)
-  quietHoursEnd: number;   // Hour in 24h format (0-23)
-}
-
-export interface NotificationState {
-  isSupported: boolean;
-  canSend: boolean;
-  isWithinQuietHours: boolean;
-  cooldownRemaining: number;
-  permissionStatus: 'not-determined' | 'denied' | 'authorized' | 'unknown';
-}
-
-export interface TestNotificationResult {
-  success: boolean;
-  reason?: string;
 }
 
 export type CameraPermissionStatus = 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown';

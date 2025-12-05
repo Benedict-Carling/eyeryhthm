@@ -8,7 +8,12 @@ export function calculateEAR(landmarks: EyeLandmarks): number {
   const d1 = calculateEuclideanDistance(landmarks.p2, landmarks.p6);
   const d2 = calculateEuclideanDistance(landmarks.p3, landmarks.p5);
   const d3 = calculateEuclideanDistance(landmarks.p1, landmarks.p4);
-  
+
+  // Guard against division by zero (corrupted landmark data)
+  if (d3 === 0) {
+    return 0;
+  }
+
   const ear = (d1 + d2) / (2 * d3);
   return ear;
 }
