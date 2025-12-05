@@ -1,6 +1,6 @@
 {
   "name": "eyeryhthm",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "private": true,
   "main": "dist-electron/electron/main.js",
   "author": "EyeRhythm",
