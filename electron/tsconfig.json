@@ -7,10 +7,14 @@
     "strict": true,
     "skipLibCheck": true,
     "outDir": "../dist-electron",
-    "rootDir": ".",
+    "rootDir": "..",
     "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": "..",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    }
   },
-  "include": ["*.ts"],
+  "include": ["*.ts", "../shared/**/*.ts"],
   "exclude": ["node_modules"]
 }

@@ -120,6 +120,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const alertServiceRef = useRef<AlertService>(new AlertService());
   // Track the last state we sent to main process to detect if incoming toggle is a response to our change
   const lastSentStateRef = useRef<boolean | null>(null);
+  // Keep activeSession in ref to avoid stale closures in AlertService monitoring
+  const activeSessionRef = useRef<SessionData | null>(null);
 
   const { activeCalibration } = useCalibration();
 
@@ -146,6 +148,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
   useEffect(() => {
     blinkCountStateRef.current = blinkCount;
   }, [blinkCount]);
+
+  // Keep activeSession ref in sync with state for AlertService monitoring
+  useEffect(() => {
+    activeSessionRef.current = activeSession;
+  }, [activeSession]);
 
   // Load mock sessions on mount and cleanup on unmount
   useEffect(() => {
@@ -363,7 +370,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         currentFaceLostPeriodStartRef.current = Date.now();
         // Immediately mark face as not detected for UI
         setIsFaceDetected(false);
-        // Start countdown from 20 seconds
+        // Start countdown from timeout value (60 seconds)
         setFaceLostCountdown(Math.ceil(FACE_DETECTION_LOST_TIMEOUT_MS / 1000));
       }
     } else if (!faceCurrentlyDetected && !isFaceDetected && faceDetectionLostTimeRef.current) {
@@ -403,12 +410,54 @@ export function SessionProvider({ children }: SessionProviderProps) {
     handleFrameProcessingRef.current = handleFrameProcessing;
   }, [processFrame, handleFrameProcessing]);
 
+  // Fallback frame processing using requestAnimationFrame for browsers without MediaStreamTrackProcessor
+  const startRafFallback = useCallback(() => {
+    processingLoopActiveRef.current = true;
+    console.log('[SessionContext] Using requestAnimationFrame fallback for frame processing');
+
+    // FPS monitoring
+    let frameCount = 0;
+    let lastFpsLog = Date.now();
+
+    const processLoop = async () => {
+      if (!processingLoopActiveRef.current || !videoRef.current) {
+        return;
+      }
+
+      const video = videoRef.current;
+      if (video.readyState >= 2) {
+        try {
+          await processFrameRef.current(video, undefined);
+          handleFrameProcessingRef.current();
+
+          // FPS monitoring
+          frameCount++;
+          const now = Date.now();
+          if (now - lastFpsLog >= FPS_LOG_INTERVAL_MS) {
+            const fps = (frameCount / ((now - lastFpsLog) / 1000)).toFixed(1);
+            console.log(`[SessionContext] FPS (fallback): ${fps}`);
+            frameCount = 0;
+            lastFpsLog = now;
+          }
+        } catch (error) {
+          console.error('[SessionContext] Frame processing error (fallback):', error);
+        }
+      }
+
+      if (processingLoopActiveRef.current) {
+        requestAnimationFrame(processLoop);
+      }
+    };
+
+    requestAnimationFrame(processLoop);
+  }, [videoRef]);
+
   // Start MediaStreamTrackProcessor-based frame capture
   const startTrackProcessor = useCallback((track: MediaStreamTrack) => {
     // Check if MediaStreamTrackProcessor is available
     if (typeof window !== 'undefined' && !('MediaStreamTrackProcessor' in window)) {
-      console.warn('[SessionContext] MediaStreamTrackProcessor not supported, using fallback');
-      // Could fallback to ImageCapture or requestAnimationFrame here
+      console.warn('[SessionContext] MediaStreamTrackProcessor not supported, using requestAnimationFrame fallback');
+      startRafFallback();
       return;
     }
 
@@ -479,7 +528,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     } catch (error) {
       console.error('[SessionContext] Failed to initialize MediaStreamTrackProcessor:', error);
     }
-  }, []);
+  }, [startRafFallback]);
 
   // Stop MediaStreamTrackProcessor
   const stopTrackProcessor = useCallback(() => {
@@ -576,9 +625,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
       // Start camera when enabling tracking
       try {
         await startCamera();
-        // Start alert monitoring
+        // Start alert monitoring (use ref to avoid stale closure)
         alertServiceRef.current.startMonitoring(
-          () => activeSession,
+          () => activeSessionRef.current,
           handleFatigueAlert
         );
       } catch (error) {

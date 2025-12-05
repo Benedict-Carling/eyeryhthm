@@ -105,7 +105,7 @@ export class CalibrationService {
   }
 
   static generateCalibrationId(): string {
-    return 'cal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    return 'cal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
   }
 
   static generateDefaultName(): string {

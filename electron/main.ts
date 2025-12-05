@@ -7,6 +7,9 @@ import { trackEvent, AnalyticsEvents } from "./analytics";
 import { log, warn, error } from "./logger";
 import { platform, isDarwin, isWindows } from "./platform";
 
+import type { NotificationSettings } from "../shared/types/notifications";
+import { DEFAULT_NOTIFICATION_SETTINGS } from "../shared/types/notifications";
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let powerSaveBlockerId: number | null = null;
@@ -15,23 +18,7 @@ let powerSaveBlockerId: number | null = null;
 let isTrackingEnabled = false;
 let launchAtLoginEnabled = false;
 
-// Notification settings and state
-interface NotificationSettings {
-  enabled: boolean;
-  soundEnabled: boolean;
-  quietHoursEnabled: boolean;
-  quietHoursStart: number; // Hour in 24h format (0-23)
-  quietHoursEnd: number;   // Hour in 24h format (0-23)
-}
-
-const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  enabled: true,
-  soundEnabled: true,
-  quietHoursEnabled: true,
-  quietHoursStart: 23, // 11 PM - notifications disabled from 11 PM
-  quietHoursEnd: 7,    // 7 AM - notifications enabled again at 7 AM
-};
-
+// Notification settings state
 let notificationSettings: NotificationSettings = { ...DEFAULT_NOTIFICATION_SETTINGS };
 let lastFatigueAlertTime: number = 0;
 const FATIGUE_ALERT_COOLDOWN_MS = 60000; // 1 minute cooldown between alerts
@@ -607,6 +594,11 @@ function isWithinQuietHours(): boolean {
   const now = new Date();
   const currentHour = now.getHours();
   const { quietHoursStart, quietHoursEnd } = notificationSettings;
+
+  // Edge case: if start equals end, quiet hours are disabled (no range)
+  if (quietHoursStart === quietHoursEnd) {
+    return false;
+  }
 
   // Handle overnight quiet hours (e.g., 11 PM to 7 AM)
   if (quietHoursStart > quietHoursEnd) {
