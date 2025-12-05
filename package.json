@@ -2,7 +2,7 @@
   "name": "eyeryhthm",
   "version": "1.8.1",
   "private": true,
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "author": "EyeRhythm",
   "description": "Privacy-focused real-time eye movement tracking application",
   "repository": {
