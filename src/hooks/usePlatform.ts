@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 /**
  * Platform types supported by the application
@@ -133,6 +133,10 @@ function detectPlatform(): { platform: Platform; isElectron: boolean } {
  * Electron desktop and web browser environments. It handles the complexity
  * of platform-specific features and provides a unified interface.
  *
+ * Note: Platform detection happens after hydration to avoid SSR mismatches.
+ * The initial render will show web defaults, then update to the correct
+ * platform after mount.
+ *
  * @example
  * ```tsx
  * const { isDarwin, isElectron, capabilities } = usePlatform();
@@ -143,14 +147,29 @@ function detectPlatform(): { platform: Platform; isElectron: boolean } {
  * ```
  */
 export function usePlatform(): PlatformInfo {
-  // Use lazy initialization to detect platform once
-  // Platform detection is synchronous and doesn't need loading state
-  const [platformState] = useState(() => detectPlatform());
+  // Start with safe defaults that match server-side rendering
+  // This prevents hydration mismatches
+  const [platformState, setPlatformState] = useState<{
+    platform: Platform;
+    isElectron: boolean;
+    isLoading: boolean;
+  }>({
+    platform: "web",
+    isElectron: false,
+    isLoading: true,
+  });
 
-  const { platform, isElectron } = platformState;
+  // Detect platform after mount to avoid hydration mismatch
+  useEffect(() => {
+    const detected = detectPlatform();
+    setPlatformState({
+      platform: detected.platform,
+      isElectron: detected.isElectron,
+      isLoading: false,
+    });
+  }, []);
 
-  // Platform is detected synchronously during initialization
-  const isLoading = false;
+  const { platform, isElectron, isLoading } = platformState;
 
   // Derive platform-specific values
   const isDarwin = platform === "darwin";
