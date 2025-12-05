@@ -43,11 +43,19 @@ const config = {
   },
 
   // Files to include in the app
+  // Note: electron-builder automatically includes production dependencies from node_modules
   files: [
     "dist-electron/**/*",
     "out/**/*",
-    "!node_modules/**/*",
-    "node_modules/electron-squirrel-startup/**/*",
+    // Exclude non-electron dependencies (Next.js/React only needed at build time)
+    "!node_modules/@mediapipe/**/*",
+    "!node_modules/@radix-ui/**/*",
+    "!node_modules/@sentry/**/*",
+    "!node_modules/d3/**/*",
+    "!node_modules/lucide-react/**/*",
+    "!node_modules/next/**/*",
+    "!node_modules/react/**/*",
+    "!node_modules/react-dom/**/*",
   ],
 
   // Extra resources bundled with the app
