@@ -9,43 +9,6 @@
     "type": "git",
     "url": "https://github.com/Benedict-Carling/eyeryhthm.git"
   },
-  "build": {
-    "appId": "com.eyerhythm.app",
-    "productName": "EyeRhythm",
-    "publish": {
-      "provider": "github",
-      "owner": "Benedict-Carling",
-      "repo": "eyeryhthm"
-    },
-    "mac": {
-      "category": "public.app-category.healthcare-fitness",
-      "icon": "build-resources/icon.icns",
-      "target": [
-        "dmg",
-        "zip"
-      ]
-    },
-    "win": {
-      "icon": "build-resources/icon.ico",
-      "target": [
-        "nsis"
-      ]
-    },
-    "linux": {
-      "icon": "build-resources/icon.png",
-      "target": [
-        "AppImage"
-      ]
-    },
-    "files": [
-      "dist-electron/**/*",
-      "out/**/*"
-    ],
-    "directories": {
-      "output": "release",
-      "buildResources": "build-resources"
-    }
-  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -59,10 +22,10 @@
     "verify": "npm run typecheck && npm run lint && npm run test:unit -- --run",
     "electron:dev": "concurrently -k \"npm run dev -- --port 3000\" \"npm run electron:start\"",
     "electron:start": "wait-on http://localhost:3000 && tsc -p electron/tsconfig.json && cross-env NODE_ENV=development electron .",
-    "electron:build": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder",
-    "electron:build:mac": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --mac",
-    "electron:build:win": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --win",
-    "electron:build:linux": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --linux"
+    "electron:build": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --config electron-builder.config.js",
+    "electron:build:mac": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --mac --config electron-builder.config.js",
+    "electron:build:win": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --win --config electron-builder.config.js",
+    "electron:build:linux": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --linux --config electron-builder.config.js"
   },
   "dependencies": {
     "@aptabase/electron": "^0.3.1",
