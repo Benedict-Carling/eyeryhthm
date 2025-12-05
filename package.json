@@ -3,7 +3,10 @@
   "version": "1.9.0",
   "private": true,
   "main": "dist-electron/electron/main.js",
-  "author": "EyeRhythm",
+  "author": {
+    "name": "EyeRhythm",
+    "email": "eyerhythm@users.noreply.github.com"
+  },
   "description": "Privacy-focused real-time eye movement tracking application",
   "repository": {
     "type": "git",
