@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.7.1...v1.8.0) (2025-12-05)
+
+
+### Features
+
+* add cross-platform support for Windows and Linux releases ([#50](https://github.com/Benedict-Carling/eyeryhthm/issues/50)) ([632a10b](https://github.com/Benedict-Carling/eyeryhthm/commit/632a10b174a35dff4708584fe30dbcfc87eb1c00))
+
 ## [1.7.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.7.0...v1.7.1) (2025-12-05)
 
 
