@@ -773,15 +773,20 @@ ipcMain.handle("get-notification-state", () => {
   };
 });
 
-ipcMain.handle("open-notification-settings", () => {
-  if (process.platform === 'darwin') {
-    // Open macOS System Preferences > Notifications
-    shell.openExternal('x-apple.systempreferences:com.apple.preference.notifications');
-  } else if (process.platform === 'win32') {
-    // Open Windows Settings > Notifications
-    shell.openExternal('ms-settings:notifications');
+ipcMain.handle("open-notification-settings", async () => {
+  try {
+    if (process.platform === 'darwin') {
+      // Open macOS System Preferences > Notifications
+      await shell.openExternal('x-apple.systempreferences:com.apple.preference.notifications');
+    } else if (process.platform === 'win32') {
+      // Open Windows Settings > Notifications
+      await shell.openExternal('ms-settings:notifications');
+    }
+    return true;
+  } catch (err) {
+    error('[Settings] Failed to open notification settings:', err);
+    return false;
   }
-  return true;
 });
 
 // Camera permission IPC handlers
@@ -794,13 +799,18 @@ ipcMain.handle("request-camera-permission", async () => {
   return await requestCameraPermission();
 });
 
-ipcMain.handle("open-camera-settings", () => {
-  if (process.platform === 'darwin') {
-    // Open macOS System Settings > Privacy & Security > Camera
-    shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Camera');
-  } else if (process.platform === 'win32') {
-    // Open Windows Settings > Privacy > Camera
-    shell.openExternal('ms-settings:privacy-webcam');
+ipcMain.handle("open-camera-settings", async () => {
+  try {
+    if (process.platform === 'darwin') {
+      // Open macOS System Settings > Privacy & Security > Camera
+      await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Camera');
+    } else if (process.platform === 'win32') {
+      // Open Windows Settings > Privacy > Camera
+      await shell.openExternal('ms-settings:privacy-webcam');
+    }
+    return true;
+  } catch (err) {
+    error('[Settings] Failed to open camera settings:', err);
+    return false;
   }
-  return true;
 });

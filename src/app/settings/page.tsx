@@ -26,10 +26,14 @@ import {
   ClockIcon,
   CheckCircledIcon,
   CrossCircledIcon,
+  CameraIcon,
+  ExclamationTriangleIcon,
+  GearIcon,
 } from "@radix-ui/react-icons";
 import { VersionInfo } from "@/components/VersionInfo";
 import { useUpdateStatus } from "@/hooks/useUpdateStatus";
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
+import { useCameraPermission } from "@/hooks/useCameraPermission";
 
 function getInitialFatigueThreshold(): number {
   if (typeof window === "undefined") return 8;
@@ -57,6 +61,14 @@ export default function SettingsPage() {
     openNotificationSettings,
     formatHour,
   } = useNotificationSettings();
+
+  const {
+    isMacOS,
+    isLoading: isCameraLoading,
+    status: cameraStatus,
+    needsAttention: cameraNeedsAttention,
+    openCameraSettings,
+  } = useCameraPermission();
 
   const handleThresholdChange = (value: number[]) => {
     const threshold = value[0];
@@ -99,6 +111,37 @@ export default function SettingsPage() {
     value: i.toString(),
     label: formatHour(i),
   }));
+
+  const renderCameraPermissionCallout = () => {
+    // Only show on macOS Electron when camera permission needs attention
+    if (!isMacOS || isCameraLoading) return null;
+
+    if (cameraNeedsAttention) {
+      return (
+        <Callout.Root color="red">
+          <Callout.Icon>
+            <ExclamationTriangleIcon />
+          </Callout.Icon>
+          <Callout.Text>
+            <Flex justify="between" align="center" style={{ width: "100%" }}>
+              <Box>
+                <Text weight="medium">Camera Access Required</Text>
+                <Text size="2" as="p" style={{ marginTop: "4px" }}>
+                  EyeRhythm needs camera access to track your eye movements. Please enable it in System Settings.
+                </Text>
+              </Box>
+              <Button size="2" variant="soft" color="red" onClick={openCameraSettings}>
+                <GearIcon />
+                Open Settings
+              </Button>
+            </Flex>
+          </Callout.Text>
+        </Callout.Root>
+      );
+    }
+
+    return null;
+  };
 
   const renderUpdateCallout = () => {
     if (!isElectron || !hasUpdate) return null;
@@ -179,6 +222,7 @@ export default function SettingsPage() {
           </Text>
         </Box>
 
+        {renderCameraPermissionCallout()}
         {renderUpdateCallout()}
 
         <Flex direction="column" gap="4">

@@ -56,6 +56,21 @@ vi.mock('@/hooks/useNotificationSettings', () => ({
   useNotificationSettings: () => mockNotificationSettings,
 }));
 
+// Mock useCameraPermission hook
+vi.mock('@/hooks/useCameraPermission', () => ({
+  useCameraPermission: () => ({
+    isMacOS: false,
+    isLoading: false,
+    status: 'granted',
+    needsAttention: false,
+    isGranted: true,
+    isNotDetermined: false,
+    refreshStatus: vi.fn(),
+    requestPermission: vi.fn(),
+    openCameraSettings: vi.fn(),
+  }),
+}));
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
