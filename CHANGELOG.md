@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.3...v1.10.0) (2025-12-05)
+
+
+### Features
+
+* **ui:** add floating feedback button ([c69f0ba](https://github.com/Benedict-Carling/eyeryhthm/commit/c69f0bad5b5dbbfe85d75887ce7d4ad8150897f6))
+* **ui:** add premium animations and micro-interactions ([7327d8e](https://github.com/Benedict-Carling/eyeryhthm/commit/7327d8ea9fa397f8417aef1973d98b3bf8709d84))
+
+
+### Bug Fixes
+
+* **calibration:** lower default threshold and widen calibration range ([972bdfb](https://github.com/Benedict-Carling/eyeryhthm/commit/972bdfba0a3466a59500659052c162e30a9ff787))
+
 ## [1.9.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.2...v1.9.3) (2025-12-05)
 
 
