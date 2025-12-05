@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.8.0...v1.8.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* address codebase audit issues and improve robustness ([075859e](https://github.com/Benedict-Carling/eyeryhthm/commit/075859ee03d29ea6ea729cb76be5b48f896c312e))
+* address codebase audit issues and improve robustness ([60fc13b](https://github.com/Benedict-Carling/eyeryhthm/commit/60fc13b040ea53788d384e2f3e62d5bffc8c1c8a))
+* use electron-builder.config.js for production builds ([#52](https://github.com/Benedict-Carling/eyeryhthm/issues/52)) ([3aeb41c](https://github.com/Benedict-Carling/eyeryhthm/commit/3aeb41cb3484fb87438851da881a666265c7d607))
+
 ## [1.8.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.7.1...v1.8.0) (2025-12-05)
 
 
