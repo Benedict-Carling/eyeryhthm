@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.8.1...v1.9.0) (2025-12-05)
+
+
+### Features
+
+* persist sessions to localStorage ([347469e](https://github.com/Benedict-Carling/eyeryhthm/commit/347469e6556ad01606b175c1220f068d6961866a))
+* persist sessions to localStorage ([3d9f9ad](https://github.com/Benedict-Carling/eyeryhthm/commit/3d9f9adeba943c6fc5b5a0f27e4bd846a7d98a81))
+
+
+### Bug Fixes
+
+* update electron entry point path to match tsc output ([8de8afc](https://github.com/Benedict-Carling/eyeryhthm/commit/8de8afccb2bdd26b0106d73f5366b0d43e9c3c23))
+
 ## [1.8.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.8.0...v1.8.1) (2025-12-05)
 
 
