@@ -93,7 +93,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "concurrently": "^9.1.0",
     "cross-env": "^10.1.0",
-    "electron": "^39.2.3",
+    "electron": "^39.2.5",
     "electron-builder": "^25.1.8",
     "electron-icon-builder": "^2.0.1",
     "electron-squirrel-startup": "^1.0.1",

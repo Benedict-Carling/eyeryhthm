@@ -88,6 +88,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   testNotification: () => ipcRenderer.invoke("test-notification"),
   getNotificationState: () => ipcRenderer.invoke("get-notification-state"),
   openNotificationSettings: () => ipcRenderer.invoke("open-notification-settings"),
+
+  // Camera permission APIs (macOS)
+  getCameraPermissionStatus: () => ipcRenderer.invoke("get-camera-permission-status"),
+  requestCameraPermission: () => ipcRenderer.invoke("request-camera-permission"),
+  openCameraSettings: () => ipcRenderer.invoke("open-camera-settings"),
 });
 
 // Update status type (mirrors the one in updater.ts)

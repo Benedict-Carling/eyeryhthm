@@ -48,6 +48,8 @@ export interface TestNotificationResult {
   reason?: string;
 }
 
+export type CameraPermissionStatus = 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown';
+
 export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   getPlatform: () => Promise<{
@@ -82,6 +84,10 @@ export interface ElectronAPI {
   testNotification: () => Promise<TestNotificationResult>;
   getNotificationState: () => Promise<NotificationState>;
   openNotificationSettings: () => Promise<boolean>;
+  // Camera permission APIs (macOS)
+  getCameraPermissionStatus: () => Promise<CameraPermissionStatus>;
+  requestCameraPermission: () => Promise<boolean>;
+  openCameraSettings: () => Promise<boolean>;
 }
 
 declare global {
