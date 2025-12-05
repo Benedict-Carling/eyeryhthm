@@ -24,7 +24,9 @@ export class DarwinPlatformHandler implements PlatformHandler {
   getTrayConfig(isDev: boolean, resourcesPath: string, dirname: string): PlatformTrayConfig {
     let iconPath: string;
     if (isDev) {
-      iconPath = path.join(dirname, '../build-resources/trayIconTemplate.png');
+      // With rootDir: ".." in tsconfig, dirname is dist-electron/electron/
+      // So we need to go up two levels to reach build-resources/
+      iconPath = path.join(dirname, '../../build-resources/trayIconTemplate.png');
     } else {
       iconPath = path.join(resourcesPath, 'trayIconTemplate.png');
     }
@@ -42,7 +44,8 @@ export class DarwinPlatformHandler implements PlatformHandler {
 
   getNotificationIconPath(isDev: boolean, resourcesPath: string, dirname: string): string {
     if (isDev) {
-      return path.join(dirname, '../build-resources/icon.png');
+      // With rootDir: ".." in tsconfig, dirname is dist-electron/electron/
+      return path.join(dirname, '../../build-resources/icon.png');
     }
     return path.join(resourcesPath, 'icon.png');
   }

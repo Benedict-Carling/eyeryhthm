@@ -24,7 +24,9 @@ let lastFatigueAlertTime: number = 0;
 const FATIGUE_ALERT_COOLDOWN_MS = 60000; // 1 minute cooldown between alerts
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
-const outDir = path.resolve(__dirname, "../out");
+// With rootDir: ".." in tsconfig, main.js is at dist-electron/electron/main.js
+// So we need to go up two levels to reach the out/ directory
+const outDir = path.resolve(__dirname, "../../out");
 
 // Camera permission status type - imported from platform abstraction
 import type { MediaAccessStatus } from "./platform";
@@ -68,7 +70,7 @@ function registerAppProtocol() {
     }
 
     // Build the file path relative to the out directory
-    const filePath = path.resolve(__dirname, "../out", urlPath);
+    const filePath = path.resolve(__dirname, "../../out", urlPath);
 
     // Security: Prevent path traversal attacks
     if (!filePath.startsWith(outDir)) {

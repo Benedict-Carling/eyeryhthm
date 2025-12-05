@@ -31,7 +31,8 @@ export class Win32PlatformHandler implements PlatformHandler {
     // For now, use the same icon file - Windows handles PNG fine for tray
     let iconPath: string;
     if (isDev) {
-      iconPath = path.join(dirname, '../build-resources/icon.png');
+      // With rootDir: ".." in tsconfig, dirname is dist-electron/electron/
+      iconPath = path.join(dirname, '../../build-resources/icon.png');
     } else {
       iconPath = path.join(resourcesPath, 'icon.png');
     }
@@ -49,7 +50,8 @@ export class Win32PlatformHandler implements PlatformHandler {
   getNotificationIconPath(isDev: boolean, resourcesPath: string, dirname: string): string {
     // Windows notifications work best with PNG
     if (isDev) {
-      return path.join(dirname, '../build-resources/icon.png');
+      // With rootDir: ".." in tsconfig, dirname is dist-electron/electron/
+      return path.join(dirname, '../../build-resources/icon.png');
     }
     return path.join(resourcesPath, 'icon.png');
   }
