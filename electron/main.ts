@@ -609,11 +609,8 @@ app.on("window-all-closed", () => {
   }
 });
 
-// Cleanup on quit
-app.on('before-quit', () => {
-  trackEvent(AnalyticsEvents.APP_QUIT);
-
-  // Destroy tray to prevent orphaned icons
+// Centralized cleanup function to ensure tray is destroyed
+function cleanupBeforeExit() {
   if (tray) {
     tray.destroy();
     tray = null;
@@ -621,8 +618,44 @@ app.on('before-quit', () => {
 
   if (powerSaveBlockerId !== null) {
     powerSaveBlocker.stop(powerSaveBlockerId);
+    powerSaveBlockerId = null;
     log('[PowerSave] Timer throttling prevention disabled');
   }
+}
+
+// Cleanup on quit
+app.on('before-quit', () => {
+  trackEvent(AnalyticsEvents.APP_QUIT);
+  cleanupBeforeExit();
+});
+
+// Additional cleanup handlers for edge cases
+app.on('will-quit', () => {
+  cleanupBeforeExit();
+});
+
+app.on('quit', () => {
+  cleanupBeforeExit();
+});
+
+// Handle process signals for force-quit scenarios
+process.on('SIGTERM', () => {
+  log('[Process] Received SIGTERM, cleaning up...');
+  cleanupBeforeExit();
+  app.quit();
+});
+
+process.on('SIGINT', () => {
+  log('[Process] Received SIGINT, cleaning up...');
+  cleanupBeforeExit();
+  app.quit();
+});
+
+// Handle uncaught exceptions - attempt cleanup before crash
+process.on('uncaughtException', (err) => {
+  error('[Process] Uncaught exception:', err);
+  cleanupBeforeExit();
+  process.exit(1);
 });
 
 // IPC Handlers
