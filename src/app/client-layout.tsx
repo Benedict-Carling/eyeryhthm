@@ -3,6 +3,7 @@
 import { Theme, Box } from "@radix-ui/themes";
 import { useTheme } from "../contexts/ThemeContext";
 import { Navbar } from "../components/Navbar";
+import { FeedbackButton } from "../components/FeedbackButton";
 import { usePathname } from "next/navigation";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +16,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       <Box key={pathname} className="page-transition-wrapper">
         {children}
       </Box>
+      <FeedbackButton />
     </Theme>
   );
 }
