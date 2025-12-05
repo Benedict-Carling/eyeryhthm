@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.2...v1.9.3) (2025-12-05)
+
+
+### Bug Fixes
+
+* correct path resolution after tsconfig rootDir change ([3d5fa43](https://github.com/Benedict-Carling/eyeryhthm/commit/3d5fa43c7073e46d4a47d957f9276b321c13d91c))
+* correct path resolution after tsconfig rootDir change ([2ac50f2](https://github.com/Benedict-Carling/eyeryhthm/commit/2ac50f270f40c881c0e54f1167319a37d719728e))
+
 ## [1.9.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.1...v1.9.2) (2025-12-05)
 
 
