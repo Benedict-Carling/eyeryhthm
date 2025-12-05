@@ -20,9 +20,14 @@ export class LinuxPlatformHandler implements PlatformHandler {
     };
   }
 
-  getTrayConfig(_isDev: boolean, _resourcesPath: string, dirname: string): PlatformTrayConfig {
+  getTrayConfig(isDev: boolean, resourcesPath: string, dirname: string): PlatformTrayConfig {
     // Linux uses PNG for tray icons
-    const iconPath = path.join(dirname, '../build-resources/icon.png');
+    let iconPath: string;
+    if (isDev) {
+      iconPath = path.join(dirname, '../build-resources/icon.png');
+    } else {
+      iconPath = path.join(resourcesPath, 'icon.png');
+    }
     return {
       iconPath,
       isTemplate: false,
@@ -34,8 +39,11 @@ export class LinuxPlatformHandler implements PlatformHandler {
     return icon;
   }
 
-  getNotificationIconPath(_isDev: boolean, _resourcesPath: string, dirname: string): string {
-    return path.join(dirname, '../build-resources/icon.png');
+  getNotificationIconPath(isDev: boolean, resourcesPath: string, dirname: string): string {
+    if (isDev) {
+      return path.join(dirname, '../build-resources/icon.png');
+    }
+    return path.join(resourcesPath, 'icon.png');
   }
 
   getSettingsUrls(): PlatformSettingsUrls {
