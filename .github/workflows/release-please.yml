@@ -32,11 +32,38 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
           release-type: node
 
-  # Build Electron apps when a release is created (macOS only for now)
+  # Build Electron apps for all platforms when a release is created
   build-electron:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            build_args: --mac --universal
+            artifact_name: electron-mac-universal
+            artifact_pattern: |
+              release/*.dmg
+              release/*.zip
+              release/latest-mac.yml
+          - os: windows-latest
+            platform: win
+            build_args: --win
+            artifact_name: electron-win-x64
+            artifact_pattern: |
+              release/*.exe
+              release/*.yml
+          - os: ubuntu-latest
+            platform: linux
+            build_args: --linux
+            artifact_name: electron-linux-x64
+            artifact_pattern: |
+              release/*.AppImage
+              release/*.deb
+              release/latest-linux.yml
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,31 +85,26 @@ jobs:
       - name: Compile Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
 
-      - name: Build Electron (macOS)
-        run: npx electron-builder --mac --universal --publish never
+      - name: Build Electron (${{ matrix.platform }})
+        run: npx electron-builder ${{ matrix.build_args }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List build output
         run: ls -la release/
+        shell: bash
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: electron-mac-universal
-          path: |
-            release/*.dmg
-            release/*.zip
-            release/*.yml
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_pattern }}
           if-no-files-found: error
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
-          files: |
-            release/*.dmg
-            release/*.zip
-            release/latest-mac.yml
+          files: ${{ matrix.artifact_pattern }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

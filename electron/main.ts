@@ -1,10 +1,11 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification, systemPreferences } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
 // IMPORTANT: Import analytics early - it initializes Aptabase on import (before app.whenReady)
 import { trackEvent, AnalyticsEvents } from "./analytics";
 import { log, warn, error } from "./logger";
+import { platform, isDarwin, isWindows } from "./platform";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -38,41 +39,17 @@ const FATIGUE_ALERT_COOLDOWN_MS = 60000; // 1 minute cooldown between alerts
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 const outDir = path.resolve(__dirname, "../out");
 
-// Camera permission status type
-type MediaAccessStatus = 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown';
+// Camera permission status type - imported from platform abstraction
+import type { MediaAccessStatus } from "./platform";
 
-// Request camera permission from macOS (must be called from main process)
+// Request camera permission (delegates to platform handler)
 async function requestCameraPermission(): Promise<boolean> {
-  if (process.platform !== 'darwin') {
-    // On non-macOS platforms, permission is handled by the browser/OS
-    return true;
-  }
-
-  const status = systemPreferences.getMediaAccessStatus('camera');
-  log('[Camera] Current permission status:', status);
-
-  if (status === 'granted') {
-    return true;
-  }
-
-  if (status === 'denied' || status === 'restricted') {
-    warn('[Camera] Permission denied or restricted. User must enable in System Settings.');
-    return false;
-  }
-
-  // Status is 'not-determined' - request permission
-  log('[Camera] Requesting camera permission from user...');
-  const granted = await systemPreferences.askForMediaAccess('camera');
-  log('[Camera] Permission request result:', granted ? 'granted' : 'denied');
-  return granted;
+  return platform.requestCameraPermission();
 }
 
-// Get current camera permission status
+// Get current camera permission status (delegates to platform handler)
 function getCameraPermissionStatus(): MediaAccessStatus {
-  if (process.platform !== 'darwin') {
-    return 'granted'; // Non-macOS platforms handle this differently
-  }
-  return systemPreferences.getMediaAccessStatus('camera') as MediaAccessStatus;
+  return platform.getCameraPermissionStatus();
 }
 
 // Register custom protocol for serving static files
@@ -116,19 +93,9 @@ function registerAppProtocol() {
   });
 }
 
-// Get the tray icon path based on environment
-function getTrayIconPath(): string {
-  if (isDev) {
-    // In development, use the build-resources directory
-    return path.join(__dirname, '../build-resources/trayIconTemplate.png');
-  } else {
-    // In production, the icon is bundled with the app
-    // On macOS, resources are in Contents/Resources
-    if (process.platform === 'darwin') {
-      return path.join(process.resourcesPath, 'trayIconTemplate.png');
-    }
-    return path.join(__dirname, '../build-resources/trayIconTemplate.png');
-  }
+// Get the tray icon configuration based on platform and environment
+function getTrayConfig() {
+  return platform.getTrayConfig(isDev, process.resourcesPath, __dirname);
 }
 
 // Update the tray context menu based on current state
@@ -148,10 +115,8 @@ function updateTrayMenu() {
       click: () => {
         mainWindow?.show();
         mainWindow?.focus();
-        // Show dock icon when window is shown (macOS)
-        if (process.platform === 'darwin' && app.dock) {
-          app.dock.show();
-        }
+        // Show dock icon when window is shown (platform-specific)
+        platform.showDock();
       }
     },
     { type: 'separator' },
@@ -200,7 +165,7 @@ function setLaunchAtLogin(enabled: boolean) {
   // Track analytics event
   trackEvent(enabled ? AnalyticsEvents.LAUNCH_AT_LOGIN_ENABLED : AnalyticsEvents.LAUNCH_AT_LOGIN_DISABLED);
 
-  if (process.platform === 'darwin' || process.platform === 'win32') {
+  if (platform.supportsLoginItems) {
     // Note: openAsHidden is deprecated on macOS 13+ (Ventura/Sonoma)
     // The app will launch normally, but our window close handler will keep it in tray
     // For true hidden launch on macOS 13+, consider using LSUIElement in Info.plist
@@ -214,7 +179,7 @@ function setLaunchAtLogin(enabled: boolean) {
 
 // Initialize launch at login state from system settings
 function initLaunchAtLoginState() {
-  if (process.platform === 'darwin' || process.platform === 'win32') {
+  if (platform.supportsLoginItems) {
     const settings = app.getLoginItemSettings();
     launchAtLoginEnabled = settings.openAtLogin;
   }
@@ -227,20 +192,17 @@ function createTray() {
     tray = null;
   }
 
-  // Load the template image for macOS (automatically handles dark/light mode)
-  // Icon sizes follow Apple HIG: 18x18 (1x) and 36x36 (@2x for Retina)
-  const iconPath = getTrayIconPath();
+  // Get platform-specific tray configuration
+  const trayConfig = getTrayConfig();
   let icon: Electron.NativeImage;
 
   try {
-    icon = nativeImage.createFromPath(iconPath);
-    // Mark as template image for macOS (enables automatic dark/light mode inversion)
-    if (process.platform === 'darwin') {
-      icon.setTemplateImage(true);
-    }
+    icon = nativeImage.createFromPath(trayConfig.iconPath);
+    // Apply platform-specific icon configuration
+    icon = platform.configureTrayIcon(icon);
 
     if (icon.isEmpty()) {
-      warn('[Tray] Icon loaded but is empty, check icon path:', iconPath);
+      warn('[Tray] Icon loaded but is empty, check icon path:', trayConfig.iconPath);
     }
   } catch (err) {
     error('[Tray] Failed to load tray icon, using empty icon:', err);
@@ -257,14 +219,15 @@ function createTray() {
   tray.on('double-click', () => {
     mainWindow?.show();
     mainWindow?.focus();
-    // Show dock icon when window is shown (macOS)
-    if (process.platform === 'darwin' && app.dock) {
-      app.dock.show();
-    }
+    // Show dock icon when window is shown (platform-specific)
+    platform.showDock();
   });
 }
 
 function createWindow() {
+  // Get platform-specific window configuration
+  const windowConfig = platform.getWindowConfig();
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -277,8 +240,10 @@ function createWindow() {
       sandbox: true, // Security: Enable sandbox (MediaPipe works fine with it)
       backgroundThrottling: false, // Prevent throttling when window is hidden
     },
-    titleBarStyle: "hiddenInset", // macOS native title bar
-    trafficLightPosition: { x: 16, y: 12 },
+    // Platform-specific title bar configuration
+    titleBarStyle: windowConfig.titleBarStyle,
+    frame: windowConfig.frame,
+    trafficLightPosition: windowConfig.trafficLightPosition,
     show: false, // Don't show until ready
     backgroundColor: "#111113", // Match app background
   });
@@ -351,7 +316,7 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // On macOS, hide window to tray instead of closing (unless quitting the app)
+  // On platforms that support it, hide window to tray instead of closing (unless quitting the app)
   // This allows the app to continue running in the background
   let isQuitting = false;
 
@@ -360,13 +325,11 @@ function createWindow() {
   });
 
   mainWindow.on('close', (event) => {
-    if (!isQuitting && process.platform === 'darwin') {
+    if (!isQuitting && platform.hideToTrayOnClose) {
       event.preventDefault();
       mainWindow?.hide();
-      // Hide dock icon when window is hidden
-      if (app.dock) {
-        app.dock.hide();
-      }
+      // Hide dock icon when window is hidden (platform-specific)
+      platform.hideDock();
     }
   });
 }
@@ -377,7 +340,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 
 // CalculateNativeWinOcclusion is Windows-only and does nothing on macOS/Linux
-if (process.platform === 'win32') {
+if (isWindows()) {
   app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 }
 
@@ -409,9 +372,9 @@ app.whenReady().then(async () => {
   // Register custom protocol before creating window
   registerAppProtocol();
 
-  // Request camera permission on macOS (triggers system permission dialog if needed)
+  // Request camera permission (triggers system permission dialog if needed on macOS)
   // This must be done before the renderer tries to access the camera
-  if (process.platform === 'darwin') {
+  if (platform.supportsNativeCameraPermission) {
     const cameraGranted = await requestCameraPermission();
     if (!cameraGranted) {
       warn('[App] Camera permission not granted. Eye tracking will not work.');
@@ -541,9 +504,9 @@ app.whenReady().then(async () => {
   });
 });
 
-// Quit when all windows are closed (except on macOS)
+// Quit when all windows are closed (except on platforms that hide to tray)
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+  if (!platform.hideToTrayOnClose) {
     app.quit();
   }
 });
@@ -687,18 +650,14 @@ function sendFatigueNotification(blinkRate: number): boolean {
     title: 'Eye Fatigue Alert',
     body: `Your blink rate has dropped to ${blinkRate.toFixed(1)} blinks/min. Consider taking a break.`,
     silent: !notificationSettings.soundEnabled,
-    icon: isDev
-      ? path.join(__dirname, '../build-resources/icon.png')
-      : path.join(process.resourcesPath, 'icon.png'),
+    icon: platform.getNotificationIconPath(isDev, process.resourcesPath, __dirname),
   });
 
   notification.on('click', () => {
     if (mainWindow) {
       mainWindow.show();
       mainWindow.focus();
-      if (process.platform === 'darwin' && app.dock) {
-        app.dock.show();
-      }
+      platform.showDock();
     }
   });
 
@@ -737,18 +696,14 @@ ipcMain.handle("test-notification", () => {
     title: 'EyeRhythm Test Notification',
     body: 'Notifications are working correctly!',
     silent: !notificationSettings.soundEnabled,
-    icon: isDev
-      ? path.join(__dirname, '../build-resources/icon.png')
-      : path.join(process.resourcesPath, 'icon.png'),
+    icon: platform.getNotificationIconPath(isDev, process.resourcesPath, __dirname),
   });
 
   notification.on('click', () => {
     if (mainWindow) {
       mainWindow.show();
       mainWindow.focus();
-      if (process.platform === 'darwin' && app.dock) {
-        app.dock.show();
-      }
+      platform.showDock();
     }
   });
 
@@ -762,7 +717,7 @@ ipcMain.handle("get-notification-state", () => {
   // without using native modules that don't support it. We return 'unknown'
   // and let users test notifications to verify they work.
   const permissionStatus: 'not-determined' | 'denied' | 'authorized' | 'unknown' =
-    process.platform !== 'darwin' && Notification.isSupported() ? 'authorized' : 'unknown';
+    !isDarwin() && Notification.isSupported() ? 'authorized' : 'unknown';
 
   return {
     isSupported: Notification.isSupported(),
@@ -775,14 +730,13 @@ ipcMain.handle("get-notification-state", () => {
 
 ipcMain.handle("open-notification-settings", async () => {
   try {
-    if (process.platform === 'darwin') {
-      // Open macOS System Preferences > Notifications
-      await shell.openExternal('x-apple.systempreferences:com.apple.preference.notifications');
-    } else if (process.platform === 'win32') {
-      // Open Windows Settings > Notifications
-      await shell.openExternal('ms-settings:notifications');
+    const settingsUrls = platform.getSettingsUrls();
+    if (settingsUrls.notifications) {
+      await shell.openExternal(settingsUrls.notifications);
+      return true;
     }
-    return true;
+    // Platform doesn't have a standard notifications settings URL
+    return false;
   } catch (err) {
     error('[Settings] Failed to open notification settings:', err);
     return false;
@@ -801,14 +755,13 @@ ipcMain.handle("request-camera-permission", async () => {
 
 ipcMain.handle("open-camera-settings", async () => {
   try {
-    if (process.platform === 'darwin') {
-      // Open macOS System Settings > Privacy & Security > Camera
-      await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Camera');
-    } else if (process.platform === 'win32') {
-      // Open Windows Settings > Privacy > Camera
-      await shell.openExternal('ms-settings:privacy-webcam');
+    const settingsUrls = platform.getSettingsUrls();
+    if (settingsUrls.camera) {
+      await shell.openExternal(settingsUrls.camera);
+      return true;
     }
-    return true;
+    // Platform doesn't have a standard camera settings URL
+    return false;
   } catch (err) {
     error('[Settings] Failed to open camera settings:', err);
     return false;
