@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.0...v1.9.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* add author email for Linux deb package build ([5993568](https://github.com/Benedict-Carling/eyeryhthm/commit/5993568fd48546087bbd6d1e843bc13de387e3c7))
+
 ## [1.9.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.8.1...v1.9.0) (2025-12-05)
 
 
