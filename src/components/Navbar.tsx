@@ -8,6 +8,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useSession } from "../contexts/SessionContext";
 import { useCalibration } from "../contexts/CalibrationContext";
 import { useUpdateStatus } from "../hooks/useUpdateStatus";
+import { useCameraPermission } from "../hooks/useCameraPermission";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import packageJson from "../../package.json";
@@ -36,9 +37,11 @@ export function Navbar() {
   const { isTracking, toggleTracking } = useSession();
   const { hasOnlyFactoryDefault } = useCalibration();
   const { hasUpdate } = useUpdateStatus();
+  const { needsAttention: cameraPermissionNeedsAttention } = useCameraPermission();
   const pathname = usePathname();
   const isElectronMac = useIsElectronMac();
   const showCalibrationNotification = hasOnlyFactoryDefault();
+  const showSettingsNotification = hasUpdate || cameraPermissionNeedsAttention;
 
   const getThemeIcon = () => {
     if (theme === "system") return <LaptopIcon />;
@@ -108,7 +111,7 @@ export function Navbar() {
                       {link.href === "/calibration" && showCalibrationNotification && (
                         <span className={styles.notificationDot} />
                       )}
-                      {link.href === "/settings" && hasUpdate && (
+                      {link.href === "/settings" && showSettingsNotification && (
                         <span className={styles.notificationDot} />
                       )}
                     </span>

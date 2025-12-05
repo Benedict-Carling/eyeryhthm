@@ -91,19 +91,20 @@ jobs:
       - name: Setup dependencies
         uses: ./.github/actions/setup-dependencies
 
-      - name: Build Next.js
+      - name: Build Next.js (static export for Electron)
         run: npm run build
+        env:
+          ELECTRON_BUILD: 'true'
 
       - name: Build Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
 
-      - name: Upload Next.js build artifact
+      - name: Upload static export artifact
         uses: actions/upload-artifact@v4
         with:
           name: next-build
-          path: .next/
+          path: out/
           retention-days: 1
-          include-hidden-files: true
 
   # Test Electron build (without packaging) - only runs after basic checks pass
   electron-build-test:
@@ -123,11 +124,11 @@ jobs:
       - name: Setup dependencies
         uses: ./.github/actions/setup-dependencies
 
-      - name: Download Next.js build artifact
+      - name: Download static export artifact
         uses: actions/download-artifact@v4
         with:
           name: next-build
-          path: .next/
+          path: out/
 
       - name: Compile Electron TypeScript
         run: npx tsc -p electron/tsconfig.json

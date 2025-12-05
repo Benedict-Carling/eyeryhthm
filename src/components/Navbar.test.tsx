@@ -32,6 +32,13 @@ vi.mock('../hooks/useUpdateStatus', () => ({
   }),
 }));
 
+// Mock useCameraPermission hook
+vi.mock('../hooks/useCameraPermission', () => ({
+  useCameraPermission: () => ({
+    needsAttention: false,
+  }),
+}));
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),

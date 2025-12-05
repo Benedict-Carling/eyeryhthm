@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification, systemPreferences } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
@@ -37,6 +37,43 @@ const FATIGUE_ALERT_COOLDOWN_MS = 60000; // 1 minute cooldown between alerts
 
 const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 const outDir = path.resolve(__dirname, "../out");
+
+// Camera permission status type
+type MediaAccessStatus = 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown';
+
+// Request camera permission from macOS (must be called from main process)
+async function requestCameraPermission(): Promise<boolean> {
+  if (process.platform !== 'darwin') {
+    // On non-macOS platforms, permission is handled by the browser/OS
+    return true;
+  }
+
+  const status = systemPreferences.getMediaAccessStatus('camera');
+  log('[Camera] Current permission status:', status);
+
+  if (status === 'granted') {
+    return true;
+  }
+
+  if (status === 'denied' || status === 'restricted') {
+    warn('[Camera] Permission denied or restricted. User must enable in System Settings.');
+    return false;
+  }
+
+  // Status is 'not-determined' - request permission
+  log('[Camera] Requesting camera permission from user...');
+  const granted = await systemPreferences.askForMediaAccess('camera');
+  log('[Camera] Permission request result:', granted ? 'granted' : 'denied');
+  return granted;
+}
+
+// Get current camera permission status
+function getCameraPermissionStatus(): MediaAccessStatus {
+  if (process.platform !== 'darwin') {
+    return 'granted'; // Non-macOS platforms handle this differently
+  }
+  return systemPreferences.getMediaAccessStatus('camera') as MediaAccessStatus;
+}
 
 // Register custom protocol for serving static files
 function registerAppProtocol() {
@@ -365,12 +402,21 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 // This method will be called when Electron has finished initialization
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Track app started (analytics already initialized on module import)
   trackEvent(AnalyticsEvents.APP_STARTED);
 
   // Register custom protocol before creating window
   registerAppProtocol();
+
+  // Request camera permission on macOS (triggers system permission dialog if needed)
+  // This must be done before the renderer tries to access the camera
+  if (process.platform === 'darwin') {
+    const cameraGranted = await requestCameraPermission();
+    if (!cameraGranted) {
+      warn('[App] Camera permission not granted. Eye tracking will not work.');
+    }
+  }
 
   // Initialize launch at login state from system settings
   initLaunchAtLoginState();
@@ -727,13 +773,44 @@ ipcMain.handle("get-notification-state", () => {
   };
 });
 
-ipcMain.handle("open-notification-settings", () => {
-  if (process.platform === 'darwin') {
-    // Open macOS System Preferences > Notifications
-    shell.openExternal('x-apple.systempreferences:com.apple.preference.notifications');
-  } else if (process.platform === 'win32') {
-    // Open Windows Settings > Notifications
-    shell.openExternal('ms-settings:notifications');
+ipcMain.handle("open-notification-settings", async () => {
+  try {
+    if (process.platform === 'darwin') {
+      // Open macOS System Preferences > Notifications
+      await shell.openExternal('x-apple.systempreferences:com.apple.preference.notifications');
+    } else if (process.platform === 'win32') {
+      // Open Windows Settings > Notifications
+      await shell.openExternal('ms-settings:notifications');
+    }
+    return true;
+  } catch (err) {
+    error('[Settings] Failed to open notification settings:', err);
+    return false;
   }
-  return true;
+});
+
+// Camera permission IPC handlers
+
+ipcMain.handle("get-camera-permission-status", () => {
+  return getCameraPermissionStatus();
+});
+
+ipcMain.handle("request-camera-permission", async () => {
+  return await requestCameraPermission();
+});
+
+ipcMain.handle("open-camera-settings", async () => {
+  try {
+    if (process.platform === 'darwin') {
+      // Open macOS System Settings > Privacy & Security > Camera
+      await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Camera');
+    } else if (process.platform === 'win32') {
+      // Open Windows Settings > Privacy > Camera
+      await shell.openExternal('ms-settings:privacy-webcam');
+    }
+    return true;
+  } catch (err) {
+    error('[Settings] Failed to open camera settings:', err);
+    return false;
+  }
 });

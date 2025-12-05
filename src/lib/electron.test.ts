@@ -29,6 +29,9 @@ function createMockElectronAPI(overrides: Partial<ElectronAPI> = {}): ElectronAP
     testNotification: vi.fn(),
     getNotificationState: vi.fn(),
     openNotificationSettings: vi.fn(),
+    getCameraPermissionStatus: vi.fn(),
+    requestCameraPermission: vi.fn(),
+    openCameraSettings: vi.fn(),
     ...overrides,
   };
 }
