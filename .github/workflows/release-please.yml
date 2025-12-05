@@ -86,7 +86,7 @@ jobs:
         run: npx tsc -p electron/tsconfig.json
 
       - name: Build Electron (${{ matrix.platform }})
-        run: npx electron-builder ${{ matrix.build_args }} --publish never
+        run: npx electron-builder ${{ matrix.build_args }} --config electron-builder.config.js --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
