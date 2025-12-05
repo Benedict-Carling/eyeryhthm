@@ -1,0 +1,306 @@
+/* ===================================
+   Global Animations & Micro-interactions
+   =================================== */
+
+/* ----- Button Micro-interactions ----- */
+button,
+[role="button"],
+.rt-Button {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.15s ease,
+              background-color 0.2s ease !important;
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+.rt-Button:active:not(:disabled) {
+  transform: scale(0.97) !important;
+}
+
+button:hover:not(:disabled),
+[role="button"]:hover:not(:disabled),
+.rt-Button:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ----- Icon Button Micro-interactions ----- */
+.rt-IconButton {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.2s ease !important;
+}
+
+.rt-IconButton:active:not(:disabled) {
+  transform: scale(0.9) !important;
+}
+
+/* ----- Switch Micro-interactions ----- */
+.rt-SwitchRoot {
+  transition: background-color 0.3s ease !important;
+}
+
+.rt-SwitchThumb {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* ----- Badge Micro-interactions ----- */
+.rt-Badge {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.3s ease,
+              color 0.3s ease,
+              box-shadow 0.3s ease !important;
+}
+
+.rt-Badge[data-clickable="true"]:hover {
+  transform: scale(1.02);
+}
+
+.rt-Badge[data-clickable="true"]:active {
+  transform: scale(0.98);
+}
+
+/* ----- Card Micro-interactions ----- */
+.rt-Card {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease,
+              border-color 0.3s ease !important;
+}
+
+/* ----- Link Hover Effects ----- */
+a {
+  transition: color 0.2s ease, opacity 0.2s ease !important;
+}
+
+/* ----- Page Transition Container ----- */
+.page-transition-wrapper {
+  animation: pageEnter 0.4s ease-out;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ----- Staggered List Animation ----- */
+.stagger-item {
+  opacity: 0;
+  animation: staggerFadeIn 0.4s ease-out forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0ms; }
+.stagger-item:nth-child(2) { animation-delay: 50ms; }
+.stagger-item:nth-child(3) { animation-delay: 100ms; }
+.stagger-item:nth-child(4) { animation-delay: 150ms; }
+.stagger-item:nth-child(5) { animation-delay: 200ms; }
+.stagger-item:nth-child(6) { animation-delay: 250ms; }
+.stagger-item:nth-child(7) { animation-delay: 300ms; }
+.stagger-item:nth-child(8) { animation-delay: 350ms; }
+.stagger-item:nth-child(9) { animation-delay: 400ms; }
+.stagger-item:nth-child(10) { animation-delay: 450ms; }
+
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ----- Metric Counter Animation ----- */
+.metric-value {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.metric-value.updating {
+  animation: metricBump 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes metricBump {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ----- Phase Transition Animation ----- */
+.phase-content {
+  animation: phaseEnter 0.35s ease-out;
+}
+
+@keyframes phaseEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ----- Status Badge Transition ----- */
+.status-badge {
+  transition: background-color 0.3s ease,
+              color 0.3s ease,
+              transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.status-badge.status-change {
+  animation: statusPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes statusPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ----- Blink Feedback Flash ----- */
+.blink-feedback {
+  position: relative;
+}
+
+.blink-feedback::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: var(--green-9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
+.blink-feedback.flash::after {
+  animation: blinkFlash 0.3s ease-out;
+}
+
+@keyframes blinkFlash {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+
+/* ----- Success Celebration ----- */
+.success-celebration {
+  animation: celebrationBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes celebrationBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ----- Loading Shimmer ----- */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--mauve-3) 0%,
+    var(--mauve-4) 50%,
+    var(--mauve-3) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ----- Callout Entrance ----- */
+.rt-CalloutRoot {
+  animation: calloutEnter 0.35s ease-out;
+}
+
+@keyframes calloutEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ----- Tooltip Animation Override ----- */
+.rt-TooltipContent {
+  animation: tooltipEnter 0.15s ease-out !important;
+}
+
+@keyframes tooltipEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ----- Dialog/Modal Animation ----- */
+.rt-DialogContent {
+  animation: dialogEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+@keyframes dialogEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ----- Focus Ring Animation ----- */
+*:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 2px;
+  transition: outline-offset 0.15s ease;
+}
+
+*:focus-visible:active {
+  outline-offset: 1px;
+}

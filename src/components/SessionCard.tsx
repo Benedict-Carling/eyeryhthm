@@ -17,9 +17,10 @@ const CHART_UPDATE_DEBOUNCE_MS = 3000;
 
 interface SessionCardProps {
   session: SessionData;
+  index?: number;
 }
 
-export function SessionCard({ session }: SessionCardProps) {
+export function SessionCard({ session, index = 0 }: SessionCardProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const { calibrations } = useCalibration();
   const {
@@ -38,6 +39,46 @@ export function SessionCard({ session }: SessionCardProps) {
     // Lazy initializer runs once on mount, not during render
     return Date.now();
   });
+
+  // Animation state tracking using refs to avoid setState in effects
+  const prevFaceDetectedRef = useRef(isFaceDetected);
+  const prevBlinkCountRef = useRef(currentBlinkCount);
+  const [faceAnimationClass, setFaceAnimationClass] = useState("");
+  const [blinkAnimKey, setBlinkAnimKey] = useState(0);
+
+  // Track face detection changes for animation
+  useEffect(() => {
+    const prevFaceDetected = prevFaceDetectedRef.current;
+    if (isFaceDetected !== prevFaceDetected) {
+      // Use setTimeout to avoid synchronous setState in effect body
+      const animTimer = setTimeout(() => {
+        setFaceAnimationClass(isFaceDetected ? "face-found" : "face-lost");
+      }, 0);
+      prevFaceDetectedRef.current = isFaceDetected;
+      // Clear animation class after animation completes
+      const clearTimer = setTimeout(() => setFaceAnimationClass(""), 400);
+      return () => {
+        clearTimeout(animTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [isFaceDetected]);
+
+  // Track blink count changes for animation - increment key to force re-render
+  useEffect(() => {
+    const prevBlinkCount = prevBlinkCountRef.current;
+    if (session.isActive && currentBlinkCount > prevBlinkCount) {
+      // Use setTimeout to avoid synchronous setState in effect body
+      const timer = setTimeout(() => {
+        setBlinkAnimKey(k => k + 1);
+      }, 0);
+      prevBlinkCountRef.current = currentBlinkCount;
+      return () => clearTimeout(timer);
+    }
+    if (currentBlinkCount !== prevBlinkCount) {
+      prevBlinkCountRef.current = currentBlinkCount;
+    }
+  }, [currentBlinkCount, session.isActive]);
 
   // Use session data directly for non-active sessions, debounced data for active
   const debouncedHistory = session.isActive ? activeSessionHistory : session.blinkRateHistory;
@@ -177,20 +218,20 @@ export function SessionCard({ session }: SessionCardProps) {
     return () => clearTimeout(timeoutId);
   }, [session.blinkRateHistory, session.isActive, lastChartUpdateTime]);
 
-  // D3 Mini Chart - uses debounced history to prevent aggressive re-rendering
+  // Track if chart has been initialized
+  const [chartInitialized, setChartInitialized] = useState(false);
+
+  // D3 Mini Chart - uses debounced history with smooth transitions
   useEffect(() => {
     if (!svgRef.current || debouncedHistory.length === 0) return;
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
 
+    // Guard against test environment where D3 may be mocked
+    if (!svg || typeof svg.select !== "function") return;
     const margin = { top: 5, right: 5, bottom: 5, left: 5 };
     const width = 200 - margin.left - margin.right;
     const height = 60 - margin.top - margin.bottom;
-
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Scales
     const xScale = d3
@@ -210,30 +251,7 @@ export function SessionCard({ session }: SessionCardProps) {
       .y((d) => yScale(d.rate))
       .curve(d3.curveMonotoneX);
 
-    // Add gradient
-    const gradient = svg
-      .append("defs")
-      .append("linearGradient")
-      .attr("id", `mini-gradient-${session.id}`)
-      .attr("gradientUnits", "userSpaceOnUse")
-      .attr("x1", 0)
-      .attr("y1", yScale(0))
-      .attr("x2", 0)
-      .attr("y2", yScale(20));
-
-    gradient
-      .append("stop")
-      .attr("offset", "0%")
-      .attr("stop-color", "var(--indigo-9)")
-      .attr("stop-opacity", 1);
-
-    gradient
-      .append("stop")
-      .attr("offset", "100%")
-      .attr("stop-color", "var(--indigo-7)")
-      .attr("stop-opacity", 1);
-
-    // Add area
+    // Area generator
     const area = d3
       .area<{ rate: number }>()
       .x((d, i) => xScale(i))
@@ -241,50 +259,122 @@ export function SessionCard({ session }: SessionCardProps) {
       .y1((d) => yScale(d.rate))
       .curve(d3.curveMonotoneX);
 
-    g.append("path")
-      .datum(debouncedHistory)
-      .attr("fill", `url(#mini-gradient-${session.id})`)
-      .attr("fill-opacity", 0.1)
-      .attr("d", area);
+    // Initialize chart structure on first render
+    if (!chartInitialized) {
+      svg.selectAll("*").remove();
 
-    // Add line
-    const path = g.append("path")
-      .datum(debouncedHistory)
-      .attr("fill", "none")
-      .attr("stroke", `url(#mini-gradient-${session.id})`)
-      .attr("stroke-width", 2)
-      .attr("d", line);
+      // Add gradient (only once)
+      const defs = svg.append("defs");
+      const gradient = defs
+        .append("linearGradient")
+        .attr("id", `mini-gradient-${session.id}`)
+        .attr("gradientUnits", "userSpaceOnUse")
+        .attr("x1", 0)
+        .attr("y1", height)
+        .attr("x2", 0)
+        .attr("y2", 0);
 
-    // Animate line drawing
-    const totalLength = path.node()?.getTotalLength() || 0;
-    path
-      .attr("stroke-dasharray", totalLength + " " + totalLength)
-      .attr("stroke-dashoffset", totalLength)
-      .transition()
-      .duration(1000)
-      .ease(d3.easeLinear)
-      .attr("stroke-dashoffset", 0);
+      gradient
+        .append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", "var(--indigo-9)")
+        .attr("stop-opacity", 1);
 
-  }, [debouncedHistory, session.id]);
+      gradient
+        .append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", "var(--indigo-7)")
+        .attr("stop-opacity", 1);
+
+      // Create group for chart elements
+      const g = svg
+        .append("g")
+        .attr("class", "chart-group")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // Add area path
+      g.append("path")
+        .attr("class", "area-path")
+        .datum(debouncedHistory)
+        .attr("fill", `url(#mini-gradient-${session.id})`)
+        .attr("fill-opacity", 0.1)
+        .attr("d", area);
+
+      // Add line path
+      g.append("path")
+        .attr("class", "line-path")
+        .datum(debouncedHistory)
+        .attr("fill", "none")
+        .attr("stroke", `url(#mini-gradient-${session.id})`)
+        .attr("stroke-width", 2)
+        .attr("d", line);
+
+      // Add a subtle glow dot at the end for active sessions
+      if (session.isActive) {
+        g.append("circle")
+          .attr("class", "live-dot")
+          .attr("cx", xScale(debouncedHistory.length - 1))
+          .attr("cy", yScale(debouncedHistory[debouncedHistory.length - 1]?.rate || 0))
+          .attr("r", 3)
+          .attr("fill", "var(--indigo-9)");
+      }
+
+      setChartInitialized(true);
+    } else {
+      // Smooth transition for subsequent updates
+      const g = svg.select(".chart-group");
+
+      // Transition area
+      g.select(".area-path")
+        .datum(debouncedHistory)
+        .transition()
+        .duration(800)
+        .ease(d3.easeCubicInOut)
+        .attr("d", area);
+
+      // Transition line
+      g.select(".line-path")
+        .datum(debouncedHistory)
+        .transition()
+        .duration(800)
+        .ease(d3.easeCubicInOut)
+        .attr("d", line);
+
+      // Transition live dot for active sessions
+      if (session.isActive && debouncedHistory.length > 0) {
+        const lastPoint = debouncedHistory[debouncedHistory.length - 1];
+        const existingDot = g.select<SVGCircleElement>(".live-dot");
+
+        if (existingDot.empty()) {
+          g.append("circle")
+            .attr("class", "live-dot")
+            .attr("r", 3)
+            .attr("fill", "var(--indigo-9)")
+            .attr("cx", xScale(debouncedHistory.length - 1))
+            .attr("cy", yScale(lastPoint?.rate || 0));
+        } else {
+          existingDot
+            .transition()
+            .duration(800)
+            .ease(d3.easeCubicInOut)
+            .attr("cx", xScale(debouncedHistory.length - 1))
+            .attr("cy", yScale(lastPoint?.rate || 0));
+        }
+      }
+    }
+
+  }, [debouncedHistory, session.id, session.isActive, chartInitialized]);
 
   return (
     <Link href={`/session?id=${session.id}`} style={{ textDecoration: "none" }}>
       <Card
         className={session.isActive ? "session-card active" : "session-card"}
+        data-index={index}
         style={{
           padding: "20px",
           border: session.isActive ? "2px solid #10b981" : "none",
           position: "relative",
           cursor: "pointer",
-          transition: "transform 0.2s ease, box-shadow 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
         }}
       >
       <Flex direction="column" gap="3">
@@ -300,22 +390,23 @@ export function SessionCard({ session }: SessionCardProps) {
               </Badge>
             )}
             {session.isActive && (
-              <Badge color="green">
+              <Badge color="green" className="live-indicator">
+                <span className="live-dot" />
                 Active
               </Badge>
             )}
             {/* Face detection status - only for active sessions */}
             {session.isActive && (
               isFaceDetected ? (
-                <Badge color="green" variant="soft">
+                <Badge color="green" variant="soft" className={`face-status-badge ${faceAnimationClass}`}>
                   Face Detected
                 </Badge>
               ) : faceLostCountdown !== null && faceLostCountdown > 0 ? (
-                <Badge color="orange" variant="soft">
+                <Badge color="orange" variant="soft" className={`face-status-badge ${faceAnimationClass}`}>
                   Face lost - closing in {faceLostCountdown}s
                 </Badge>
               ) : (
-                <Badge color="gray" variant="soft">
+                <Badge color="gray" variant="soft" className={`face-status-badge ${faceAnimationClass}`}>
                   No Face Detected
                 </Badge>
               )
@@ -325,7 +416,7 @@ export function SessionCard({ session }: SessionCardProps) {
           {/* Quality badges */}
           <Flex gap="2" align="center">
             {showQualityBadge && (
-              <Badge color={getQualityColor(session.quality)} variant="soft">
+              <Badge color={getQualityColor(session.quality)} variant="soft" className="quality-badge">
                 {session.quality.charAt(0).toUpperCase() +
                   session.quality.slice(1)}{" "}
                 quality
@@ -376,7 +467,7 @@ export function SessionCard({ session }: SessionCardProps) {
         {/* Main content area */}
         <Flex justify="between" align="center" gap="4">
           {/* Mini chart */}
-          <Box style={{ width: "200px", height: "60px" }}>
+          <Box style={{ width: "200px", height: "60px" }} className="mini-chart">
             {session.blinkRateHistory.length > 0 ? (
               <svg
                 ref={svgRef}
@@ -407,7 +498,7 @@ export function SessionCard({ session }: SessionCardProps) {
                   >
                     {currentBlinkRate}/min
                   </Text>
-                  <Badge color={getTrendColor()} variant="soft" size="1">
+                  <Badge color={getTrendColor()} variant="soft" size="1" className="trend-badge">
                     {getTrendIcon()}
                   </Badge>
                 </Flex>
@@ -429,13 +520,14 @@ export function SessionCard({ session }: SessionCardProps) {
                 <Text
                   size="6"
                   weight="bold"
+                  className="metric-value"
                   style={{
                     minWidth: "120px",
                     textAlign: "right",
                     color: "var(--indigo-11)",
                   }}
                 >
-                  {displayBlinkCount} blinks
+                  <span key={blinkAnimKey} className="blink-count-number blink-bump">{displayBlinkCount}</span> blinks
                 </Text>
                 <Text
                   size="2"

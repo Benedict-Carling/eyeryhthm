@@ -15,6 +15,7 @@ import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
 import { useFrameProcessor } from "../hooks/useFrameProcessor";
 import { VideoCanvas } from "./VideoCanvas";
+import "./Camera.css";
 
 export function Camera() {
   const { canStartDetection, activeCalibration } = useCalibration();
@@ -159,13 +160,17 @@ export function Camera() {
           <Box>
             <Flex direction="column" align="center" gap="3">
               {/* Live Metrics Display */}
-              <Card style={{ padding: "16px", minWidth: "300px" }}>
+              <Card className="metrics-card" style={{ padding: "16px", minWidth: "300px" }}>
                 <Flex direction="column" gap="2">
                   <Flex justify="between" align="center">
                     <Text size="2" weight="medium">
                       Blink Count:
                     </Text>
-                    <Badge color={isBlinking ? "green" : "gray"} size="2">
+                    <Badge
+                      color={isBlinking ? "green" : "gray"}
+                      size="2"
+                      className={`blink-count ${isBlinking ? "incrementing" : ""}`}
+                    >
                       {blinkCount}
                     </Badge>
                   </Flex>
@@ -180,6 +185,7 @@ export function Camera() {
                           : "blue"
                       }
                       size="2"
+                      className="ear-score"
                     >
                       {currentEAR.toFixed(3)}
                     </Badge>
@@ -203,6 +209,7 @@ export function Camera() {
                         !isDetectorReady ? "gray" : isBlinking ? "red" : "green"
                       }
                       size="2"
+                      className={`status-badge ${!isDetectorReady ? "status-initializing" : ""}`}
                     >
                       {!isDetectorReady
                         ? "Initializing..."
@@ -214,11 +221,13 @@ export function Camera() {
                 </Flex>
               </Card>
 
-              <VideoCanvas
-                videoRef={videoRef}
-                canvasRef={canvasRef}
-                showCanvas={showDebugOverlay}
-              />
+              <Box className="video-feed">
+                <VideoCanvas
+                  videoRef={videoRef}
+                  canvasRef={canvasRef}
+                  showCanvas={showDebugOverlay}
+                />
+              </Box>
 
               <Flex gap="2" justify="center" wrap="wrap">
                 {stream && (

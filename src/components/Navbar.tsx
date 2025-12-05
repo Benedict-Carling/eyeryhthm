@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
 import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
@@ -30,15 +30,19 @@ export function Navbar() {
   const { isElectron, capabilities } = usePlatform();
   const pathname = usePathname();
 
+  // Animation key triggers - derived from state changes
+  // Using the actual state value as key ensures animation replays on change
+  const [themeAnimKey, setThemeAnimKey] = useState(0);
+
   // Show title bar with traffic light accommodation on macOS Electron
   const showTitleBar = isElectron && capabilities.hasTrafficLights;
   const showCalibrationNotification = hasOnlyFactoryDefault();
   const showSettingsNotification = hasUpdate || cameraPermissionNeedsAttention;
 
   const getThemeIcon = () => {
-    if (theme === "system") return <LaptopIcon />;
-    if (theme === "dark") return <MoonIcon />;
-    return <SunIcon />;
+    if (theme === "system") return <LaptopIcon className={styles.themeIcon} />;
+    if (theme === "dark") return <MoonIcon className={styles.themeIcon} />;
+    return <SunIcon className={styles.themeIcon} />;
   };
 
   const handleThemeCycle = () => {
@@ -47,6 +51,7 @@ export function Navbar() {
     const nextIndex = (currentIndex + 1) % themes.length;
     const nextTheme = themes[nextIndex];
     if (nextTheme) {
+      setThemeAnimKey(k => k + 1);
       setTheme(nextTheme);
     }
   };
@@ -56,6 +61,12 @@ export function Navbar() {
     { href: "/calibration", label: "Calibration" },
     { href: "/settings", label: "Settings" },
   ];
+
+  // Build tracking badge class names
+  const trackingBadgeClasses = [
+    styles.trackingBadge,
+    isTracking ? styles.trackingBadgeActive : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <>
@@ -98,7 +109,10 @@ export function Navbar() {
                           : "var(--mauve-11)",
                     }}
                   >
-                    <span style={{ position: "relative" }}>
+                    <span
+                      className={`${styles.navLink} ${pathname === link.href ? styles.navLinkActive : ""}`}
+                      style={{ position: "relative", display: "inline-block" }}
+                    >
                       <Text size="3">{link.label}</Text>
                       {link.href === "/calibration" && showCalibrationNotification && (
                         <span className={styles.notificationDot} />
@@ -119,11 +133,13 @@ export function Navbar() {
                   size="2"
                   color={isTracking ? "green" : "gray"}
                   variant="soft"
-                  style={{ cursor: "pointer", padding: "4px 10px" }}
+                  className={trackingBadgeClasses}
                   onClick={toggleTracking}
                 >
-                  {isTracking ? <Eye size={14} /> : <EyeOff size={14} />}
-                  <span style={{ minWidth: "58px", display: "inline-block", textAlign: "center" }}>
+                  <span key={String(isTracking)} className={styles.trackingIconEnter}>
+                    {isTracking ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </span>
+                  <span className={styles.trackingText}>
                     {isTracking ? "Tracking" : "Paused"}
                   </span>
                   <Switch
@@ -140,8 +156,11 @@ export function Navbar() {
                 variant="ghost"
                 onClick={handleThemeCycle}
                 title={`Theme: ${theme} (click to cycle)`}
+                className={styles.themeToggle}
               >
-                {getThemeIcon()}
+                <span key={themeAnimKey} className={styles.themeIconRotate}>
+                  {getThemeIcon()}
+                </span>
               </IconButton>
             </Flex>
           </Flex>

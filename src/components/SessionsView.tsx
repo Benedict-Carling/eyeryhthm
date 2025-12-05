@@ -82,8 +82,8 @@ export function SessionsView() {
         <Flex direction="column" gap="4">
           {sessions
             .filter((session) => !session.isActive)
-            .map((session) => (
-              <SessionCard key={session.id} session={session} />
+            .map((session, index) => (
+              <SessionCard key={session.id} session={session} index={index} />
             ))}
         </Flex>
       </Box>

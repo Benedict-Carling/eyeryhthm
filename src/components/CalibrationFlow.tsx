@@ -24,6 +24,7 @@ import {
   CalibrationRawData,
   CalibrationMetadata,
 } from "../lib/blink-detection/types";
+import "./CalibrationFlow.css";
 
 interface CalibrationFlowProps {
   onComplete?: () => void;
@@ -254,8 +255,8 @@ export function CalibrationFlow({
     switch (phase) {
       case "setup":
         return (
-          <Box>
-            <Callout.Root mb="4">
+          <Box className="phase-container">
+            <Callout.Root mb="4" className="instruction-callout">
               <Callout.Icon>📋</Callout.Icon>
               <Callout.Text>
                 <strong>Calibration Instructions:</strong>
@@ -287,9 +288,9 @@ export function CalibrationFlow({
 
       case "recording":
         return (
-          <Box>
+          <Box className="phase-container">
             <Flex direction="column" gap="4">
-              <Box>
+              <Box className="graph-container">
                 <EARTimeSeriesGraph
                   data={earData}
                   width={480}
@@ -300,12 +301,19 @@ export function CalibrationFlow({
               </Box>
 
               <Flex justify="between" align="center">
-                <Text size="3">
-                  {isRecording
-                    ? "Recording... Blink 10 times"
-                    : "Click Start to begin recording"}
-                </Text>
-                <Badge size="2" color={currentEAR < 0.25 ? "red" : "green"}>
+                <Flex align="center" gap="2">
+                  {isRecording && (
+                    <span className="recording-indicator">
+                      <span className="recording-dot" />
+                    </span>
+                  )}
+                  <Text size="3">
+                    {isRecording
+                      ? "Recording... Blink 10 times"
+                      : "Click Start to begin recording"}
+                  </Text>
+                </Flex>
+                <Badge size="2" color={currentEAR < 0.25 ? "red" : "green"} className="ear-badge">
                   EAR: {currentEAR.toFixed(3)}
                 </Badge>
               </Flex>
@@ -335,10 +343,15 @@ export function CalibrationFlow({
 
       case "analyzing":
         return (
-          <Box>
+          <Box className="phase-container">
             <Flex direction="column" align="center" gap="4">
-              <Text size="5">Analyzing blink data...</Text>
-              <Text size="3">
+              <Box className="analyzing-spinner" style={{ fontSize: "32px" }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+              </Box>
+              <Text size="5" className="analyzing-text">Analyzing blink data...</Text>
+              <Text size="3" color="gray">
                 Searching for the optimal EAR threshold between 0.2 and 0.3
               </Text>
             </Flex>
@@ -347,12 +360,17 @@ export function CalibrationFlow({
 
       case "complete":
         return (
-          <Box>
+          <Box className="phase-container success-container">
             <Flex direction="column" align="center" gap="4">
-              <Text size="5" color="green">
-                ✅ Calibration Complete!
+              <Box style={{ position: "relative", display: "inline-flex" }}>
+                <Text size="7" className="success-icon">
+                  ✅
+                </Text>
+              </Box>
+              <Text size="5" color="green" weight="medium">
+                Calibration Complete!
               </Text>
-              <Text size="3" align="center">
+              <Text size="3" align="center" color="gray">
                 Successfully detected 10 blinks and calculated your optimal EAR
                 threshold.
               </Text>
@@ -362,12 +380,15 @@ export function CalibrationFlow({
 
       case "failed":
         return (
-          <Box>
+          <Box className="phase-container failed-container">
             <Flex direction="column" align="center" gap="4">
-              <Text size="5" color="red">
-                ❌ Calibration Failed
+              <Text size="7">
+                ❌
               </Text>
-              <Text size="3" align="center">
+              <Text size="5" color="red" weight="medium">
+                Calibration Failed
+              </Text>
+              <Text size="3" align="center" color="gray">
                 Could not detect exactly 10 blinks in the EAR range of 0.2 to
                 0.3.
                 <br />
@@ -399,7 +420,7 @@ export function CalibrationFlow({
           </Heading>
 
           {stream && phase !== "setup" && (
-            <Box style={{ display: "flex", justifyContent: "center" }}>
+            <Box className="video-container" style={{ display: "flex", justifyContent: "center" }}>
               <VideoCanvas
                 videoRef={videoRef}
                 canvasRef={canvasRef}

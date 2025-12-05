@@ -1,0 +1,181 @@
+/* ===================================
+   Camera Component Animations
+   =================================== */
+
+/* ----- Status Badge Transitions ----- */
+.status-badge {
+  transition: background-color 0.3s ease,
+              color 0.3s ease,
+              transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.status-badge.status-initializing {
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.status-badge.status-change {
+  animation: statusPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes statusPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ----- Blink Flash Effect ----- */
+.blink-indicator {
+  position: relative;
+}
+
+.blink-indicator::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: var(--red-9);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.blink-indicator.blinking::after {
+  animation: blinkIndicatorFlash 0.2s ease-out;
+}
+
+@keyframes blinkIndicatorFlash {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+/* ----- EAR Score Animation ----- */
+.ear-score {
+  transition: background-color 0.3s ease,
+              color 0.3s ease,
+              transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ear-score.below-threshold {
+  animation: earWarning 0.5s ease-in-out;
+}
+
+@keyframes earWarning {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.05);
+  }
+  75% {
+    transform: scale(1.05);
+  }
+}
+
+/* ----- Blink Count Animation ----- */
+.blink-count {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.blink-count.incrementing {
+  animation: countIncrement 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes countIncrement {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ----- Metrics Card ----- */
+.metrics-card {
+  animation: metricsEnter 0.4s ease-out;
+}
+
+@keyframes metricsEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ----- Video Feed Container ----- */
+.video-feed {
+  animation: videoFeedEnter 0.5s ease-out;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+@keyframes videoFeedEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ----- Camera Loading State ----- */
+.camera-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.camera-loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ----- Permission Request Animation ----- */
+.permission-request {
+  animation: permissionPulse 2s ease-in-out infinite;
+}
+
+@keyframes permissionPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.15);
+  }
+}

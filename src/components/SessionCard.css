@@ -52,36 +52,303 @@
   }
 }
 
+/* ----- Session Card Base ----- */
 .session-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease,
+              border-color 0.3s ease;
+  opacity: 0;
+  animation: cardEnter 0.4s ease-out forwards;
 }
 
 .session-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+.session-card:active {
+  transform: translateY(-2px) scale(0.995);
+}
+
+/* Staggered entrance - applied via inline style or data attribute */
+.session-card[data-index="0"] { animation-delay: 0ms; }
+.session-card[data-index="1"] { animation-delay: 60ms; }
+.session-card[data-index="2"] { animation-delay: 120ms; }
+.session-card[data-index="3"] { animation-delay: 180ms; }
+.session-card[data-index="4"] { animation-delay: 240ms; }
+.session-card[data-index="5"] { animation-delay: 300ms; }
+.session-card[data-index="6"] { animation-delay: 360ms; }
+.session-card[data-index="7"] { animation-delay: 420ms; }
+.session-card[data-index="8"] { animation-delay: 480ms; }
+.session-card[data-index="9"] { animation-delay: 540ms; }
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ----- Active Session Card ----- */
 .session-card.active {
-  animation: borderPulse 2s ease-in-out infinite;
+  animation: cardEnter 0.4s ease-out forwards,
+             borderPulse 2s ease-in-out infinite,
+             activeGlow 3s ease-in-out infinite;
 }
 
 @keyframes borderPulse {
-  0% {
+  0%, 100% {
     border-color: #10b981;
   }
   50% {
     border-color: #34d399;
   }
-  100% {
-    border-color: #10b981;
+}
+
+@keyframes activeGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0),
+                0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.15),
+                0 4px 12px rgba(0, 0, 0, 0.1);
   }
 }
 
+/* ----- Live Heartbeat Indicator ----- */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+/* ----- Metric Value Animation ----- */
+.metric-value {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              color 0.3s ease;
+}
+
+.metric-value.bump {
+  animation: metricBump 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes metricBump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ----- Quality Badge Transitions ----- */
+.quality-badge {
+  transition: background-color 0.4s ease,
+              color 0.4s ease,
+              transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.quality-badge.quality-change {
+  animation: qualityPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes qualityPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ----- Trend Badge Animation ----- */
+.trend-badge {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trend-badge.trend-up {
+  animation: trendUp 0.5s ease-out;
+}
+
+.trend-badge.trend-down {
+  animation: trendDown 0.5s ease-out;
+}
+
+@keyframes trendUp {
+  0% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes trendDown {
+  0% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ----- Face Detection Status ----- */
+.face-status-badge {
+  transition: background-color 0.3s ease,
+              color 0.3s ease,
+              transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.3s ease;
+}
+
+.face-status-badge.face-found {
+  animation: faceFound 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.face-status-badge.face-lost {
+  animation: faceLost 0.4s ease-out;
+}
+
+@keyframes faceFound {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes faceLost {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(3px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* ----- Blink Count Animation ----- */
+.blink-count-number {
+  display: inline-block;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+              color 0.15s ease;
+}
+
+.blink-count-number.blink-bump {
+  animation: blinkBump 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes blinkBump {
+  0% {
+    transform: scale(1);
+    color: var(--indigo-11);
+  }
+  40% {
+    transform: scale(1.25);
+    color: var(--green-10);
+  }
+  100% {
+    transform: scale(1);
+    color: var(--indigo-11);
+  }
+}
+
+/* ----- Spin Animation ----- */
 @keyframes spin {
   from {
     transform: rotate(0deg);
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ----- Mini Chart Fade In ----- */
+.mini-chart {
+  animation: chartFadeIn 0.6s ease-out;
+}
+
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ----- Chart Live Dot ----- */
+.mini-chart svg .live-dot {
+  animation: chartDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes chartDotPulse {
+  0%, 100% {
+    opacity: 1;
+    r: 3;
+  }
+  50% {
+    opacity: 0.6;
+    r: 4;
   }
 }

@@ -4,6 +4,7 @@ import { SessionProvider } from "../contexts/SessionContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { ClientLayout } from "./client-layout";
 import "@radix-ui/themes/styles.css";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "EyeRhythm",
