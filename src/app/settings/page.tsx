@@ -63,7 +63,7 @@ export default function SettingsPage() {
   } = useNotificationSettings();
 
   const {
-    isMacOS,
+    supportsNativePermission,
     isLoading: isCameraLoading,
     status: cameraStatus,
     needsAttention: cameraNeedsAttention,
@@ -113,8 +113,8 @@ export default function SettingsPage() {
   }));
 
   const renderCameraPermissionCallout = () => {
-    // Only show on macOS Electron when camera permission needs attention
-    if (!isMacOS || isCameraLoading) return null;
+    // Only show on platforms with native camera permission when it needs attention
+    if (!supportsNativePermission || isCameraLoading) return null;
 
     if (cameraNeedsAttention) {
       return (

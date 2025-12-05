@@ -50,9 +50,15 @@ const config = {
     "node_modules/electron-squirrel-startup/**/*",
   ],
 
-  // Extra resources (MediaPipe models if needed offline)
-  // Include tray icons for macOS menu bar
+  // Extra resources bundled with the app
+  // These are copied to the resources directory and can be accessed at runtime
   extraResources: [
+    // Main app icon for notifications (all platforms)
+    {
+      from: "build-resources/icon.png",
+      to: "icon.png",
+    },
+    // macOS tray icons (template images for automatic dark/light mode)
     {
       from: "build-resources/trayIconTemplate.png",
       to: "trayIconTemplate.png",

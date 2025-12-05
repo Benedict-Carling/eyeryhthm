@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
 import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
@@ -9,25 +9,14 @@ import { useSession } from "../contexts/SessionContext";
 import { useCalibration } from "../contexts/CalibrationContext";
 import { useUpdateStatus } from "../hooks/useUpdateStatus";
 import { useCameraPermission } from "../hooks/useCameraPermission";
+import { usePlatform } from "../hooks/usePlatform";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import packageJson from "../../package.json";
+
 import styles from "./Navbar.module.css";
 
-// Check if running in Electron on macOS
-function getIsElectronMac(): boolean {
-  if (typeof window === "undefined") return false;
-  const isElectron = window.navigator.userAgent.includes("Electron");
-  const isMac = navigator.userAgent.includes("Mac");
-  return isElectron && isMac;
-}
-
-function useIsElectronMac() {
-  const [isElectronMac] = useState(getIsElectronMac);
-  return isElectronMac;
-}
-
-// Draggable title bar for Electron macOS traffic lights
+// Draggable title bar for Electron with traffic lights (macOS)
 function TitleBar() {
   return <div className={styles.titleBar} />;
 }
@@ -38,8 +27,11 @@ export function Navbar() {
   const { hasOnlyFactoryDefault } = useCalibration();
   const { hasUpdate } = useUpdateStatus();
   const { needsAttention: cameraPermissionNeedsAttention } = useCameraPermission();
+  const { isElectron, capabilities } = usePlatform();
   const pathname = usePathname();
-  const isElectronMac = useIsElectronMac();
+
+  // Show title bar with traffic light accommodation on macOS Electron
+  const showTitleBar = isElectron && capabilities.hasTrafficLights;
   const showCalibrationNotification = hasOnlyFactoryDefault();
   const showSettingsNotification = hasUpdate || cameraPermissionNeedsAttention;
 
@@ -67,11 +59,11 @@ export function Navbar() {
 
   return (
     <>
-      {/* Separate title bar for Electron macOS traffic lights */}
-      {isElectronMac && <TitleBar />}
+      {/* Separate title bar for Electron with traffic lights (macOS) */}
+      {showTitleBar && <TitleBar />}
 
       {/* Main navbar */}
-      <div className={isElectronMac ? `${styles.navbar} ${styles.navbarWithTitleBar}` : styles.navbar}>
+      <div className={showTitleBar ? `${styles.navbar} ${styles.navbarWithTitleBar}` : styles.navbar}>
         <Container size="3">
           <Flex
             align="center"

@@ -2,28 +2,23 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { CameraPermissionStatus } from "@/lib/electron";
+import { usePlatform } from "./usePlatform";
 
 export function useCameraPermission() {
-  const [isElectron, setIsElectron] = useState(false);
-  const [isMacOS, setIsMacOS] = useState(false);
+  const { isElectron, capabilities, isLoading: isPlatformLoading } = usePlatform();
   const [status, setStatus] = useState<CameraPermissionStatus>("unknown");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if running in Electron on macOS
+  // Platform supports native camera permission if it has this capability
+  const supportsNativePermission = capabilities.supportsNativeCameraPermission;
+
+  // Update loading state when platform is loaded
   useEffect(() => {
-    if (typeof window !== "undefined" && window.electronAPI) {
-      setIsElectron(true);
-      // Check platform
-      if (window.electronAPI.platform === "darwin") {
-        setIsMacOS(true);
-      } else {
-        // Non-macOS platforms don't need this UI
-        setIsLoading(false);
-      }
-    } else {
+    if (!isPlatformLoading && !supportsNativePermission) {
+      // Platforms without native permission don't need this UI
       setIsLoading(false);
     }
-  }, []);
+  }, [isPlatformLoading, supportsNativePermission]);
 
   // Load camera permission status
   const refreshStatus = useCallback(async () => {
@@ -45,10 +40,10 @@ export function useCameraPermission() {
 
   // Load status on mount
   useEffect(() => {
-    if (isElectron && isMacOS) {
+    if (isElectron && supportsNativePermission && !isPlatformLoading) {
       refreshStatus();
     }
-  }, [isElectron, isMacOS, refreshStatus]);
+  }, [isElectron, supportsNativePermission, isPlatformLoading, refreshStatus]);
 
   // Request camera permission
   const requestPermission = async (): Promise<boolean> => {
@@ -81,14 +76,17 @@ export function useCameraPermission() {
     }
   };
 
-  // Determine if permission needs attention
-  const needsAttention = isMacOS && (status === "denied" || status === "restricted");
+  // Determine if permission needs attention (only on platforms with native permission)
+  const needsAttention = supportsNativePermission && (status === "denied" || status === "restricted");
   const isGranted = status === "granted";
   const isNotDetermined = status === "not-determined";
 
   return {
     isElectron,
-    isMacOS,
+    /** @deprecated Use usePlatform().isDarwin instead */
+    isMacOS: supportsNativePermission,
+    /** Whether native camera permission is supported on this platform */
+    supportsNativePermission,
     isLoading,
     status,
     needsAttention,
