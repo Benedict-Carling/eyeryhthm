@@ -14,6 +14,7 @@ import {
   BlinkRatePoint,
   getSessionQuality,
 } from "../lib/sessions/types";
+import { SessionStorageService } from "../lib/sessions/session-storage-service";
 import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
 import { useCalibration } from "./CalibrationContext";
@@ -154,9 +155,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
     activeSessionRef.current = activeSession;
   }, [activeSession]);
 
-  // Load mock sessions on mount and cleanup on unmount
+  // Load persisted sessions on mount (or mock data if none exist) and cleanup on unmount
   useEffect(() => {
-    setSessions(generateMockSessions());
+    // Check if there are persisted sessions in localStorage
+    if (SessionStorageService.hasPersistedSessions()) {
+      const persistedSessions = SessionStorageService.getAllSessions();
+      setSessions(persistedSessions);
+    } else {
+      // No persisted sessions - show example sessions for new users
+      setSessions(generateMockSessions());
+    }
+
     const alertService = alertServiceRef.current;
 
     // Cleanup on unmount
@@ -605,6 +614,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
         session.id === updatedSession.id ? updatedSession : session
       )
     );
+
+    // Persist session to localStorage (service handles min duration check)
+    SessionStorageService.saveSession(updatedSession);
   }, [activeSession]); // blinkCount read from ref
 
   // Internal function to set tracking state (used by both toggle and Electron IPC)
