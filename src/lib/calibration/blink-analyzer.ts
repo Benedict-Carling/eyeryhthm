@@ -14,13 +14,13 @@ interface BlinkAnalysisResult {
 export class BlinkAnalyzer {
   /**
    * Analyzes EAR data to find the optimal threshold that would detect exactly 10 blinks
-   * within the 0.2 to 0.3 range
+   * within the 0.1 to 0.4 range
    */
   static analyzeBlinkData(
     earData: EARDataPoint[],
     targetBlinks: number = 10,
-    minThreshold: number = 0.2,
-    maxThreshold: number = 0.3
+    minThreshold: number = 0.1,
+    maxThreshold: number = 0.4
   ): BlinkAnalysisResult {
     const thresholdStep = 0.005;
     const analysisResults: Array<{

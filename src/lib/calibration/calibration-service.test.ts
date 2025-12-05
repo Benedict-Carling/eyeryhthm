@@ -39,7 +39,7 @@ describe('CalibrationService', () => {
       expect(defaultCalibration.name).toBe('Factory Default');
       expect(defaultCalibration.isActive).toBe(true);
       expect(defaultCalibration.isDefault).toBe(true);
-      expect(defaultCalibration.earThreshold).toBe(0.25);
+      expect(defaultCalibration.earThreshold).toBe(0.2);
       expect(defaultCalibration.metadata.totalBlinksRequested).toBe(0);
       expect(defaultCalibration.metadata.totalBlinksDetected).toBe(0);
       expect(defaultCalibration.metadata.accuracy).toBe(0);
@@ -68,7 +68,7 @@ describe('CalibrationService', () => {
       expect(calibrations).toHaveLength(1);
       expect(calibrations[0]?.id).toBe('default');
       expect(calibrations[0]?.isDefault).toBe(true);
-      expect(calibrations[0]?.earThreshold).toBe(0.25);
+      expect(calibrations[0]?.earThreshold).toBe(0.2);
     });
 
     it('should not create default calibration when calibrations already exist', () => {
@@ -307,7 +307,7 @@ describe('CalibrationService', () => {
   });
 
   describe('calculateEarThreshold', () => {
-    it('should return 0.25 when no blink events', () => {
+    it('should return 0.2 when no blink events', () => {
       const rawData = {
         timestamps: [],
         earValues: [],
@@ -315,7 +315,7 @@ describe('CalibrationService', () => {
       };
 
       const threshold = CalibrationService.calculateEarThreshold(rawData);
-      expect(threshold).toBe(0.25);
+      expect(threshold).toBe(0.2);
     });
 
     it('should calculate threshold from blink events', () => {
@@ -332,28 +332,27 @@ describe('CalibrationService', () => {
       const threshold = CalibrationService.calculateEarThreshold(rawData);
 
       // Average blink EAR = (0.2 + 0.18 + 0.22) / 3 = 0.2
-      // Threshold = averageBlinkEar * 1.1 = 0.2 * 1.1 = 0.22
-      expect(threshold).toBeCloseTo(0.22, 2);
+      expect(threshold).toBeCloseTo(0.2, 2);
     });
 
-    it('should clamp threshold between 0.15 and 0.35', () => {
+    it('should clamp threshold between 0.1 and 0.4', () => {
       const lowRawData = {
         timestamps: [1000],
-        earValues: [0.1],
-        blinkEvents: [{ timestamp: 1000, earValue: 0.1, duration: 100 }],
+        earValues: [0.05],
+        blinkEvents: [{ timestamp: 1000, earValue: 0.05, duration: 100 }],
       };
 
       const lowThreshold = CalibrationService.calculateEarThreshold(lowRawData);
-      expect(lowThreshold).toBe(0.15);
+      expect(lowThreshold).toBe(0.1);
 
       const highRawData = {
         timestamps: [1000],
-        earValues: [0.4],
-        blinkEvents: [{ timestamp: 1000, earValue: 0.4, duration: 100 }],
+        earValues: [0.5],
+        blinkEvents: [{ timestamp: 1000, earValue: 0.5, duration: 100 }],
       };
 
       const highThreshold = CalibrationService.calculateEarThreshold(highRawData);
-      expect(highThreshold).toBe(0.35);
+      expect(highThreshold).toBe(0.4);
     });
   });
 

@@ -121,15 +121,13 @@ export class CalibrationService {
 
   static calculateEarThreshold(rawData: CalibrationRawData): number {
     if (rawData.blinkEvents.length === 0) {
-      return 0.25; // Default fallback
+      return 0.2; // Default fallback
     }
 
-    // Calculate threshold as 90% of the average minimum EAR during blinks
-    // This provides a buffer to avoid false positives
     const blinkEarValues = rawData.blinkEvents.map(event => event.earValue);
     const averageBlinkEar = blinkEarValues.reduce((sum, val) => sum + val, 0) / blinkEarValues.length;
-    
-    return Math.max(0.15, Math.min(0.35, averageBlinkEar * 1.1));
+
+    return Math.max(0.1, Math.min(0.4, averageBlinkEar));
   }
 
   static validateCalibration(calibration: Calibration): boolean {
@@ -201,14 +199,14 @@ export class CalibrationService {
       updatedAt: now,
       isActive: true,
       isDefault: true,
-      earThreshold: 0.25,
+      earThreshold: 0.2,
       metadata: {
         totalBlinksRequested: 0,
         totalBlinksDetected: 0,
         accuracy: 0,
         averageBlinkInterval: 0,
-        minEarValue: 0.25,
-        maxEarValue: 0.25,
+        minEarValue: 0.2,
+        maxEarValue: 0.2,
       },
       rawData: {
         timestamps: [],

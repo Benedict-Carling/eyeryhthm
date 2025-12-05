@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification, session } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
@@ -39,6 +39,110 @@ async function requestCameraPermission(): Promise<boolean> {
 // Get current camera permission status (delegates to platform handler)
 function getCameraPermissionStatus(): MediaAccessStatus {
   return platform.getCameraPermissionStatus();
+}
+
+// Set up session permission handlers for camera/media access
+// This is critical for macOS to properly persist camera permissions and prevent
+// repeated permission prompts. Without these handlers, each getUserMedia() call
+// may trigger a new permission request on macOS.
+function setupSessionPermissionHandlers() {
+  const defaultSession = session.defaultSession;
+
+  // Permission check handler - called before any permission request
+  // Returns true/false synchronously based on current permission status
+  defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    // Allow all permissions for our app protocol and localhost (dev server)
+    const isAllowedOrigin = requestingOrigin.startsWith('app://') ||
+                            requestingOrigin.startsWith('http://localhost');
+
+    if (!isAllowedOrigin) {
+      log(`[Permission] Denied check for ${permission} from untrusted origin: ${requestingOrigin}`);
+      return false;
+    }
+
+    // For media permissions, check macOS system permission status
+    if (permission === 'media') {
+      const mediaType = details.mediaType;
+
+      if (mediaType === 'video') {
+        const status = getCameraPermissionStatus();
+        const granted = status === 'granted';
+        log(`[Permission] Camera check: ${status} -> ${granted ? 'allowed' : 'denied'}`);
+        return granted;
+      }
+
+      // Allow audio checks (we don't use audio but don't want to block it)
+      if (mediaType === 'audio') {
+        return true;
+      }
+    }
+
+    // Allow other permission types for our origin
+    return true;
+  });
+
+  // Permission request handler - called when a permission is requested
+  // Can be async via callback
+  defaultSession.setPermissionRequestHandler(async (webContents, permission, callback, details) => {
+    // Verify the request comes from our app
+    const requestingUrl = webContents.getURL();
+    const isAllowedOrigin = requestingUrl.startsWith('app://') ||
+                            requestingUrl.startsWith('http://localhost');
+
+    if (!isAllowedOrigin) {
+      log(`[Permission] Denied request for ${permission} from untrusted origin: ${requestingUrl}`);
+      callback(false);
+      return;
+    }
+
+    // Handle media permission requests (camera/microphone)
+    if (permission === 'media') {
+      // Type-narrow to MediaAccessPermissionRequest
+      const mediaDetails = details as { mediaTypes?: Array<'video' | 'audio'> };
+      const mediaTypes = mediaDetails.mediaTypes || [];
+
+      // Check if camera is requested
+      if (mediaTypes.includes('video')) {
+        const status = getCameraPermissionStatus();
+
+        if (status === 'granted') {
+          log('[Permission] Camera already granted at system level');
+          callback(true);
+          return;
+        }
+
+        if (status === 'denied' || status === 'restricted') {
+          log('[Permission] Camera denied/restricted at system level');
+          callback(false);
+          return;
+        }
+
+        // Status is 'not-determined' - request permission from macOS
+        if (status === 'not-determined') {
+          log('[Permission] Camera not determined, requesting from macOS...');
+          const granted = await requestCameraPermission();
+          log(`[Permission] macOS camera request result: ${granted ? 'granted' : 'denied'}`);
+          callback(granted);
+          return;
+        }
+      }
+
+      // Allow audio-only requests
+      if (mediaTypes.includes('audio') && !mediaTypes.includes('video')) {
+        callback(true);
+        return;
+      }
+
+      // Default: allow media requests from trusted origins
+      callback(true);
+      return;
+    }
+
+    // Allow other permissions from our app
+    callback(true);
+  });
+
+  log('[Permission] Session permission handlers configured');
 }
 
 // Register custom protocol for serving static files
@@ -369,6 +473,11 @@ app.whenReady().then(async () => {
       warn('[App] Camera permission not granted. Eye tracking will not work.');
     }
   }
+
+  // Set up session permission handlers for camera/media access
+  // This ensures Electron properly mediates between renderer getUserMedia() calls
+  // and macOS system permissions, preventing repeated permission prompts
+  setupSessionPermissionHandlers();
 
   // Initialize launch at login state from system settings
   initLaunchAtLoginState();
