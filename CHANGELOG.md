@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.7.0...v1.7.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* request camera permission from main process on macOS ([#48](https://github.com/Benedict-Carling/eyeryhthm/issues/48)) ([308e7c2](https://github.com/Benedict-Carling/eyeryhthm/commit/308e7c2164ec029b41b17baa866a9d4d9786ac32))
+
 ## [1.7.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.6.0...v1.7.0) (2025-12-04)
 
 
