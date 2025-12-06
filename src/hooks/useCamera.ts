@@ -96,16 +96,28 @@ export function useCamera(options: CameraOptions = {}) {
     // Use ref to avoid stale closure - streamRef always has current stream
     const stream = streamRef.current;
     if (stream) {
-      stream.getTracks().forEach(track => {
+      // Get all tracks and stop each one
+      const tracks = stream.getTracks();
+      tracks.forEach(track => {
+        // Remove event listener to prevent memory leaks and stale callbacks
+        track.onended = null;
+        // Stop the track - this releases the camera on most platforms
         track.stop();
       });
 
-      // Clear the ref
+      // Clear the ref first to prevent any stale references
       streamRef.current = null;
 
-      // Clean up video element
+      // Clean up video element - critical for Windows camera release
       if (videoRef.current) {
+        // Pause video to stop any ongoing playback
+        videoRef.current.pause();
+        // Remove srcObject to release the stream reference
         videoRef.current.srcObject = null;
+        // Clear the src attribute as well (belt and suspenders)
+        videoRef.current.removeAttribute('src');
+        // Force a load to clear any buffered data
+        videoRef.current.load();
       }
 
       setState(prev => ({
