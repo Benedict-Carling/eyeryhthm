@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.10.0...v1.10.1) (2025-12-06)
+
+
+### Bug Fixes
+
+* **camera:** properly release camera resources on Windows ([#65](https://github.com/Benedict-Carling/eyeryhthm/issues/65)) ([e339ece](https://github.com/Benedict-Carling/eyeryhthm/commit/e339ecef7c51d6db5ddfcc233ece70caf78d0c8a))
+* **electron:** improve tray cleanup to prevent orphaned icons on quit ([#63](https://github.com/Benedict-Carling/eyeryhthm/issues/63)) ([aff84d2](https://github.com/Benedict-Carling/eyeryhthm/commit/aff84d21886d867987df4f1184f5da206de78ab8))
+
 ## [1.10.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.9.3...v1.10.0) (2025-12-05)
 
 
