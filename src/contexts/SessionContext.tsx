@@ -540,14 +540,22 @@ export function SessionProvider({ children }: SessionProviderProps) {
   }, [startRafFallback]);
 
   // Stop MediaStreamTrackProcessor
-  const stopTrackProcessor = useCallback(() => {
+  // Returns a promise to ensure cleanup completes before stopping the camera
+  const stopTrackProcessor = useCallback(async () => {
     processingLoopActiveRef.current = false;
 
     if (readerRef.current) {
       try {
+        // Cancel the reader first to signal we're done reading
+        // This properly closes the stream and releases camera resources on Windows
+        await readerRef.current.cancel();
+      } catch (e) {
+        // Ignore errors during cancel (stream may already be closed)
+      }
+      try {
         readerRef.current.releaseLock();
       } catch (e) {
-        // Ignore errors during cleanup
+        // Ignore errors during cleanup (lock may already be released)
       }
       readerRef.current = null;
     }
@@ -657,7 +665,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
       }
       setIsInitialized(false);
       stopDetection();
-      stopTrackProcessor(); // Stop MediaStreamTrackProcessor
+      // Await stopTrackProcessor to ensure reader is properly cancelled
+      // before stopping the camera - critical for Windows camera cleanup
+      await stopTrackProcessor();
       // Use ref to ensure we call the current stopCamera, not a stale closure
       stopCameraRef.current();
       setIsFaceDetected(false);
