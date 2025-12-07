@@ -30,7 +30,7 @@
   ],
   "topbarCtaButton": {
     "name": "Download",
-    "url": "/download"
+    "url": "download"
   },
   "tabs": [
     {
