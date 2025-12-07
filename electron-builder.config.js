@@ -86,12 +86,20 @@ const config = {
     entitlementsInherit: "build-resources/entitlements.mac.plist",
 
     // Enable notarization for macOS distribution
-    // Using explicit teamId config instead of just `true` for better reliability
-    // See: https://github.com/electron-userland/electron-builder/issues/8040
     // Requires APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID env vars
-    notarize: {
-      teamId: process.env.APPLE_TEAM_ID,
-    },
+    notarize: true,
+
+    // Skip signing non-executable files to dramatically speed up builds
+    // Locale .pak files and other data files don't need to be signed
+    signIgnore: [
+      // Skip all locale .pak files (hundreds of them)
+      ".*\\.lproj/.*",
+      ".*\\.pak$",
+      // Skip other data files that don't need signing
+      ".*\\.dat$",
+      ".*\\.bin$",
+      ".*\\.nib$",
+    ],
 
     // Camera permission
     extendInfo: {
