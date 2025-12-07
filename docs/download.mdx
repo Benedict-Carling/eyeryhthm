@@ -1,25 +1,43 @@
 ---
 title: "Download"
-description: "Get EyeRhythm for your Mac"
+description: "Get EyeRhythm for macOS, Windows, or Linux"
 ---
 
 import { EmailSignupForm } from '/snippets/email-signup.jsx';
 
 # Download EyeRhythm
 
-<Card title="Download for macOS" icon="apple" href="https://github.com/Benedict-Carling/eyeryhthm/releases/latest">
-  **Latest Release** - Universal binary (Intel + Apple Silicon)
-</Card>
+EyeRhythm is now available for all major desktop platforms. Choose your operating system below.
+
+<CardGroup cols={3}>
+  <Card title="macOS" icon="apple" href="#macos">
+    Intel & Apple Silicon
+  </Card>
+  <Card title="Windows" icon="windows" href="#windows">
+    64-bit
+  </Card>
+  <Card title="Linux" icon="linux" href="#linux">
+    AppImage & .deb
+  </Card>
+</CardGroup>
 
 <Info>
   **Current version:** Check the [GitHub releases page](https://github.com/Benedict-Carling/eyeryhthm/releases) for the latest version and release notes.
 </Info>
 
-## Installation
+---
+
+## macOS
+
+<Card title="Download for macOS" icon="apple" href="https://github.com/Benedict-Carling/eyeryhthm/releases/latest/download/EyeRhythm-universal.dmg">
+  **EyeRhythm-universal.dmg** - Works on both Intel and Apple Silicon Macs
+</Card>
+
+### Installation
 
 <Steps>
   <Step title="Download the .dmg file">
-    Click the download button above or visit the [releases page](https://github.com/Benedict-Carling/eyeryhthm/releases/latest) to get the latest version
+    Click the download button above to get the universal DMG file
   </Step>
   <Step title="Open the disk image">
     Double-click the downloaded `.dmg` file to mount it
@@ -28,60 +46,197 @@ import { EmailSignupForm } from '/snippets/email-signup.jsx';
     Drag the EyeRhythm app to your Applications folder
   </Step>
   <Step title="First launch (important)">
-    **Right-click** the app and select **"Open"** to bypass Gatekeeper on first launch. Click "Open" in the dialog that appears.
+    **Right-click** the app and select **"Open"** to launch for the first time
   </Step>
   <Step title="Grant camera permission">
-    When prompted, click "Allow" to grant camera access. EyeRhythm needs this to detect your blinks.
+    When prompted, click "Allow" to grant camera access
   </Step>
   <Step title="Run calibration">
-    Follow the on-screen calibration wizard to personalize blink detection to your eyes
+    Follow the on-screen calibration wizard to personalize detection to your eyes
   </Step>
 </Steps>
 
-## System requirements
+<Warning title="macOS Security Notice">
+  Since EyeRhythm is not distributed through the Mac App Store, macOS will show a security warning on first launch.
+
+  **To open the app:**
+  1. **Right-click** (or Control-click) the app in Finder
+  2. Select **"Open"** from the context menu
+  3. Click **"Open"** in the dialog that appears
+
+  **Alternative method:**
+  1. Go to **System Settings > Privacy & Security**
+  2. Scroll down to find the message about EyeRhythm being blocked
+  3. Click **"Open Anyway"**
+
+  You only need to do this once. After the first launch, the app will open normally.
+</Warning>
+
+### System requirements
 
 | Requirement | Minimum |
 |-------------|---------|
 | **macOS** | 11.0 (Big Sur) or later |
 | **Camera** | Built-in or external webcam |
-| **Processor** | Intel or Apple Silicon (M1/M2/M3) |
+| **Processor** | Intel or Apple Silicon (M1/M2/M3/M4) |
 | **RAM** | 4GB minimum |
+
+---
+
+## Windows
+
+<Card title="Download for Windows" icon="windows" href="https://github.com/Benedict-Carling/eyeryhthm/releases/latest/download/EyeRhythm-Setup.exe">
+  **EyeRhythm-Setup.exe** - Windows installer (64-bit)
+</Card>
+
+### Installation
+
+<Steps>
+  <Step title="Download the installer">
+    Click the download button above to get the Windows installer
+  </Step>
+  <Step title="Run the installer">
+    Double-click `EyeRhythm-Setup.exe` to start installation
+  </Step>
+  <Step title="Complete setup">
+    Follow the installation wizard to install EyeRhythm
+  </Step>
+  <Step title="Grant camera permission">
+    When prompted, allow EyeRhythm to access your camera
+  </Step>
+  <Step title="Run calibration">
+    Follow the on-screen calibration wizard to personalize detection to your eyes
+  </Step>
+</Steps>
+
+<Warning title="Windows SmartScreen Notice">
+  Since EyeRhythm is new software, Windows SmartScreen may show a warning when you first run the installer.
+
+  **To proceed with installation:**
+  1. Click **"More info"** on the SmartScreen popup
+  2. Click **"Run anyway"**
+
+  This warning appears because the app hasn't been downloaded enough times yet to build a reputation with Microsoft. The app is safe to install.
+</Warning>
+
+### System requirements
+
+| Requirement | Minimum |
+|-------------|---------|
+| **Windows** | Windows 10 or later (64-bit) |
+| **Camera** | Built-in or external webcam |
+| **RAM** | 4GB minimum |
+
+---
+
+## Linux
+
+<CardGroup cols={2}>
+  <Card title="AppImage" icon="linux" href="https://github.com/Benedict-Carling/eyeryhthm/releases/latest/download/EyeRhythm.AppImage">
+    **EyeRhythm.AppImage** - Universal Linux format
+  </Card>
+  <Card title="Debian/Ubuntu" icon="ubuntu" href="https://github.com/Benedict-Carling/eyeryhthm/releases/latest/download/EyeRhythm.deb">
+    **EyeRhythm.deb** - For Debian-based distros
+  </Card>
+</CardGroup>
+
+### Installation (AppImage)
+
+<Steps>
+  <Step title="Download the AppImage">
+    Click the AppImage download button above
+  </Step>
+  <Step title="Make it executable">
+    Right-click the file, go to Properties > Permissions, and check "Allow executing file as program"
+
+    Or run in terminal:
+    ```bash
+    chmod +x EyeRhythm.AppImage
+    ```
+  </Step>
+  <Step title="Run the app">
+    Double-click the AppImage to launch EyeRhythm
+  </Step>
+  <Step title="Grant camera permission">
+    Ensure your user has permission to access the camera device
+  </Step>
+</Steps>
+
+### Installation (Debian/Ubuntu)
+
+<Steps>
+  <Step title="Download the .deb package">
+    Click the .deb download button above
+  </Step>
+  <Step title="Install the package">
+    Double-click the `.deb` file to open in Software Center, or install via terminal:
+    ```bash
+    sudo dpkg -i EyeRhythm.deb
+    ```
+  </Step>
+  <Step title="Launch from applications menu">
+    Find EyeRhythm in your applications menu or run `eyerhythm` from terminal
+  </Step>
+</Steps>
+
+<Note title="Linux Permissions">
+  On some Linux distributions, you may need to add your user to the `video` group to access the camera:
+
+  ```bash
+  sudo usermod -a -G video $USER
+  ```
+
+  Log out and log back in for the changes to take effect.
+</Note>
+
+### System requirements
+
+| Requirement | Minimum |
+|-------------|---------|
+| **Distribution** | Ubuntu 20.04+, Debian 11+, Fedora 35+, or equivalent |
+| **Camera** | Built-in or external webcam |
+| **RAM** | 4GB minimum |
+
+---
 
 ## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title="'EyeRhythm' cannot be opened because the developer cannot be verified">
-    This is normal for apps downloaded outside the Mac App Store. To fix:
-
-    1. **Right-click** (or Control-click) the app in Finder
-    2. Select **"Open"** from the context menu
-    3. Click **"Open"** in the dialog
-
-    Alternatively:
-    1. Go to **System Settings > Privacy & Security**
-    2. Scroll down to find the message about EyeRhythm
-    3. Click **"Open Anyway"**
-  </Accordion>
-
   <Accordion title="Camera not detected or 'No camera access'">
     EyeRhythm needs camera permission to function:
 
+    **macOS:**
     1. Open **System Settings > Privacy & Security > Camera**
-    2. Find EyeRhythm in the list
-    3. Toggle the switch to **ON**
-    4. Restart EyeRhythm
+    2. Find EyeRhythm in the list and toggle **ON**
+    3. Restart EyeRhythm
 
-    If EyeRhythm isn't in the list, try launching it again - macOS should prompt you for permission.
+    **Windows:**
+    1. Open **Settings > Privacy > Camera**
+    2. Ensure "Allow apps to access your camera" is **ON**
+    3. Find EyeRhythm and toggle **ON**
+
+    **Linux:**
+    - Ensure your user is in the `video` group
+    - Check that no other application is using the camera
   </Accordion>
 
   <Accordion title="App crashes on launch">
     Try resetting the app's data:
 
-    1. Quit EyeRhythm completely (check Activity Monitor if needed)
-    2. Open Finder and press **Cmd+Shift+G**
-    3. Enter: `~/Library/Application Support/`
-    4. Delete the `EyeRhythm` folder
-    5. Relaunch the app
+    **macOS:**
+    1. Open Finder and press **Cmd+Shift+G**
+    2. Enter: `~/Library/Application Support/`
+    3. Delete the `EyeRhythm` folder
+    4. Relaunch the app
+
+    **Windows:**
+    1. Press **Win+R**, type `%appdata%`, press Enter
+    2. Delete the `EyeRhythm` folder
+    3. Relaunch the app
+
+    **Linux:**
+    1. Delete `~/.config/EyeRhythm`
+    2. Relaunch the app
 
     Still having issues? [Open an issue on GitHub](https://github.com/Benedict-Carling/eyeryhthm/issues/new)
   </Accordion>
@@ -99,26 +254,25 @@ import { EmailSignupForm } from '/snippets/email-signup.jsx';
     EyeRhythm checks for updates automatically. If updates aren't installing:
 
     1. Check if you have the latest version on the [releases page](https://github.com/Benedict-Carling/eyeryhthm/releases)
-    2. Download and install the latest `.dmg` manually
+    2. Download and install the latest version manually
     3. The app will auto-update from then on
   </Accordion>
 </AccordionGroup>
 
-## Other platforms
+---
 
-<CardGroup cols={2}>
-  <Card title="Windows" icon="windows">
-    **Coming soon** - Star the [GitHub repo](https://github.com/Benedict-Carling/eyeryhthm) to get notified
-  </Card>
-  <Card title="Linux" icon="linux">
-    **Coming soon** - AppImage and .deb packages planned
-  </Card>
-</CardGroup>
+## Feedback
+
+Having issues or have suggestions? We'd love to hear from you.
+
+<Card title="Share Feedback" icon="comment" href="https://eyerhythm.userjot.com">
+  Report bugs, request features, and help shape EyeRhythm
+</Card>
 
 ---
 
 ## Stay updated
 
-Get notified when Windows and Linux versions are released:
+Get notified about new releases and features:
 
 <EmailSignupForm />

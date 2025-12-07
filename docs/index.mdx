@@ -7,68 +7,58 @@ import { EmailSignupForm } from '/snippets/email-signup.jsx';
 
 # Track your blinks. Detect fatigue before you feel it.
 
-EyeRhythm monitors your blink patterns in real-time using on-device AI to help you stay aware of eye strain and digital fatigue while working at your computer.
+EyeRhythm monitors your blink patterns in real-time to help you stay aware of eye strain and digital fatigue. All processing happens on your device - your video never leaves your computer.
 
-<Card title="Download for Mac" icon="apple" href="https://github.com/Benedict-Carling/eyeryhthm/releases/latest">
-  Free download - macOS 11.0+
+<Card title="Download EyeRhythm" icon="download" href="/download">
+  Free for macOS, Windows, and Linux
 </Card>
 
 ---
 
 ## How it works
 
-<Tabs>
-  <Tab title="Detection" icon="eye">
-    Your webcam feed is analyzed by MediaPipe, Google's on-device machine learning framework. It detects your eye movements and calculates your <Tooltip tip="Eye Aspect Ratio - a mathematical formula that measures the openness of your eyes">EAR</Tooltip> to accurately identify blinks.
-  </Tab>
-  <Tab title="Calibration" icon="sliders">
-    EyeRhythm calibrates to your unique blink patterns. During setup, it learns your baseline blink rate and sets personalized thresholds for fatigue detection.
-  </Tab>
-  <Tab title="Alerts" icon="bell">
-    When your blink rate drops significantly (a key indicator of eye fatigue and reduced focus), you'll receive a gentle notification to take a break.
-  </Tab>
-  <Tab title="Privacy" icon="shield-check">
-    All processing happens locally on your device. Your video feed never leaves your computer, is never recorded, and is never uploaded anywhere.
-  </Tab>
-</Tabs>
+<Steps>
+  <Step title="Calibrate">
+    A quick setup learns your natural blink patterns and sets personalized thresholds
+  </Step>
+  <Step title="Track">
+    See your blinks per minute displayed live as you work
+  </Step>
+  <Step title="Get notified">
+    Receive gentle reminders when your blink rate drops below healthy levels
+  </Step>
+</Steps>
 
 ---
 
 ## Why track blinks?
 
+When you stare at screens, your blink rate drops by up to 70%. This leads to dry eyes, eye strain, and mental fatigue. EyeRhythm makes you aware of these patterns so you can take action before discomfort sets in.
+
 <CardGroup cols={2}>
-  <Card title="Digital eye strain" icon="eye-slash">
-    We blink less when staring at screens, leading to dry eyes and discomfort
+  <Card title="Prevent eye strain" icon="eye">
+    Catch low blink rates before they cause dry eyes and discomfort
   </Card>
-  <Card title="Mental fatigue" icon="brain">
-    Decreased blinking correlates with cognitive load and reduced attention
-  </Card>
-  <Card title="Poor focus" icon="bullseye">
-    Low blink rates indicate hyperfocus states that often precede burnout
-  </Card>
-  <Card title="Sleep deprivation" icon="moon">
-    Tired eyes blink differently - EyeRhythm helps you notice before it's too late
+  <Card title="Reduce fatigue" icon="brain">
+    Low blink rates signal cognitive overload - know when to take a break
   </Card>
 </CardGroup>
 
 ---
 
-## Features
+## Privacy first
 
-<AccordionGroup>
-  <Accordion title="Real-time blink tracking" icon="chart-line">
-    See your blinks per minute displayed live as you work. EyeRhythm processes video frames in real-time to give you instant feedback on your eye health.
-  </Accordion>
-  <Accordion title="Session history" icon="clock-rotate-left">
-    Review past sessions to understand your patterns over time. See when you're most prone to eye strain and adjust your work habits accordingly.
-  </Accordion>
-  <Accordion title="Smart notifications" icon="bell">
-    Get gentle reminders when your blink rate drops below healthy levels. Notifications are non-intrusive and designed to help, not annoy.
-  </Accordion>
-  <Accordion title="Works offline" icon="wifi-slash">
-    After initial setup, EyeRhythm works completely offline. No internet required for blink tracking.
-  </Accordion>
-</AccordionGroup>
+<Info>
+  **Your video never leaves your device.** EyeRhythm processes everything locally. No recordings, no uploads, no cloud processing.
+</Info>
+
+---
+
+## Help us improve
+
+<Card title="Share Feedback" icon="comment" href="https://eyerhythm.userjot.com">
+  Got ideas or found a bug? Your feedback shapes what we build next.
+</Card>
 
 ---
 
@@ -78,30 +68,10 @@ EyeRhythm monitors your blink patterns in real-time using on-device AI to help y
   <img src="/images/app-screenshot.png" alt="EyeRhythm app interface showing real-time blink tracking" />
 </Frame>
 
-<Tip>
-  **Currently in alpha.** We're actively developing new features and would love your feedback! Report issues or share ideas on [GitHub](https://github.com/Benedict-Carling/eyeryhthm/issues).
-</Tip>
-
 ---
 
-## Coming soon
+## Subscribe for updates
 
-<CardGroup cols={3}>
-  <Card title="Windows" icon="windows">
-    Windows support in development
-  </Card>
-  <Card title="Linux" icon="linux">
-    AppImage and .deb packages planned
-  </Card>
-  <Card title="Web app" icon="globe">
-    Browser-based tracking coming soon
-  </Card>
-</CardGroup>
-
----
-
-## Subscribe to newsletter
-
-Get notified about new features, platform releases, and eye health tips.
+Get notified about new features and eye health tips.
 
 <EmailSignupForm />

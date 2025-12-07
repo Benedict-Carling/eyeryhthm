@@ -20,6 +20,10 @@
   },
   "topbarLinks": [
     {
+      "name": "Feedback",
+      "url": "https://eyerhythm.userjot.com"
+    },
+    {
       "name": "GitHub",
       "url": "https://github.com/Benedict-Carling/eyeryhthm"
     }
@@ -42,7 +46,11 @@
   "navigation": [
     {
       "group": "",
-      "pages": ["index", "download", "privacy"]
+      "pages": ["index", "download", "feedback"]
+    },
+    {
+      "group": "",
+      "pages": ["blog/index"]
     },
     {
       "group": "Articles",
