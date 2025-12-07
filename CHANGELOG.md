@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.4](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.3...v1.11.4) (2025-12-07)
+
+
+### Bug Fixes
+
+* skip signing non-executable files to speed up macOS build ([0b3fa3f](https://github.com/Benedict-Carling/eyeryhthm/commit/0b3fa3fb90379c87b50896612a3b858a1ded94c3))
+
 ## [1.11.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.2...v1.11.3) (2025-12-07)
 
 
