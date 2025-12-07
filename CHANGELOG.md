@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.0...v1.11.1) (2025-12-07)
+
+
+### Bug Fixes
+
+* simplify macOS signing - let electron-builder handle certificate ([93c9696](https://github.com/Benedict-Carling/eyeryhthm/commit/93c9696e0dd958d418bd55accfaa2f28ac592ab7))
+* use CSC_NAME instead of CSC_LINK for macOS code signing ([08526ec](https://github.com/Benedict-Carling/eyeryhthm/commit/08526ec932ff7d144e770c116de76baf02f380d8))
+
 ## [1.11.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.10.1...v1.11.0) (2025-12-07)
 
 
