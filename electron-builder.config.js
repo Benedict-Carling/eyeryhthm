@@ -34,7 +34,7 @@
 const config = {
   appId: "com.eyerhythm.app",
   productName: "EyeRhythm",
-  copyright: "Copyright © 2024 EyeRhythm",
+  copyright: "Copyright © 2025 EyeRhythm",
 
   // Directory configuration
   directories: {
