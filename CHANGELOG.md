@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.1...v1.11.2) (2025-12-07)
+
+
+### Bug Fixes
+
+* update copyright year to 2025 ([13fc02a](https://github.com/Benedict-Carling/eyeryhthm/commit/13fc02aa6a597f3d93e73810bf7d3c88effce0a0))
+
 ## [1.11.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.0...v1.11.1) (2025-12-07)
 
 
