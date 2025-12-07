@@ -85,44 +85,9 @@ const config = {
     entitlements: "build-resources/entitlements.mac.plist",
     entitlementsInherit: "build-resources/entitlements.mac.plist",
 
-    /**
-     * macOS Code Signing Configuration
-     *
-     * CRITICAL FOR AUTO-UPDATES: Without code signing, macOS will reject auto-updates
-     * and users will see "unidentified developer" warnings.
-     *
-     * Setup Steps:
-     * 1. Obtain a "Developer ID Application" certificate from Apple Developer Program
-     *    (requires paid membership: https://developer.apple.com/programs/)
-     * 2. Install the certificate in your macOS Keychain
-     * 3. Configure signing identity using one of these methods:
-     *
-     * Method 1 - Auto-detection (Recommended for local builds):
-     *   - Leave identity commented out or set to null
-     *   - electron-builder will auto-detect the certificate from Keychain
-     *   - Works when only one valid certificate is installed
-     *
-     * Method 2 - Environment variable (Recommended for CI/CD):
-     *   - Set CSC_NAME environment variable to certificate name
-     *   - Example: export CSC_NAME="Developer ID Application: Your Name (TEAM_ID)"
-     *   - Also set CSC_LINK (base64 .p12) and CSC_KEY_PASSWORD for CI/CD
-     *
-     * Method 3 - Explicit identity configuration:
-     *   - Uncomment and set identity to certificate name
-     *   - Example: identity: "Developer ID Application: Your Name (TEAM_ID)"
-     *   - Find exact name: security find-identity -v -p codesigning
-     *
-     * Additional Security:
-     * - hardenedRuntime: Enables macOS security features
-     * - entitlements: Required permissions (camera access for this app)
-     * - Notarization: For macOS 10.15+, also notarize the app after signing
-     *   Set APPLE_ID and APPLE_APP_SPECIFIC_PASSWORD environment variables
-     *
-     * Verify signing: codesign -dv --verbose=4 path/to/EyeRhythm.app
-     */
-    // identity: null, // Auto-detect from Keychain (or set to certificate name)
-    // certificateFile: undefined, // Alternative: path to .p12 certificate file
-    // certificatePassword: undefined, // Password for .p12 file (use CSC_KEY_PASSWORD env var)
+    // Enable notarization for macOS distribution
+    // Requires APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID env vars
+    notarize: true,
 
     // Camera permission
     extendInfo: {
