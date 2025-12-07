@@ -87,7 +87,7 @@ jobs:
 
       - name: Build Electron (${{ matrix.platform }})
         run: npx electron-builder ${{ matrix.build_args }} --config electron-builder.config.js --publish never
-        timeout-minutes: 30
+        timeout-minutes: 40
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # macOS code signing - electron-builder handles keychain creation and certificate import
