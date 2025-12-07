@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.10.1...v1.11.0) (2025-12-07)
+
+
+### Features
+
+* add macOS code signing and notarization for releases ([#66](https://github.com/Benedict-Carling/eyeryhthm/issues/66)) ([8584626](https://github.com/Benedict-Carling/eyeryhthm/commit/8584626ed240e9b23f4d928819c344dbc0e447e5))
+
+
+### Bug Fixes
+
+* **docs:** fix download button navigation in mintlify ([8246f30](https://github.com/Benedict-Carling/eyeryhthm/commit/8246f309c1295166811da629c5590d119a1018ba))
+
 ## [1.10.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.10.0...v1.10.1) (2025-12-06)
 
 
