@@ -86,8 +86,12 @@ const config = {
     entitlementsInherit: "build-resources/entitlements.mac.plist",
 
     // Enable notarization for macOS distribution
+    // Using explicit teamId config instead of just `true` for better reliability
+    // See: https://github.com/electron-userland/electron-builder/issues/8040
     // Requires APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID env vars
-    notarize: true,
+    notarize: {
+      teamId: process.env.APPLE_TEAM_ID,
+    },
 
     // Camera permission
     extendInfo: {

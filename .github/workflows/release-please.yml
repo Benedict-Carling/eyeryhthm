@@ -85,15 +85,26 @@ jobs:
       - name: Compile Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
 
+      # macOS code signing - use Apple's official action which properly handles:
+      # 1. Creating a temporary keychain
+      # 2. Setting security set-key-partition-list (prevents codesign hanging)
+      # 3. Making the keychain searchable for codesign
+      # See: https://github.com/electron/osx-sign/issues/309
+      - name: Import Apple code signing certificate
+        if: matrix.platform == 'mac'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
       - name: Build Electron (${{ matrix.platform }})
         run: npx electron-builder ${{ matrix.build_args }} --config electron-builder.config.js --publish never
-        timeout-minutes: 90
+        timeout-minutes: 60
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS code signing - electron-builder handles keychain creation and certificate import
-          CSC_LINK: ${{ matrix.platform == 'mac' && secrets.APPLE_CERTIFICATE_BASE64 || '' }}
-          CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
-          # macOS notarization (electron-builder reads these automatically when notarize: true)
+          # Enable verbose logging to diagnose signing/notarization issues
+          DEBUG: ${{ matrix.platform == 'mac' && 'electron-builder' || '' }}
+          # macOS notarization (electron-builder reads these automatically)
           APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
           APPLE_TEAM_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_TEAM_ID || '' }}
@@ -116,3 +127,9 @@ jobs:
           files: ${{ matrix.artifact_pattern }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Cleanup macOS keychain (runs even if build fails)
+      - name: Cleanup macOS keychain
+        if: matrix.platform == 'mac' && always()
+        run: |
+          security delete-keychain signing_temp.keychain-db || true
