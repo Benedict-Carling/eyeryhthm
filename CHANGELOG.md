@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.11.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.0...v1.11.1) (2025-12-07)
+
+
+### Bug Fixes
+
+* build universal macOS only and increase timeout to 40min ([#69](https://github.com/Benedict-Carling/eyeryhthm/issues/69)) ([09a4966](https://github.com/Benedict-Carling/eyeryhthm/commit/09a4966e34f86ad4b099b1ef6ee40170d69c38f7))
+* simplify macOS signing - let electron-builder handle certificate ([93c9696](https://github.com/Benedict-Carling/eyeryhthm/commit/93c9696e0dd958d418bd55accfaa2f28ac592ab7))
+* use CSC_NAME instead of CSC_LINK for macOS code signing ([08526ec](https://github.com/Benedict-Carling/eyeryhthm/commit/08526ec932ff7d144e770c116de76baf02f380d8))
+
 ## [1.11.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.10.1...v1.11.0) (2025-12-07)
 
 
