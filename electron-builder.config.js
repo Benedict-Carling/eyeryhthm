@@ -71,11 +71,11 @@ const config = {
     target: [
       {
         target: "dmg",
-        arch: ["x64", "arm64"],
+        arch: ["universal"],
       },
       {
         target: "zip",
-        arch: ["x64", "arm64"],
+        arch: ["universal"],
       },
     ],
     icon: "build-resources/icon.icns",
