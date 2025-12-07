@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.3](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.2...v1.11.3) (2025-12-07)
+
+
+### Bug Fixes
+
+* use apple-actions for code signing to prevent codesign hanging ([40261d8](https://github.com/Benedict-Carling/eyeryhthm/commit/40261d8f6c508ebc32abd10c15761421ec615f9e))
+
 ## [1.11.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.1...v1.11.2) (2025-12-07)
 
 
