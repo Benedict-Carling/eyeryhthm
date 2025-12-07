@@ -123,9 +123,10 @@ jobs:
         timeout-minutes: 30
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS code signing (electron-builder reads CSC_LINK and CSC_KEY_PASSWORD)
-          CSC_LINK: ${{ matrix.platform == 'mac' && secrets.APPLE_CERTIFICATE_BASE64 || '' }}
-          CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          # macOS code signing - use certificate identity name (auto-detected from keychain we set up)
+          # Don't use CSC_LINK as we already imported the cert manually above
+          CSC_NAME: ${{ matrix.platform == 'mac' && 'Developer ID Application: Apalos LTD (GXGKP8JC4Y)' || '' }}
+          CSC_KEYCHAIN: ${{ matrix.platform == 'mac' && format('{0}/app-signing.keychain-db', runner.temp) || '' }}
           # macOS notarization (electron-builder reads these automatically when notarize: true)
           APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
