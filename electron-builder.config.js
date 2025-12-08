@@ -67,6 +67,7 @@ const config = {
 
   // macOS configuration
   mac: {
+    artifactName: "${productName}-mac.${ext}", // Used for zip (dmg has its own artifactName)
     category: "public.app-category.healthcare-fitness",
     target: [
       {
@@ -130,11 +131,6 @@ const config = {
       width: 540,
       height: 380,
     },
-  },
-
-  // macOS zip configuration
-  zip: {
-    artifactName: "${productName}-mac.${ext}",
   },
 
   // Windows configuration
