@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.4...v1.12.0) (2025-12-08)
+
+
+### Features
+
+* use fixed artifact names without version numbers ([9cd66d7](https://github.com/Benedict-Carling/eyeryhthm/commit/9cd66d7f6f9395d810b6788cf6543a52e886581d))
+
 ## [1.11.4](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.3...v1.11.4) (2025-12-07)
 
 
