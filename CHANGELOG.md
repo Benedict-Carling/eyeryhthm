@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.12.1...v1.12.2) (2025-12-08)
+
+
+### Bug Fixes
+
+* re-enable macOS code signing and notarization ([95a4764](https://github.com/Benedict-Carling/eyeryhthm/commit/95a476493f4610db61d0f970ae0333f5418c9966))
+
 ## [1.12.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.12.0...v1.12.1) (2025-12-08)
 
 
