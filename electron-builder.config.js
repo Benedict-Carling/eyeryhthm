@@ -112,6 +112,7 @@ const config = {
 
   // DMG configuration
   dmg: {
+    artifactName: "${productName}.${ext}",
     contents: [
       {
         x: 130,
@@ -128,6 +129,11 @@ const config = {
       width: 540,
       height: 380,
     },
+  },
+
+  // macOS zip configuration
+  zip: {
+    artifactName: "${productName}-mac.${ext}",
   },
 
   // Windows configuration
@@ -197,6 +203,7 @@ const config = {
 
   // NSIS installer configuration
   nsis: {
+    artifactName: "${productName}-Setup.${ext}",
     oneClick: false,
     perMachine: false,
     allowToChangeInstallationDirectory: true,
@@ -204,6 +211,11 @@ const config = {
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: "EyeRhythm",
+  },
+
+  // Windows portable configuration
+  portable: {
+    artifactName: "${productName}-Portable.${ext}",
   },
 
   // Linux configuration
@@ -223,6 +235,16 @@ const config = {
     synopsis: "Eye movement tracking for fatigue detection",
     description:
       "Privacy-focused real-time eye movement tracking application that monitors blink patterns to detect fatigue and improve screen time awareness.",
+  },
+
+  // Linux AppImage configuration
+  appImage: {
+    artifactName: "${productName}.${ext}",
+  },
+
+  // Linux deb configuration
+  deb: {
+    artifactName: "${productName}.${ext}",
   },
 
   // Publish configuration for GitHub releases
