@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.12.0...v1.12.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* move mac zip artifactName to mac section ([2d283f6](https://github.com/Benedict-Carling/eyeryhthm/commit/2d283f684f6ed9c1e9a9a0f63da2e83f3e85fcb7))
+
 ## [1.12.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.11.4...v1.12.0) (2025-12-08)
 
 
