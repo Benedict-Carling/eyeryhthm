@@ -86,10 +86,9 @@ const config = {
     entitlements: "build-resources/entitlements.mac.plist",
     entitlementsInherit: "build-resources/entitlements.mac.plist",
 
-    // TODO: Re-enable signing and notarization once certificate issues are resolved
+    // Enable notarization for macOS distribution
     // Requires APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID env vars
-    identity: null, // Temporarily disable code signing
-    notarize: false,
+    notarize: true,
 
     // Skip signing non-executable files to dramatically speed up builds
     // Locale .pak files and other data files don't need to be signed
