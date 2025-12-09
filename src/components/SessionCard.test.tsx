@@ -151,7 +151,7 @@ describe('SessionCard', () => {
   it('displays average blink rate', () => {
     render(<SessionCard session={mockSession} />);
 
-    const blinkRate = screen.getByText('7/min avg');
+    const blinkRate = screen.getByText('session average');
     expect(blinkRate).toBeInTheDocument();
   });
 

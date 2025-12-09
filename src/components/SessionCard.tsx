@@ -108,11 +108,23 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
   })();
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const hour12 = hours % 12 || 12;
+    const period = hours >= 12 ? 'pm' : 'am';
+    return { time: `${hour12}:${minutes}`, period };
+  };
+
+  const getRelativeDate = (date: Date) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sessionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.floor((today.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return null; // Today - no date label needed
+    if (diffDays === 1) return 'Yesterday';
+    // For anything older, show weekday + date (e.g., "Friday, Dec 6")
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   };
 
   const getQualityColor = (quality: "good" | "fair" | "poor") => {
@@ -386,9 +398,21 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
         {/* Header */}
         <Flex justify="between" align="center">
           <Flex align="center" gap="3">
-            <Text size="5" weight="medium" style={{ color: "var(--mauve-12)" }}>
-              {formatTime(session.startTime)}
-            </Text>
+            <Flex align="baseline" gap="2">
+              {getRelativeDate(session.startTime) && (
+                <Text size="2" style={{ color: "var(--mauve-10)" }}>
+                  {getRelativeDate(session.startTime)}
+                </Text>
+              )}
+              <Flex align="baseline" gap="1">
+                <Text size="5" weight="medium" style={{ color: "var(--mauve-12)" }}>
+                  {formatTime(session.startTime).time}
+                </Text>
+                <Text size="1" style={{ color: "var(--mauve-10)" }}>
+                  {formatTime(session.startTime).period}
+                </Text>
+              </Flex>
+            </Flex>
             {session.isExample && (
               <Badge color="gray" variant="soft">
                 Example
@@ -537,7 +561,7 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
                     color: "var(--indigo-11)",
                   }}
                 >
-                  <span key={blinkAnimKey} className="blink-count-number blink-bump">{displayBlinkCount}</span> blinks
+                  <span key={blinkAnimKey} className="blink-count-number blink-bump">{displayBlinkRate}</span>/min
                 </Text>
                 <Text
                   size="2"
@@ -546,7 +570,7 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
                     color: "var(--mauve-11)",
                   }}
                 >
-                  {displayBlinkRate}/min avg
+                  session average
                 </Text>
               </>
             )}
