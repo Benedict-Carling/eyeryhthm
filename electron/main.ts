@@ -594,10 +594,16 @@ app.whenReady().then(async () => {
     }
   });
 
-  // On macOS, re-create window when dock icon is clicked
-  app.on("activate", () => {
+  // On macOS, re-create window when dock icon is clicked or app is activated via Spotlight
+  // The hasVisibleWindows parameter indicates if any windows are currently visible
+  app.on("activate", (_event, hasVisibleWindows) => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+    } else if (!hasVisibleWindows && mainWindow) {
+      // Window exists but is hidden (e.g., user closed to tray) - show it
+      mainWindow.show();
+      mainWindow.focus();
+      platform.showDock();
     }
   });
 });
