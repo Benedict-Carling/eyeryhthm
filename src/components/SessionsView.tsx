@@ -8,6 +8,7 @@ import {
   Callout,
 } from "@radix-ui/themes";
 import { useSession } from "../contexts/SessionContext";
+import { useCalibration } from "../contexts/CalibrationContext";
 import { SessionCard } from "./SessionCard";
 import { SessionFilterBar } from "./SessionFilterBar";
 import { useSessionFilters } from "@/hooks/useSessionFilters";
@@ -21,6 +22,8 @@ export function SessionsView() {
     isInitializing,
     isFaceDetected,
   } = useSession();
+
+  const { calibrations } = useCalibration();
 
   const {
     filters,
@@ -98,6 +101,7 @@ export function SessionsView() {
           totalCount={totalCount}
           filteredCount={filteredCount}
           earliestSessionDate={earliestSessionDate}
+          calibrations={calibrations}
         />
 
         <Flex direction="column" gap="4">

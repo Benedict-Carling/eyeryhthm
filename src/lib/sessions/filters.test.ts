@@ -20,6 +20,7 @@ const createMockSession = (overrides: Partial<SessionData> = {}): SessionData =>
   duration: 3600, // 1 hour
   totalBlinks: 900,
   faceLostPeriods: [],
+  calibrationId: 'default-calibration',
   ...overrides,
 });
 
@@ -196,6 +197,40 @@ describe('filterSessions', () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.duration).toBe(600);
     expect(result[0]?.fatigueAlertCount).toBe(3);
+  });
+
+  it('filters by calibration ID', () => {
+    const sessions: SessionData[] = [
+      createMockSession({ calibrationId: 'cal-1' }),
+      createMockSession({ calibrationId: 'cal-2' }),
+      createMockSession({ calibrationId: 'cal-1' }),
+    ];
+
+    const filters: SessionFilters = {
+      ...DEFAULT_FILTERS,
+      minDuration: null,
+      calibrationId: 'cal-1',
+    };
+
+    const result = filterSessions(sessions, filters);
+    expect(result).toHaveLength(2);
+    expect(result.every((s) => s.calibrationId === 'cal-1')).toBe(true);
+  });
+
+  it('includes all calibrations when calibrationId is null', () => {
+    const sessions: SessionData[] = [
+      createMockSession({ calibrationId: 'cal-1' }),
+      createMockSession({ calibrationId: 'cal-2' }),
+    ];
+
+    const filters: SessionFilters = {
+      ...DEFAULT_FILTERS,
+      minDuration: null,
+      calibrationId: null,
+    };
+
+    const result = filterSessions(sessions, filters);
+    expect(result).toHaveLength(2);
   });
 });
 

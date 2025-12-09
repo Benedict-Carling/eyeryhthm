@@ -8,6 +8,7 @@ export interface SessionFilters {
   };
   minFatigueAlerts: number | null;
   hadFaceLost: boolean | null; // true = only with face lost, false = only without, null = all
+  calibrationId: string | null; // null means all calibrations
 }
 
 export const DEFAULT_FILTERS: SessionFilters = {
@@ -18,6 +19,7 @@ export const DEFAULT_FILTERS: SessionFilters = {
   },
   minFatigueAlerts: null,
   hadFaceLost: null,
+  calibrationId: null,
 };
 
 export const DURATION_OPTIONS = [
@@ -86,6 +88,11 @@ export function filterSessions(
       if (filters.hadFaceLost !== hadFaceLost) return false;
     }
 
+    // Calibration filter
+    if (filters.calibrationId !== null) {
+      if (session.calibrationId !== filters.calibrationId) return false;
+    }
+
     return true;
   });
 }
@@ -103,6 +110,9 @@ export function getActiveFilterCount(filters: SessionFilters): number {
     count++;
   }
   if (filters.hadFaceLost !== null) {
+    count++;
+  }
+  if (filters.calibrationId !== null) {
     count++;
   }
 

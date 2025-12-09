@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Flex, Text, Button, Popover, Box, DropdownMenu, Badge } from "@radix-ui/themes";
 import {
   Cross2Icon,
@@ -10,7 +10,9 @@ import {
   ExclamationTriangleIcon,
   EyeNoneIcon,
   ChevronDownIcon,
+  TargetIcon,
 } from "@radix-ui/react-icons";
+import { Calibration } from "@/lib/blink-detection/types";
 import { DayPicker, DateRange } from "react-day-picker";
 import "react-day-picker/style.css";
 import {
@@ -29,6 +31,7 @@ interface SessionFilterBarProps {
   totalCount: number;
   filteredCount: number;
   earliestSessionDate?: Date;
+  calibrations: Calibration[];
 }
 
 export function SessionFilterBar({
@@ -37,6 +40,7 @@ export function SessionFilterBar({
   totalCount,
   filteredCount,
   earliestSessionDate,
+  calibrations,
 }: SessionFilterBarProps) {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
@@ -45,7 +49,8 @@ export function SessionFilterBar({
     filters.dateRange.start !== null ||
     filters.dateRange.end !== null ||
     filters.minFatigueAlerts !== null ||
-    filters.hadFaceLost !== null;
+    filters.hadFaceLost !== null ||
+    filters.calibrationId !== null;
 
   const clearAllFilters = () => {
     onFiltersChange(DEFAULT_FILTERS);
@@ -69,6 +74,13 @@ export function SessionFilterBar({
     onFiltersChange({
       ...filters,
       hadFaceLost: value,
+    });
+  };
+
+  const updateCalibration = (value: string | null) => {
+    onFiltersChange({
+      ...filters,
+      calibrationId: value,
     });
   };
 
@@ -113,6 +125,13 @@ export function SessionFilterBar({
   const isDurationActive = filters.minDuration !== DEFAULT_FILTERS.minDuration;
   const isAlertsActive = filters.minFatigueAlerts !== null;
   const isInterruptionsActive = filters.hadFaceLost !== null;
+  const isCalibrationActive = filters.calibrationId !== null;
+
+  const getCalibrationName = (id: string | null): string => {
+    if (id === null) return "Calibration";
+    const calibration = calibrations.find((c) => c.id === id);
+    return calibration?.name ?? "Unknown";
+  };
 
   return (
     <Box className={styles.filterBar}>
@@ -254,6 +273,42 @@ export function SessionFilterBar({
             ))}
           </DropdownMenu.Content>
         </DropdownMenu.Root>
+
+        {/* Calibration Filter */}
+        {calibrations.length > 1 && (
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              <Badge
+                size="2"
+                variant="soft"
+                color={isCalibrationActive ? "indigo" : "gray"}
+                className={styles.filterBadge}
+              >
+                <TargetIcon />
+                {getCalibrationName(filters.calibrationId)}
+                <ChevronDownIcon />
+              </Badge>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              <DropdownMenu.Item
+                onSelect={() => updateCalibration(null)}
+              >
+                All calibrations
+                {filters.calibrationId === null && " *"}
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator />
+              {calibrations.map((calibration) => (
+                <DropdownMenu.Item
+                  key={calibration.id}
+                  onSelect={() => updateCalibration(calibration.id)}
+                >
+                  {calibration.name}
+                  {filters.calibrationId === calibration.id && " *"}
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        )}
 
         {/* Clear All */}
         {hasActiveFilters && (
