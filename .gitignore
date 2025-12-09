@@ -59,3 +59,7 @@ next-env.d.ts
 
 # Generated icon variants (keep only final icons)
 /build-resources/icons/
+
+# Icon source exports
+eyerhythm-iOS-*.png
+eyerhythm Exports/
