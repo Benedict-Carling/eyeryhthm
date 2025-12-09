@@ -87,6 +87,11 @@ describe('SessionCard', () => {
     endTime: new Date('2024-01-15T11:30:00'),
     isActive: false,
     averageBlinkRate: 7,
+    blinkEvents: [
+      { timestamp: Date.now() - 60000 },
+      { timestamp: Date.now() - 30000 },
+      { timestamp: Date.now() },
+    ],
     blinkRateHistory: [
       { timestamp: Date.now() - 60000, rate: 8 },
       { timestamp: Date.now() - 30000, rate: 6 },
@@ -202,6 +207,7 @@ describe('SessionCard', () => {
     const activeSessionNoData = {
       ...mockSession,
       isActive: true,
+      blinkEvents: [],
       blinkRateHistory: []
     };
     render(<SessionCard session={activeSessionNoData} />);
@@ -212,13 +218,14 @@ describe('SessionCard', () => {
   });
 
   it('shows "No data" for inactive sessions without data', () => {
-    const inactiveSessionNoData = { 
-      ...mockSession, 
-      isActive: false, 
-      blinkRateHistory: [] 
+    const inactiveSessionNoData = {
+      ...mockSession,
+      isActive: false,
+      blinkEvents: [],
+      blinkRateHistory: []
     };
     render(<SessionCard session={inactiveSessionNoData} />);
-    
+
     const noDataText = screen.getByText('No data');
     expect(noDataText).toBeInTheDocument();
   });

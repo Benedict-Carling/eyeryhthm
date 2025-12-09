@@ -3,7 +3,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
 import * as d3 from "d3";
-import { SessionData, formatSessionDuration, BlinkRatePoint, MAX_BLINK_RATE, BLINK_RATE_WINDOW_MS } from "../lib/sessions/types";
+import {
+  SessionData,
+  formatSessionDuration,
+  BlinkRatePoint,
+  MAX_BLINK_RATE,
+  BLINK_RATE_WINDOW_MS,
+  getChartDataFromSession,
+} from "../lib/sessions/types";
 import { ClockIcon } from "@radix-ui/react-icons";
 import { Bell, BellOff, Eye, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { useCalibration } from "../contexts/CalibrationContext";
@@ -33,7 +40,10 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
 
   // For active sessions: debounced chart history - only updates every CHART_UPDATE_DEBOUNCE_MS
   // For non-active sessions: use session data directly (no debouncing needed)
-  const [activeSessionHistory, setActiveSessionHistory] = useState<BlinkRatePoint[]>(session.blinkRateHistory);
+  const [activeSessionHistory, setActiveSessionHistory] = useState<BlinkRatePoint[]>(() => {
+    // Derive initial chart data from blinkEvents or fall back to legacy blinkRateHistory
+    return getChartDataFromSession(session);
+  });
   // Track last chart update time in state (not ref with Date.now()) to be React Compiler pure
   const [lastChartUpdateTime, setLastChartUpdateTime] = useState<number>(() => {
     // Lazy initializer runs once on mount, not during render
@@ -81,7 +91,7 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
   }, [currentBlinkCount, session.isActive]);
 
   // Use session data directly for non-active sessions, debounced data for active
-  const debouncedHistory = session.isActive ? activeSessionHistory : session.blinkRateHistory;
+  const debouncedHistory = session.isActive ? activeSessionHistory : getChartDataFromSession(session);
 
   // Timer tick for active session duration updates (updates every 30 seconds)
   // Also used to trigger blink rate recalculation
@@ -152,21 +162,24 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
       return liveBlinkRate > 0 ? Math.round(liveBlinkRate) : null;
     }
 
-    // For completed sessions, calculate from history using 2-minute moving window
-    if (session.blinkRateHistory.length === 0) return null;
+    // Get chart data for completed sessions
+    const chartData = getChartDataFromSession(session);
+
+    // For completed sessions, calculate from chart data using 2-minute moving window
+    if (chartData.length === 0) return null;
 
     // For completed sessions, use end time as reference point
     const referenceTime = session.endTime?.getTime() || session.startTime.getTime();
     const windowDuration = 120000; // 2 minutes
     const windowStart = referenceTime - windowDuration;
 
-    const recentPoints = session.blinkRateHistory.filter(
+    const recentPoints = chartData.filter(
       (point: BlinkRatePoint) => point.timestamp >= windowStart
     );
 
     if (recentPoints.length === 0) {
       // Use most recent point if nothing in window
-      const lastPoint = session.blinkRateHistory[session.blinkRateHistory.length - 1];
+      const lastPoint = chartData[chartData.length - 1];
       return lastPoint ? Math.round(lastPoint.rate) : null;
     }
 
@@ -209,7 +222,7 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
   };
 
   // Debounce chart history updates for active sessions only
-  // Non-active sessions use session.blinkRateHistory directly via derived value above
+  // Non-active sessions use getChartDataFromSession directly via derived value above
   useEffect(() => {
     // Only debounce for active sessions
     if (!session.isActive) {
@@ -223,12 +236,12 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
 
     // Always schedule update via setTimeout to avoid synchronous setState in effect body
     const timeoutId = setTimeout(() => {
-      setActiveSessionHistory(session.blinkRateHistory);
+      setActiveSessionHistory(getChartDataFromSession(session));
       setLastChartUpdateTime(Date.now());
     }, timeUntilUpdate);
 
     return () => clearTimeout(timeoutId);
-  }, [session.blinkRateHistory, session.isActive, lastChartUpdateTime]);
+  }, [session.blinkEvents, session.isActive, lastChartUpdateTime, session.startTime, session.endTime]);
 
   // Track if chart has been initialized
   const [chartInitialized, setChartInitialized] = useState(false);
@@ -497,7 +510,7 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
         <Flex justify="between" align="center" gap="4">
           {/* Mini chart */}
           <Box style={{ width: "200px", height: "60px" }} className="mini-chart">
-            {session.blinkRateHistory.length > 0 ? (
+            {debouncedHistory.length > 0 ? (
               <svg
                 ref={svgRef}
                 width="200"

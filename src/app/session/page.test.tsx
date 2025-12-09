@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Theme } from '@radix-ui/themes';
 import SessionDetailPage from './page';
 import { SessionData } from '../../lib/sessions/types';
+
+// Wrapper with Theme for Radix components
+const renderWithTheme = (ui: React.ReactElement) => {
+  return render(<Theme>{ui}</Theme>);
+};
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -23,6 +29,11 @@ const mockSessions: SessionData[] = [
     endTime: new Date('2024-01-15T11:30:00'),
     isActive: false,
     averageBlinkRate: 7,
+    blinkEvents: [
+      { timestamp: Date.now() - 60000 },
+      { timestamp: Date.now() - 30000 },
+      { timestamp: Date.now() },
+    ],
     blinkRateHistory: [
       { timestamp: Date.now() - 60000, rate: 8 },
       { timestamp: Date.now() - 30000, rate: 6 },
@@ -38,6 +49,7 @@ const mockSessions: SessionData[] = [
     startTime: new Date('2024-01-15T14:00:00'),
     isActive: true,
     averageBlinkRate: 12,
+    blinkEvents: [],
     blinkRateHistory: [],
     quality: 'good',
     fatigueAlertCount: 0,
@@ -75,7 +87,7 @@ describe('SessionDetailPage', () => {
   });
 
   it('renders session details correctly', () => {
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
 
     expect(screen.getByText('Session Details')).toBeInTheDocument();
     expect(screen.getByText(/Monday, January 15, 2024/)).toBeInTheDocument();
@@ -86,7 +98,7 @@ describe('SessionDetailPage', () => {
   });
 
   it('renders back button', () => {
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
 
     const backButton = screen.getByText('Back to Sessions');
     expect(backButton).toBeInTheDocument();
@@ -94,7 +106,7 @@ describe('SessionDetailPage', () => {
 
   it('navigates back to home when back button is clicked', async () => {
     const user = userEvent.setup();
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
 
     const backButton = screen.getByText('Back to Sessions');
     await user.click(backButton);
@@ -103,16 +115,18 @@ describe('SessionDetailPage', () => {
   });
 
   it('renders blink rate chart', () => {
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
 
     const chart = screen.getByTestId('blink-rate-chart');
     expect(chart).toBeInTheDocument();
-    expect(chart).toHaveAttribute('data-points', '3');
+    // Chart data points are now aggregated from blinkEvents, so count varies by session duration
+    const dataPoints = parseInt(chart.getAttribute('data-points') || '0', 10);
+    expect(dataPoints).toBeGreaterThan(0);
   });
 
   it('shows live duration for active sessions', () => {
     mockSearchParams.set('id', 'session-2');
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
 
     // Active sessions show live elapsed time starting from 0s
     expect(screen.getByText('0s')).toBeInTheDocument();
@@ -120,18 +134,18 @@ describe('SessionDetailPage', () => {
 
   it('shows "Session not found" for invalid session ID', () => {
     mockSearchParams.set('id', 'invalid-id');
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
 
     expect(screen.getByText('Session not found')).toBeInTheDocument();
   });
 
   it('formats duration correctly for different time periods', () => {
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
     expect(screen.getByText('1h 30m 0s')).toBeInTheDocument();
   });
 
   it('applies correct color to quality indicator', () => {
-    render(<SessionDetailPage />);
+    renderWithTheme(<SessionDetailPage />);
 
     const qualityText = screen.getByText('Poor');
     expect(qualityText).toBeInTheDocument();
