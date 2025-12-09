@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.14.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.13.0...v1.14.0) (2025-12-09)
+
+
+### Features
+
+* **filters:** add calibration filter to session filter bar ([d221275](https://github.com/Benedict-Carling/eyeryhthm/commit/d22127502180c719de9b16c6e9f90696bd092bed))
+* **sessions:** add filter bar for historic sessions ([fcdf599](https://github.com/Benedict-Carling/eyeryhthm/commit/fcdf599dcdb1a668515900670322c8c92cc34b36))
+* **sessions:** add filter bar for historic sessions ([218b6cb](https://github.com/Benedict-Carling/eyeryhthm/commit/218b6cb09c9fb3daab82154830890fac25abf633))
+* **settings:** move update callout to About section and enable auto-download ([ff06474](https://github.com/Benedict-Carling/eyeryhthm/commit/ff06474c547d60b2bcf4f037fafa78cb3c181308))
+
+
+### Bug Fixes
+
+* **charts:** improve blink rate chart stability and readability ([#81](https://github.com/Benedict-Carling/eyeryhthm/issues/81)) ([a789c99](https://github.com/Benedict-Carling/eyeryhthm/commit/a789c995d8374ef8c495ffbb9d2c320cdecb5e41))
+* **filters:** disable calendar dates before earliest session ([4da415b](https://github.com/Benedict-Carling/eyeryhthm/commit/4da415b2071ec31b26a4d4292ebb3819e9d23f90))
+
 ## [1.13.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.12.2...v1.13.0) (2025-12-09)
 
 
