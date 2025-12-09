@@ -87,6 +87,7 @@ describe('AlertService', () => {
       startTime: new Date(now - 6 * 60 * 1000), // 6 minutes ago (past 5-min grace period)
       isActive: true,
       averageBlinkRate: 7,
+      blinkEvents: [], // Individual blink events
       blinkRateHistory: createBlinkRateHistory(7, now),
       quality: 'poor',
       fatigueAlertCount: 0,

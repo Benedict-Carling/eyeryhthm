@@ -27,6 +27,7 @@ const createMockSession = (overrides: Partial<SessionData> = {}): SessionData =>
   endTime: new Date(),
   isActive: false,
   averageBlinkRate: 12,
+  blinkEvents: [], // Individual blink events
   blinkRateHistory: [],
   quality: 'good',
   fatigueAlertCount: 0,

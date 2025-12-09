@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import {
   SessionData,
-  BlinkRatePoint,
+  BlinkEvent,
   getSessionQuality,
   MAX_BLINK_RATE,
 } from "../lib/sessions/types";
@@ -56,14 +56,19 @@ const MIN_SESSION_TIME_FOR_RATE_MS = WINDOWED_RATE_DURATION_MS; // Wait for full
 const generateMockSessions = (): SessionData[] => {
   const now = new Date();
 
+  const session1Start = now.getTime() - 4 * 60 * 60 * 1000;
+  const session1End = now.getTime() - 2.5 * 60 * 60 * 1000;
+  const session2Start = now.getTime() - 2 * 60 * 60 * 1000;
+  const session2End = now.getTime() - 0.5 * 60 * 60 * 1000;
+
   return [
     {
       id: "session-1",
-      startTime: new Date(now.getTime() - 4 * 60 * 60 * 1000), // 4 hours ago
-      endTime: new Date(now.getTime() - 2.5 * 60 * 60 * 1000),
+      startTime: new Date(session1Start),
+      endTime: new Date(session1End),
       isActive: false,
       averageBlinkRate: 7,
-      blinkRateHistory: generateMockBlinkHistory(90, 7),
+      blinkEvents: generateMockBlinkEvents(session1Start, session1End, 7),
       quality: "poor",
       fatigueAlertCount: 2,
       duration: 5400, // 1h 30m
@@ -73,11 +78,11 @@ const generateMockSessions = (): SessionData[] => {
     },
     {
       id: "session-2",
-      startTime: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
-      endTime: new Date(now.getTime() - 0.5 * 60 * 60 * 1000),
+      startTime: new Date(session2Start),
+      endTime: new Date(session2End),
       isActive: false,
       averageBlinkRate: 11,
-      blinkRateHistory: generateMockBlinkHistory(90, 11),
+      blinkEvents: generateMockBlinkEvents(session2Start, session2End, 11),
       quality: "fair",
       fatigueAlertCount: 0,
       duration: 5400, // 1h 30m
@@ -88,22 +93,36 @@ const generateMockSessions = (): SessionData[] => {
   ];
 };
 
-function generateMockBlinkHistory(
-  minutes: number,
+// Generate realistic mock blink events with some variation
+function generateMockBlinkEvents(
+  startTime: number,
+  endTime: number,
   avgRate: number
-): BlinkRatePoint[] {
-  const points: BlinkRatePoint[] = [];
-  const now = Date.now();
+): BlinkEvent[] {
+  const events: BlinkEvent[] = [];
+  const durationMs = endTime - startTime;
+  const durationMinutes = durationMs / 60000;
 
-  for (let i = 0; i < minutes; i += 5) {
-    const variation = (Math.random() - 0.5) * 4;
-    points.push({
-      timestamp: now - (minutes - i) * 60 * 1000,
-      rate: Math.max(5, Math.min(20, avgRate + variation)),
+  // Total expected blinks based on average rate
+  const totalBlinks = Math.round(durationMinutes * avgRate);
+
+  // Distribute blinks across the session with some randomness
+  for (let i = 0; i < totalBlinks; i++) {
+    // Add some variation to the timing (not perfectly uniform)
+    const baseProgress = i / totalBlinks;
+    const variation = (Math.random() - 0.5) * 0.02; // +/- 1% variation
+    const progress = Math.max(0, Math.min(1, baseProgress + variation));
+
+    events.push({
+      timestamp: startTime + progress * durationMs,
+      duration: 100 + Math.random() * 100, // 100-200ms blink duration
     });
   }
 
-  return points;
+  // Sort by timestamp
+  events.sort((a, b) => a.timestamp - b.timestamp);
+
+  return events;
 }
 
 export function SessionProvider({ children }: SessionProviderProps) {
@@ -279,44 +298,77 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
   }, [stream, videoRef]);
 
-  // Use functional setState to avoid dependency on activeSession
-  // This prevents cascading re-renders when session updates
-  const updateActiveSessionBlinkRate = useCallback(
-    (rate: number, totalBlinks: number) => {
-      setActiveSession(prev => {
-        if (!prev) return prev;
+  // Track the last recorded blink count to detect new blinks
+  const lastRecordedBlinkCountRef = useRef<number>(0);
 
-        const newPoint: BlinkRatePoint = {
-          timestamp: Date.now(),
-          rate,
-        };
+  // Record a new blink event
+  const recordBlinkEvent = useCallback((blinkTimestamp: number) => {
+    setActiveSession(prev => {
+      if (!prev) return prev;
 
-        const updatedHistory = [...prev.blinkRateHistory, newPoint];
-        const avgRate =
-          updatedHistory.reduce((sum, p) => sum + p.rate, 0) /
-          updatedHistory.length;
-        const quality = getSessionQuality(avgRate);
+      const newEvent: BlinkEvent = {
+        timestamp: blinkTimestamp,
+      };
 
-        const updatedSession: SessionData = {
-          ...prev,
-          blinkRateHistory: updatedHistory,
-          averageBlinkRate: avgRate,
-          quality,
-          totalBlinks,
-        };
+      const updatedEvents = [...prev.blinkEvents, newEvent];
 
-        // Update sessions array with the new session data
-        setSessions(prevSessions =>
-          prevSessions.map(session =>
-            session.id === updatedSession.id ? updatedSession : session
-          )
-        );
+      // Calculate average blink rate from events
+      const sessionDurationMs = Date.now() - prev.startTime.getTime();
+      const sessionDurationMinutes = sessionDurationMs / 60000;
+      const avgRate = sessionDurationMinutes > 0
+        ? updatedEvents.length / sessionDurationMinutes
+        : 0;
+      const quality = getSessionQuality(avgRate);
 
-        return updatedSession;
-      });
-    },
-    [] // No dependencies - prevents cascading re-renders
-  );
+      const updatedSession: SessionData = {
+        ...prev,
+        blinkEvents: updatedEvents,
+        averageBlinkRate: avgRate,
+        quality,
+        totalBlinks: updatedEvents.length,
+      };
+
+      // Update sessions array with the new session data
+      setSessions(prevSessions =>
+        prevSessions.map(session =>
+          session.id === updatedSession.id ? updatedSession : session
+        )
+      );
+
+      return updatedSession;
+    });
+  }, []);
+
+  // Update session stats periodically (for UI updates without new blinks)
+  const updateSessionStats = useCallback((totalBlinks: number) => {
+    setActiveSession(prev => {
+      if (!prev) return prev;
+
+      // Calculate average blink rate from events
+      const sessionDurationMs = Date.now() - prev.startTime.getTime();
+      const sessionDurationMinutes = sessionDurationMs / 60000;
+      const avgRate = sessionDurationMinutes > 0
+        ? prev.blinkEvents.length / sessionDurationMinutes
+        : 0;
+      const quality = getSessionQuality(avgRate);
+
+      const updatedSession: SessionData = {
+        ...prev,
+        averageBlinkRate: avgRate,
+        quality,
+        totalBlinks,
+      };
+
+      // Update sessions array with the new session data
+      setSessions(prevSessions =>
+        prevSessions.map(session =>
+          session.id === updatedSession.id ? updatedSession : session
+        )
+      );
+
+      return updatedSession;
+    });
+  }, []);
 
   // Use functional setState to avoid dependency on activeSession
   const handleFatigueAlert = useCallback(() => {
@@ -403,57 +455,34 @@ export function SessionProvider({ children }: SessionProviderProps) {
       }
     }
 
-    // Update session data (including chart history) periodically
-    // Live blink count/rate are derived by consumers from source of truth values
-    if (activeSession && Date.now() - lastBlinkUpdateRef.current > BLINK_RATE_UPDATE_INTERVAL_MS) {
-      const now = Date.now();
-      const timeElapsedMs = now - sessionStartTimeRef.current;
-      const blinksSinceStart = blinkCountStateRef.current - blinkCountRef.current;
+    // Record individual blink events when new blinks are detected
+    if (activeSession) {
+      const currentBlinksSinceStart = blinkCountStateRef.current - blinkCountRef.current;
+      const lastRecordedBlinks = lastRecordedBlinkCountRef.current;
 
-      // Add current snapshot to history
-      blinkSnapshotsRef.current.push({
-        timestamp: now,
-        blinkCount: blinksSinceStart,
-      });
+      // Check if new blinks occurred since last check
+      if (currentBlinksSinceStart > lastRecordedBlinks) {
+        const newBlinksCount = currentBlinksSinceStart - lastRecordedBlinks;
+        const now = Date.now();
 
-      // Remove snapshots older than the window duration
-      const windowStart = now - WINDOWED_RATE_DURATION_MS;
-      blinkSnapshotsRef.current = blinkSnapshotsRef.current.filter(
-        (snapshot) => snapshot.timestamp >= windowStart
-      );
-
-      // Only record blink rate after minimum time has passed (prevents early spikes)
-      // This ensures we have enough data for a meaningful rate
-      if (timeElapsedMs >= MIN_SESSION_TIME_FOR_RATE_MS) {
-        let windowedRate: number;
-
-        const snapshots = blinkSnapshotsRef.current;
-        const oldestSnapshot = snapshots[0];
-        const newestSnapshot = snapshots[snapshots.length - 1];
-
-        if (snapshots.length >= 2 && oldestSnapshot && newestSnapshot) {
-          // Calculate windowed rate: blinks in the window / window duration
-          const blinksInWindow = newestSnapshot.blinkCount - oldestSnapshot.blinkCount;
-          const windowDurationMs = newestSnapshot.timestamp - oldestSnapshot.timestamp;
-          const windowDurationMinutes = windowDurationMs / 1000 / 60;
-
-          windowedRate = windowDurationMinutes > 0 ? blinksInWindow / windowDurationMinutes : 0;
-        } else {
-          // Not enough data points yet, use cumulative rate as fallback
-          const timeElapsedMinutes = timeElapsedMs / 1000 / 60;
-          windowedRate = timeElapsedMinutes > 0 ? blinksSinceStart / timeElapsedMinutes : 0;
+        // Record each new blink event
+        // For simplicity, we assign the current timestamp to all new blinks
+        // In reality they may have occurred slightly earlier within this frame interval
+        for (let i = 0; i < newBlinksCount; i++) {
+          recordBlinkEvent(now);
         }
 
-        // Cap the rate to prevent outliers from distorting the chart
-        const cappedRate = Math.min(windowedRate, MAX_BLINK_RATE);
-
-        updateActiveSessionBlinkRate(cappedRate, blinksSinceStart);
+        lastRecordedBlinkCountRef.current = currentBlinksSinceStart;
       }
 
-      lastBlinkUpdateRef.current = now;
+      // Periodically update session stats (for UI updates)
+      if (Date.now() - lastBlinkUpdateRef.current > BLINK_RATE_UPDATE_INTERVAL_MS) {
+        updateSessionStats(currentBlinksSinceStart);
+        lastBlinkUpdateRef.current = Date.now();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEAR, isFaceDetected, updateActiveSessionBlinkRate]); // activeSession read from ref; blinkCount read from ref
+  }, [currentEAR, isFaceDetected, recordBlinkEvent, updateSessionStats]); // activeSession read from ref; blinkCount read from ref
 
   // Store stable references to avoid triggering worker callback changes
   const processFrameRef = useRef(processFrame);
@@ -617,7 +646,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       startTime: new Date(),
       isActive: true,
       averageBlinkRate: 0,
-      blinkRateHistory: [],
+      blinkEvents: [], // Individual blink events
       quality: "good",
       fatigueAlertCount: 0,
       calibrationId: activeCalibration?.id,
@@ -631,6 +660,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     sessionStartTimeRef.current = Date.now();
     currentFaceLostPeriodStartRef.current = null; // Reset idle period tracking
     blinkSnapshotsRef.current = []; // Reset blink snapshots for windowed rate calculation
+    lastRecordedBlinkCountRef.current = 0; // Reset blink event tracking
     // Set baseline values for consumers to derive live counts
     setSessionBaselineBlinkCount(blinkCount);
     setSessionStartTime(Date.now());

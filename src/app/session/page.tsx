@@ -2,10 +2,18 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, Suspense, useMemo } from "react";
-import { Container, Flex, Box, Text, Heading, Button, Card } from "@radix-ui/themes";
+import { Container, Flex, Box, Text, Heading, Button, Card, Select } from "@radix-ui/themes";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useSession } from "../../contexts/SessionContext";
-import { SessionData, BlinkRatePoint } from "../../lib/sessions/types";
+import {
+  SessionData,
+  BlinkRatePoint,
+  BlinkEvent,
+  aggregateBlinkEvents,
+  SMOOTHING_OPTIONS,
+  SmoothingWindow,
+  DEFAULT_SMOOTHING_WINDOW,
+} from "../../lib/sessions/types";
 import { BlinkRateChart } from "../../components/BlinkRateChart";
 import { useInterval } from "../../hooks/useInterval";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
@@ -14,22 +22,53 @@ import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 const CHART_UPDATE_DEBOUNCE_MS = 3000;
 
 /**
- * Hook to get debounced blink rate history for chart rendering.
+ * Hook to get debounced blink events for chart rendering.
  * Uses useDebouncedValue for compiler compatibility.
  */
-function useDebouncedHistory(session: SessionData | null): BlinkRatePoint[] {
-  // Get the raw history from session
-  const rawHistory = session?.blinkRateHistory ?? [];
+function useDebouncedBlinkEvents(session: SessionData | null): BlinkEvent[] {
+  // Get the raw events from session
+  const rawEvents = session?.blinkEvents ?? [];
 
   // For inactive sessions, return immediately without debouncing
   // For active sessions, debounce to prevent chart thrashing
   const shouldDebounce = session?.isActive ?? false;
 
-  // Debounce the history for active sessions
-  const debouncedHistory = useDebouncedValue(rawHistory, CHART_UPDATE_DEBOUNCE_MS);
+  // Debounce the events for active sessions
+  const debouncedEvents = useDebouncedValue(rawEvents, CHART_UPDATE_DEBOUNCE_MS);
 
   // Return debounced for active, immediate for inactive
-  return shouldDebounce ? debouncedHistory : rawHistory;
+  return shouldDebounce ? debouncedEvents : rawEvents;
+}
+
+/**
+ * Hook to get chart data from blink events with configurable smoothing.
+ * Falls back to legacy blinkRateHistory for old sessions.
+ */
+function useChartData(
+  session: SessionData | null,
+  blinkEvents: BlinkEvent[],
+  smoothingWindow: SmoothingWindow
+): BlinkRatePoint[] {
+  return useMemo(() => {
+    if (!session) return [];
+
+    // If we have blink events, aggregate them with the selected smoothing window
+    if (blinkEvents.length > 0) {
+      return aggregateBlinkEvents(
+        blinkEvents,
+        smoothingWindow,
+        session.startTime.getTime(),
+        session.endTime ? session.endTime.getTime() : undefined
+      );
+    }
+
+    // Fall back to legacy blinkRateHistory for old sessions
+    if (session.blinkRateHistory && session.blinkRateHistory.length > 0) {
+      return session.blinkRateHistory;
+    }
+
+    return [];
+  }, [session, blinkEvents, smoothingWindow]);
 }
 
 /**
@@ -60,6 +99,9 @@ function SessionDetailContent() {
     sessionStartTime,
   } = useSession();
 
+  // Smoothing window state
+  const [smoothingWindow, setSmoothingWindow] = useState<SmoothingWindow>(DEFAULT_SMOOTHING_WINDOW);
+
   // Derive session from URL params - use useMemo instead of useState + useEffect
   const sessionId = searchParams.get("id");
   const session = useMemo(() => {
@@ -72,7 +114,8 @@ function SessionDetailContent() {
     session?.isActive ?? false,
     sessionStartTime
   );
-  const debouncedHistory = useDebouncedHistory(session);
+  const debouncedBlinkEvents = useDebouncedBlinkEvents(session);
+  const chartData = useChartData(session, debouncedBlinkEvents, smoothingWindow);
 
   // Derive live blink count and rate from source of truth (only for active sessions)
   const liveBlinkCount = session?.isActive ? currentBlinkCount - sessionBaselineBlinkCount : 0;
@@ -201,10 +244,28 @@ function SessionDetailContent() {
         </Flex>
 
         <Card size="3">
-          <Heading size="4" mb="4">Blink Rate Over Time</Heading>
+          <Flex justify="between" align="center" mb="4">
+            <Heading size="4">Blink Rate Over Time</Heading>
+            <Flex align="center" gap="2">
+              <Text size="2" color="gray">Smoothing:</Text>
+              <Select.Root
+                value={String(smoothingWindow)}
+                onValueChange={(value) => setSmoothingWindow(Number(value) as SmoothingWindow)}
+              >
+                <Select.Trigger />
+                <Select.Content>
+                  {SMOOTHING_OPTIONS.map((option) => (
+                    <Select.Item key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+            </Flex>
+          </Flex>
           <Box style={{ height: "400px" }}>
             <BlinkRateChart
-              data={debouncedHistory}
+              data={chartData}
               faceLostPeriods={session.faceLostPeriods}
               sessionEndTime={session.endTime ? new Date(session.endTime).getTime() : undefined}
             />

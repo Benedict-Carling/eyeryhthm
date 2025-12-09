@@ -8,9 +8,29 @@ export const MAX_BLINK_RATE = Math.round((60 * 1000) / (BLINK_DEBOUNCE_MS + MIN_
 // Time window for calculating blink rate - also used as minimum time before first chart reading
 export const BLINK_RATE_WINDOW_MS = 30000; // 30 seconds
 
+// Smoothing window options for chart display (in seconds)
+export const SMOOTHING_OPTIONS = [
+  { value: 10, label: '10s' },
+  { value: 30, label: '30s' },
+  { value: 60, label: '1 min' },
+  { value: 120, label: '2 min' },
+  { value: 300, label: '5 min' },
+] as const;
+
+export type SmoothingWindow = typeof SMOOTHING_OPTIONS[number]['value'];
+
+export const DEFAULT_SMOOTHING_WINDOW: SmoothingWindow = 30;
+
 export interface FaceLostPeriod {
   start: number; // timestamp in ms
   end?: number;  // timestamp in ms, undefined if face is currently lost
+}
+
+// Individual blink event - stores each blink with timestamp
+// This replaces the pre-aggregated BlinkRatePoint for more flexible analysis
+export interface BlinkEvent {
+  timestamp: number; // When the blink occurred (ms since epoch)
+  duration?: number; // Blink duration in ms (optional, for future use)
 }
 
 export interface SessionData {
@@ -19,7 +39,10 @@ export interface SessionData {
   endTime?: Date;
   isActive: boolean;
   averageBlinkRate: number;
-  blinkRateHistory: BlinkRatePoint[];
+  // Individual blink events - aggregated on-the-fly for charts
+  blinkEvents: BlinkEvent[];
+  // Legacy field for backwards compatibility with old sessions
+  blinkRateHistory?: BlinkRatePoint[];
   quality: 'good' | 'fair' | 'poor';
   fatigueAlertCount: number;
   duration?: number; // in seconds
@@ -29,9 +52,52 @@ export interface SessionData {
   isExample?: boolean; // Indicates this is a demo/example session
 }
 
+// Legacy type for backwards compatibility with old sessions
 export interface BlinkRatePoint {
   timestamp: number;
   rate: number;
+}
+
+// Aggregate blink events into rate points for chart display
+export function aggregateBlinkEvents(
+  blinkEvents: BlinkEvent[],
+  windowSeconds: SmoothingWindow,
+  sessionStartTime: number,
+  sessionEndTime?: number
+): BlinkRatePoint[] {
+  if (blinkEvents.length === 0) return [];
+
+  const windowMs = windowSeconds * 1000;
+  const endTime = sessionEndTime ?? Date.now();
+  const points: BlinkRatePoint[] = [];
+
+  // Generate a point every 5 seconds (bucket interval)
+  const bucketIntervalMs = 5000;
+
+  // Start from the first full window after session start
+  let currentTime = sessionStartTime + windowMs;
+
+  while (currentTime <= endTime) {
+    const windowStart = currentTime - windowMs;
+
+    // Count blinks within this window
+    const blinksInWindow = blinkEvents.filter(
+      (event) => event.timestamp >= windowStart && event.timestamp < currentTime
+    ).length;
+
+    // Calculate rate (blinks per minute)
+    const windowMinutes = windowSeconds / 60;
+    const rate = blinksInWindow / windowMinutes;
+
+    points.push({
+      timestamp: currentTime,
+      rate: Math.min(rate, MAX_BLINK_RATE), // Cap to prevent outliers
+    });
+
+    currentTime += bucketIntervalMs;
+  }
+
+  return points;
 }
 
 export interface SessionStats {

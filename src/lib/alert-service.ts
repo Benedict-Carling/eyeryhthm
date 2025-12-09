@@ -189,7 +189,7 @@ export class AlertService {
     }
 
     // Check 3: Get blink rate in the rolling window
-    const windowBlinkRate = this.getWindowBlinkRate(session.blinkRateHistory);
+    const windowBlinkRate = this.getWindowBlinkRate(session.blinkRateHistory ?? []);
     if (windowBlinkRate === null) {
       return false;
     }
