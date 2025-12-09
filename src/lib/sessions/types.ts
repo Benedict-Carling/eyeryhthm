@@ -8,6 +8,9 @@ export const MAX_BLINK_RATE = Math.round((60 * 1000) / (BLINK_DEBOUNCE_MS + MIN_
 // Time window for calculating blink rate - also used as minimum time before first chart reading
 export const BLINK_RATE_WINDOW_MS = 30000; // 30 seconds
 
+// Interval between chart data points when aggregating blink events
+export const CHART_BUCKET_INTERVAL_MS = 5000; // 5 seconds
+
 // Smoothing window options for chart display (in seconds)
 export const SMOOTHING_OPTIONS = [
   { value: 10, label: '10s' },
@@ -71,9 +74,6 @@ export function aggregateBlinkEvents(
   const endTime = sessionEndTime ?? Date.now();
   const points: BlinkRatePoint[] = [];
 
-  // Generate a point every 5 seconds (bucket interval)
-  const bucketIntervalMs = 5000;
-
   // Start from the first full window after session start
   let currentTime = sessionStartTime + windowMs;
 
@@ -94,10 +94,33 @@ export function aggregateBlinkEvents(
       rate: Math.min(rate, MAX_BLINK_RATE), // Cap to prevent outliers
     });
 
-    currentTime += bucketIntervalMs;
+    currentTime += CHART_BUCKET_INTERVAL_MS;
   }
 
   return points;
+}
+
+/**
+ * Get chart data from a session, handling both new (blinkEvents) and legacy (blinkRateHistory) formats.
+ */
+export function getChartDataFromSession(
+  session: SessionData,
+  smoothingWindow: SmoothingWindow = DEFAULT_SMOOTHING_WINDOW
+): BlinkRatePoint[] {
+  if (session.blinkEvents && session.blinkEvents.length > 0) {
+    return aggregateBlinkEvents(
+      session.blinkEvents,
+      smoothingWindow,
+      session.startTime.getTime(),
+      session.endTime ? session.endTime.getTime() : undefined
+    );
+  }
+
+  if (session.blinkRateHistory && session.blinkRateHistory.length > 0) {
+    return session.blinkRateHistory;
+  }
+
+  return [];
 }
 
 export interface SessionStats {

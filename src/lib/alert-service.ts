@@ -1,4 +1,4 @@
-import { SessionData, BlinkRatePoint, FaceLostPeriod } from "./sessions/types";
+import { SessionData, BlinkRatePoint, BlinkEvent, FaceLostPeriod } from "./sessions/types";
 import { getElectronAPI } from "./electron";
 
 export interface AlertServiceConfig {
@@ -18,26 +18,43 @@ export class AlertService {
   private lastAlertTime: number = 0;
 
   /**
-   * Calculate the average blink rate over the rolling window (last 3 minutes).
-   * This is more responsive to fatigue than using the full session average,
-   * which can be diluted by early healthy blink rates.
+   * Calculate blink rate from individual blink events within the rolling window.
    */
-  private getWindowBlinkRate(blinkRateHistory: BlinkRatePoint[]): number | null {
+  private getWindowBlinkRateFromEvents(blinkEvents: BlinkEvent[]): number | null {
+    if (blinkEvents.length === 0) return null;
+
+    const now = Date.now();
+    const windowStart = now - ROLLING_WINDOW_MS;
+
+    const eventsInWindow = blinkEvents.filter(event => event.timestamp >= windowStart);
+    const windowMinutes = ROLLING_WINDOW_MS / 60000;
+
+    return eventsInWindow.length / windowMinutes;
+  }
+
+  /**
+   * Calculate the average blink rate over the rolling window (last 3 minutes).
+   * First tries blinkEvents (new sessions), then falls back to blinkRateHistory (legacy).
+   */
+  private getWindowBlinkRate(blinkEvents: BlinkEvent[], blinkRateHistory: BlinkRatePoint[]): number | null {
+    // Try blinkEvents first (new sessions store individual events)
+    if (blinkEvents.length > 0) {
+      return this.getWindowBlinkRateFromEvents(blinkEvents);
+    }
+
+    // Fall back to legacy blinkRateHistory
     if (blinkRateHistory.length === 0) return null;
 
     const now = Date.now();
     const windowStart = now - ROLLING_WINDOW_MS;
 
-    // Get points within the rolling window
     const recentPoints = blinkRateHistory.filter(point => point.timestamp >= windowStart);
 
     if (recentPoints.length === 0) {
-      // If no points in window, use the most recent point
       const lastPoint = blinkRateHistory[blinkRateHistory.length - 1];
       return lastPoint ? lastPoint.rate : null;
     }
 
-    // Calculate average of recent points
     const sum = recentPoints.reduce((acc, point) => acc + point.rate, 0);
     return sum / recentPoints.length;
   }
@@ -189,7 +206,7 @@ export class AlertService {
     }
 
     // Check 3: Get blink rate in the rolling window
-    const windowBlinkRate = this.getWindowBlinkRate(session.blinkRateHistory ?? []);
+    const windowBlinkRate = this.getWindowBlinkRate(session.blinkEvents ?? [], session.blinkRateHistory ?? []);
     if (windowBlinkRate === null) {
       return false;
     }

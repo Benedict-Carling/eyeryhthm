@@ -9,8 +9,7 @@ import {
   BlinkRatePoint,
   MAX_BLINK_RATE,
   BLINK_RATE_WINDOW_MS,
-  aggregateBlinkEvents,
-  DEFAULT_SMOOTHING_WINDOW,
+  getChartDataFromSession,
 } from "../lib/sessions/types";
 import { ClockIcon } from "@radix-ui/react-icons";
 import { Bell, BellOff, Eye, TrendingDown, TrendingUp, Minus } from "lucide-react";
@@ -22,26 +21,6 @@ import "./SessionCard.css";
 
 // Debounce interval for chart updates (ms) - prevents aggressive re-rendering
 const CHART_UPDATE_DEBOUNCE_MS = 3000;
-
-// Helper to get chart data from session (handles both new blinkEvents and legacy blinkRateHistory)
-function getChartDataFromSession(session: SessionData): BlinkRatePoint[] {
-  // If we have blink events, aggregate them
-  if (session.blinkEvents && session.blinkEvents.length > 0) {
-    return aggregateBlinkEvents(
-      session.blinkEvents,
-      DEFAULT_SMOOTHING_WINDOW,
-      session.startTime.getTime(),
-      session.endTime ? session.endTime.getTime() : undefined
-    );
-  }
-
-  // Fall back to legacy blinkRateHistory for old sessions
-  if (session.blinkRateHistory && session.blinkRateHistory.length > 0) {
-    return session.blinkRateHistory;
-  }
-
-  return [];
-}
 
 interface SessionCardProps {
   session: SessionData;

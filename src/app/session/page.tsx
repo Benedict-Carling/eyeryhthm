@@ -6,13 +6,13 @@ import { Container, Flex, Box, Text, Heading, Button, Card, Select } from "@radi
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useSession } from "../../contexts/SessionContext";
 import {
-  SessionData,
   BlinkRatePoint,
   BlinkEvent,
   aggregateBlinkEvents,
   SMOOTHING_OPTIONS,
   SmoothingWindow,
   DEFAULT_SMOOTHING_WINDOW,
+  SessionData,
 } from "../../lib/sessions/types";
 import { BlinkRateChart } from "../../components/BlinkRateChart";
 import { useInterval } from "../../hooks/useInterval";
@@ -250,7 +250,12 @@ function SessionDetailContent() {
               <Text size="2" color="gray">Smoothing:</Text>
               <Select.Root
                 value={String(smoothingWindow)}
-                onValueChange={(value) => setSmoothingWindow(Number(value) as SmoothingWindow)}
+                onValueChange={(value) => {
+                  const parsed = Number(value);
+                  if (SMOOTHING_OPTIONS.some(opt => opt.value === parsed)) {
+                    setSmoothingWindow(parsed as SmoothingWindow);
+                  }
+                }}
               >
                 <Select.Trigger />
                 <Select.Content>
