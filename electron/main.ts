@@ -28,6 +28,34 @@ const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 // So we need to go up two levels to reach the out/ directory
 const outDir = path.resolve(__dirname, "../../out");
 
+// Single instance lock - ensures only one instance of the app runs at a time
+// This must be checked early, before any other initialization
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  // Another instance is already running - quit immediately
+  // The primary instance will be notified via 'second-instance' event
+  app.quit();
+} else {
+  // We are the primary instance - handle attempts to launch second instances
+  app.on('second-instance', (_event, _commandLine, _workingDirectory) => {
+    // When a second instance is launched, focus/show our existing window
+    if (mainWindow) {
+      // Restore if minimized
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      // Show if hidden (e.g., closed to tray)
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+        platform.showDock();
+      }
+      // Focus the window
+      mainWindow.focus();
+    }
+  });
+}
+
 // Camera permission status type - imported from platform abstraction
 import type { MediaAccessStatus } from "./platform";
 
