@@ -1,3 +1,13 @@
+// Blink rate constraints based on detection algorithm
+// The debounce time prevents detecting the same blink multiple times
+// The minimum cycle time accounts for the physical time needed for a blink (close + reopen)
+export const BLINK_DEBOUNCE_MS = 50; // Must match useBlinkDetection debounceTime default
+export const MIN_BLINK_CYCLE_MS = 100; // Minimum time for eye to close and reopen
+export const MAX_BLINK_RATE = Math.round((60 * 1000) / (BLINK_DEBOUNCE_MS + MIN_BLINK_CYCLE_MS)); // ~400 blinks/min
+
+// Time window for calculating blink rate - also used as minimum time before first chart reading
+export const BLINK_RATE_WINDOW_MS = 30000; // 30 seconds
+
 export interface FaceLostPeriod {
   start: number; // timestamp in ms
   end?: number;  // timestamp in ms, undefined if face is currently lost

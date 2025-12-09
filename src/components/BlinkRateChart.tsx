@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { BlinkRatePoint, FaceLostPeriod } from "../lib/sessions/types";
+import { BlinkRatePoint, FaceLostPeriod, MAX_BLINK_RATE } from "../lib/sessions/types";
 
 interface BlinkRateChartProps {
   data: BlinkRatePoint[];
@@ -35,9 +35,14 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
       .domain(d3.extent(data, (d) => new Date(d.timestamp)) as [Date, Date])
       .range([0, innerWidth]);
 
+    // Use a sensible Y-axis range: minimum 20, but expand if data exceeds it
+    // Cap at MAX_BLINK_RATE (calculated from debounce time) to prevent outliers from distorting the chart
+    const maxDataRate = d3.max(data, (d) => d.rate) || 0;
+    const yMax = Math.min(Math.max(maxDataRate, 20), MAX_BLINK_RATE);
+
     const yScale = d3
       .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.rate) || 20])
+      .domain([0, yMax])
       .nice()
       .range([innerHeight, 0]);
 
@@ -73,13 +78,13 @@ export function BlinkRateChart({ data, faceLostPeriods, sessionEndTime }: BlinkR
 
     // Add green "good" zone above 12 blinks/min
     const goodThreshold = 12;
-    const yMax = yScale.domain()[1] || 20;
-    if (yMax > goodThreshold) {
+    const yAxisMax = yScale.domain()[1] || 20;
+    if (yAxisMax > goodThreshold) {
       g.append("rect")
         .attr("x", 0)
-        .attr("y", yScale(yMax))
+        .attr("y", yScale(yAxisMax))
         .attr("width", innerWidth)
-        .attr("height", yScale(goodThreshold) - yScale(yMax))
+        .attr("height", yScale(goodThreshold) - yScale(yAxisMax))
         .attr("fill", "var(--green-3)")
         .attr("opacity", 0.5);
     }
