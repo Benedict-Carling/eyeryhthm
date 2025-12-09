@@ -9,6 +9,8 @@ import {
 } from "@radix-ui/themes";
 import { useSession } from "../contexts/SessionContext";
 import { SessionCard } from "./SessionCard";
+import { SessionFilterBar } from "./SessionFilterBar";
+import { useSessionFilters } from "@/hooks/useSessionFilters";
 import { EyeOff, UserX, Loader2 } from "lucide-react";
 
 export function SessionsView() {
@@ -19,6 +21,14 @@ export function SessionsView() {
     isInitializing,
     isFaceDetected,
   } = useSession();
+
+  const {
+    filters,
+    setFilters,
+    filteredSessions,
+    totalCount,
+    filteredCount,
+  } = useSessionFilters(sessions);
 
   return (
     <Box>
@@ -76,15 +86,32 @@ export function SessionsView() {
 
       {/* Recent Sessions */}
       <Box mt="6">
-        <Text size="3" weight="medium" mb="4">
+        <Text size="3" weight="medium" mb="2">
           Recent Screen Sessions
         </Text>
+
+        {/* Filter Bar */}
+        <SessionFilterBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          totalCount={totalCount}
+          filteredCount={filteredCount}
+        />
+
         <Flex direction="column" gap="4">
-          {sessions
-            .filter((session) => !session.isActive)
-            .map((session, index) => (
+          {filteredSessions.length > 0 ? (
+            filteredSessions.map((session, index) => (
               <SessionCard key={session.id} session={session} index={index} />
-            ))}
+            ))
+          ) : (
+            <Box py="6">
+              <Text size="2" color="gray" align="center">
+                {totalCount === 0
+                  ? "No sessions recorded yet. Start tracking to record your first session."
+                  : "No sessions match the current filters."}
+              </Text>
+            </Box>
+          )}
         </Flex>
       </Box>
 
