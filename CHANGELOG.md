@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.12.2...v1.13.0) (2025-12-09)
+
+
+### Features
+
+* **electron:** add single instance lock to prevent duplicate app launches ([d3eb091](https://github.com/Benedict-Carling/eyeryhthm/commit/d3eb09137b0d00bf01661a398a25f7bfc8ad69f5))
+
+
+### Bug Fixes
+
+* **macos:** show hidden window when app is activated via Spotlight or dock ([0f52ad6](https://github.com/Benedict-Carling/eyeryhthm/commit/0f52ad605d087a7161f33e7cc63b6982596d99fd))
+
 ## [1.12.2](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.12.1...v1.12.2) (2025-12-08)
 
 
