@@ -24,6 +24,9 @@ vi.mock('../contexts/SessionContext', () => ({
     toggleTracking: vi.fn(),
     videoRef: { current: null },
     canvasRef: { current: null },
+    currentBlinkCount: 0,
+    sessionBaselineBlinkCount: 0,
+    sessionStartTime: Date.now(),
   }),
 }));
 
@@ -195,16 +198,17 @@ describe('SessionCard', () => {
     expect(svg).toHaveAttribute('height', '60');
   });
 
-  it('shows "Collecting data..." for active sessions without data', () => {
-    const activeSessionNoData = { 
-      ...mockSession, 
-      isActive: true, 
-      blinkRateHistory: [] 
+  it('shows countdown for active sessions without data', () => {
+    const activeSessionNoData = {
+      ...mockSession,
+      isActive: true,
+      blinkRateHistory: []
     };
     render(<SessionCard session={activeSessionNoData} />);
-    
-    const collectingText = screen.getByText('Collecting data...');
-    expect(collectingText).toBeInTheDocument();
+
+    // Should show countdown like "First reading in 30s"
+    const countdownText = screen.getByText(/First reading in \d+s/);
+    expect(countdownText).toBeInTheDocument();
   });
 
   it('shows "No data" for inactive sessions without data', () => {

@@ -13,6 +13,7 @@ import {
   SessionData,
   BlinkRatePoint,
   getSessionQuality,
+  MAX_BLINK_RATE,
 } from "../lib/sessions/types";
 import { SessionStorageService } from "../lib/sessions/session-storage-service";
 import { useCamera } from "../hooks/useCamera";
@@ -48,6 +49,8 @@ const FPS_LOG_INTERVAL_MS = 5000; // Log FPS every 5 seconds
 const FACE_DETECTION_LOST_TIMEOUT_MS = 60000; // Stop session if face lost for 60 seconds
 const CAMERA_STABILIZATION_DELAY_MS = 200; // Wait for stable camera feed before processing
 const BLINK_RATE_UPDATE_INTERVAL_MS = 5000; // Update blink rate every 5 seconds
+const WINDOWED_RATE_DURATION_MS = 30000; // 30-second window for calculating current blink rate
+const MIN_SESSION_TIME_FOR_RATE_MS = WINDOWED_RATE_DURATION_MS; // Wait for full window before first reading
 
 // Mock data generator for demo purposes
 const generateMockSessions = (): SessionData[] => {
@@ -125,6 +128,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const lastSentStateRef = useRef<boolean | null>(null);
   // Keep activeSession in ref to avoid stale closures in AlertService monitoring
   const activeSessionRef = useRef<SessionData | null>(null);
+  // History of blink count snapshots for windowed rate calculation
+  // Each entry is { timestamp, blinkCount } - we keep entries within the window duration
+  const blinkSnapshotsRef = useRef<Array<{ timestamp: number; blinkCount: number }>>([]);
 
   const { activeCalibration } = useCalibration();
 
@@ -400,14 +406,51 @@ export function SessionProvider({ children }: SessionProviderProps) {
     // Update session data (including chart history) periodically
     // Live blink count/rate are derived by consumers from source of truth values
     if (activeSession && Date.now() - lastBlinkUpdateRef.current > BLINK_RATE_UPDATE_INTERVAL_MS) {
-      const timeElapsed =
-        (Date.now() - sessionStartTimeRef.current) / 1000 / 60; // in minutes
+      const now = Date.now();
+      const timeElapsedMs = now - sessionStartTimeRef.current;
       const blinksSinceStart = blinkCountStateRef.current - blinkCountRef.current;
-      const currentBlinkRate =
-        timeElapsed > 0 ? blinksSinceStart / timeElapsed : 0;
 
-      updateActiveSessionBlinkRate(currentBlinkRate, blinksSinceStart);
-      lastBlinkUpdateRef.current = Date.now();
+      // Add current snapshot to history
+      blinkSnapshotsRef.current.push({
+        timestamp: now,
+        blinkCount: blinksSinceStart,
+      });
+
+      // Remove snapshots older than the window duration
+      const windowStart = now - WINDOWED_RATE_DURATION_MS;
+      blinkSnapshotsRef.current = blinkSnapshotsRef.current.filter(
+        (snapshot) => snapshot.timestamp >= windowStart
+      );
+
+      // Only record blink rate after minimum time has passed (prevents early spikes)
+      // This ensures we have enough data for a meaningful rate
+      if (timeElapsedMs >= MIN_SESSION_TIME_FOR_RATE_MS) {
+        let windowedRate: number;
+
+        const snapshots = blinkSnapshotsRef.current;
+        const oldestSnapshot = snapshots[0];
+        const newestSnapshot = snapshots[snapshots.length - 1];
+
+        if (snapshots.length >= 2 && oldestSnapshot && newestSnapshot) {
+          // Calculate windowed rate: blinks in the window / window duration
+          const blinksInWindow = newestSnapshot.blinkCount - oldestSnapshot.blinkCount;
+          const windowDurationMs = newestSnapshot.timestamp - oldestSnapshot.timestamp;
+          const windowDurationMinutes = windowDurationMs / 1000 / 60;
+
+          windowedRate = windowDurationMinutes > 0 ? blinksInWindow / windowDurationMinutes : 0;
+        } else {
+          // Not enough data points yet, use cumulative rate as fallback
+          const timeElapsedMinutes = timeElapsedMs / 1000 / 60;
+          windowedRate = timeElapsedMinutes > 0 ? blinksSinceStart / timeElapsedMinutes : 0;
+        }
+
+        // Cap the rate to prevent outliers from distorting the chart
+        const cappedRate = Math.min(windowedRate, MAX_BLINK_RATE);
+
+        updateActiveSessionBlinkRate(cappedRate, blinksSinceStart);
+      }
+
+      lastBlinkUpdateRef.current = now;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEAR, isFaceDetected, updateActiveSessionBlinkRate]); // activeSession read from ref; blinkCount read from ref
@@ -587,6 +630,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     blinkCountRef.current = blinkCount;
     sessionStartTimeRef.current = Date.now();
     currentFaceLostPeriodStartRef.current = null; // Reset idle period tracking
+    blinkSnapshotsRef.current = []; // Reset blink snapshots for windowed rate calculation
     // Set baseline values for consumers to derive live counts
     setSessionBaselineBlinkCount(blinkCount);
     setSessionStartTime(Date.now());

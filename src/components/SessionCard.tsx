@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Card, Flex, Text, Badge } from "@radix-ui/themes";
 import * as d3 from "d3";
-import { SessionData, formatSessionDuration, BlinkRatePoint } from "../lib/sessions/types";
+import { SessionData, formatSessionDuration, BlinkRatePoint, MAX_BLINK_RATE, BLINK_RATE_WINDOW_MS } from "../lib/sessions/types";
 import { ClockIcon } from "@radix-ui/react-icons";
 import { Bell, BellOff, Eye, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { useCalibration } from "../contexts/CalibrationContext";
@@ -239,22 +239,27 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
       .domain([0, debouncedHistory.length - 1])
       .range([0, width]);
 
+    // Use a sensible Y-axis range: minimum 20, but expand if data exceeds it
+    // Cap at MAX_BLINK_RATE (calculated from debounce time) to prevent outliers from distorting the chart
+    const maxDataRate = d3.max(debouncedHistory, (d) => d.rate) || 0;
+    const yMax = Math.min(Math.max(maxDataRate, 20), MAX_BLINK_RATE);
+
     const yScale = d3
       .scaleLinear()
-      .domain([0, d3.max(debouncedHistory, (d) => d.rate) || 20])
+      .domain([0, yMax])
       .range([height, 0]);
 
     // Line generator
     const line = d3
       .line<{ rate: number }>()
-      .x((d, i) => xScale(i))
+      .x((_, i) => xScale(i))
       .y((d) => yScale(d.rate))
       .curve(d3.curveMonotoneX);
 
     // Area generator
     const area = d3
       .area<{ rate: number }>()
-      .x((d, i) => xScale(i))
+      .x((_, i) => xScale(i))
       .y0(height)
       .y1((d) => yScale(d.rate))
       .curve(d3.curveMonotoneX);
@@ -477,8 +482,13 @@ export function SessionCard({ session, index = 0 }: SessionCardProps) {
               />
             ) : (
               <Flex align="center" justify="center" style={{ height: "100%" }}>
-                <Text size="2">
-                  {session.isActive ? "Collecting data..." : "No data"}
+                <Text size="2" color="gray">
+                  {session.isActive ? (() => {
+                    const elapsedMs = currentTime - sessionStartTime;
+                    const remainingMs = BLINK_RATE_WINDOW_MS - elapsedMs;
+                    const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+                    return `First reading in ${remainingSeconds}s`;
+                  })() : "No data"}
                 </Text>
               </Flex>
             )}
