@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Flex, Text, Button, Popover, Box, Select } from "@radix-ui/themes";
+import { Flex, Text, Button, Popover, Box, DropdownMenu, Badge } from "@radix-ui/themes";
 import {
   Cross2Icon,
   MixerHorizontalIcon,
@@ -9,6 +9,7 @@ import {
   CalendarIcon,
   ExclamationTriangleIcon,
   EyeNoneIcon,
+  ChevronDownIcon,
 } from "@radix-ui/react-icons";
 import { DayPicker, DateRange } from "react-day-picker";
 import "react-day-picker/style.css";
@@ -50,24 +51,24 @@ export function SessionFilterBar({
     onFiltersChange(DEFAULT_FILTERS);
   };
 
-  const updateDuration = (value: string) => {
+  const updateDuration = (value: number | null) => {
     onFiltersChange({
       ...filters,
-      minDuration: value === "null" ? null : parseInt(value, 10),
+      minDuration: value,
     });
   };
 
-  const updateFatigueAlerts = (value: string) => {
+  const updateFatigueAlerts = (value: number | null) => {
     onFiltersChange({
       ...filters,
-      minFatigueAlerts: value === "null" ? null : parseInt(value, 10),
+      minFatigueAlerts: value,
     });
   };
 
-  const updateFaceLost = (value: string) => {
+  const updateFaceLost = (value: boolean | null) => {
     onFiltersChange({
       ...filters,
-      hadFaceLost: value === "null" ? null : value === "true",
+      hadFaceLost: value,
     });
   };
 
@@ -109,6 +110,10 @@ export function SessionFilterBar({
     return `Until ${filters.dateRange.end?.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
   };
 
+  const isDurationActive = filters.minDuration !== DEFAULT_FILTERS.minDuration;
+  const isAlertsActive = filters.minFatigueAlerts !== null;
+  const isInterruptionsActive = filters.hadFaceLost !== null;
+
   return (
     <Box className={styles.filterBar}>
       <Flex align="center" gap="2" wrap="wrap">
@@ -118,40 +123,45 @@ export function SessionFilterBar({
         </Flex>
 
         {/* Duration Filter */}
-        <Select.Root
-          value={filters.minDuration === null ? "null" : filters.minDuration.toString()}
-          onValueChange={updateDuration}
-        >
-          <Select.Trigger className={styles.filterPill} data-active={filters.minDuration !== DEFAULT_FILTERS.minDuration}>
-            <Flex align="center" gap="1">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <Badge
+              size="2"
+              variant="soft"
+              color={isDurationActive ? "indigo" : "gray"}
+              className={styles.filterBadge}
+            >
               <ClockIcon />
-              <span>{formatDurationFilter(filters.minDuration)}</span>
-            </Flex>
-          </Select.Trigger>
-          <Select.Content>
+              {formatDurationFilter(filters.minDuration)}
+              <ChevronDownIcon />
+            </Badge>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
             {DURATION_OPTIONS.map((option) => (
-              <Select.Item
+              <DropdownMenu.Item
                 key={option.value === null ? "null" : option.value}
-                value={option.value === null ? "null" : option.value.toString()}
+                onSelect={() => updateDuration(option.value)}
               >
                 {option.label}
-              </Select.Item>
+                {filters.minDuration === option.value && " *"}
+              </DropdownMenu.Item>
             ))}
-          </Select.Content>
-        </Select.Root>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
 
         {/* Date Range Filter */}
         <Popover.Root open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
           <Popover.Trigger>
-            <Button
+            <Badge
+              size="2"
               variant="soft"
-              size="1"
-              className={styles.filterPill}
-              data-active={hasDateFilter}
+              color={hasDateFilter ? "indigo" : "gray"}
+              className={styles.filterBadge}
             >
               <CalendarIcon />
               {formatDateRange()}
-            </Button>
+              <ChevronDownIcon />
+            </Badge>
           </Popover.Trigger>
           <Popover.Content className={styles.datePopover}>
             <Flex direction="column" gap="3">
@@ -184,62 +194,66 @@ export function SessionFilterBar({
         </Popover.Root>
 
         {/* Fatigue Alerts Filter */}
-        <Select.Root
-          value={filters.minFatigueAlerts === null ? "null" : filters.minFatigueAlerts.toString()}
-          onValueChange={updateFatigueAlerts}
-        >
-          <Select.Trigger className={styles.filterPill} data-active={filters.minFatigueAlerts !== null}>
-            <Flex align="center" gap="1">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <Badge
+              size="2"
+              variant="soft"
+              color={isAlertsActive ? "indigo" : "gray"}
+              className={styles.filterBadge}
+            >
               <ExclamationTriangleIcon />
-              <span>
-                {filters.minFatigueAlerts === null
-                  ? "Alerts"
-                  : filters.minFatigueAlerts === 0
-                    ? "No alerts"
-                    : `${filters.minFatigueAlerts}+ alerts`}
-              </span>
-            </Flex>
-          </Select.Trigger>
-          <Select.Content>
+              {filters.minFatigueAlerts === null
+                ? "Alerts"
+                : filters.minFatigueAlerts === 0
+                  ? "No alerts"
+                  : `${filters.minFatigueAlerts}+ alerts`}
+              <ChevronDownIcon />
+            </Badge>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
             {FATIGUE_ALERT_OPTIONS.map((option) => (
-              <Select.Item
+              <DropdownMenu.Item
                 key={option.value === null ? "null" : option.value}
-                value={option.value === null ? "null" : option.value.toString()}
+                onSelect={() => updateFatigueAlerts(option.value)}
               >
                 {option.label}
-              </Select.Item>
+                {filters.minFatigueAlerts === option.value && " *"}
+              </DropdownMenu.Item>
             ))}
-          </Select.Content>
-        </Select.Root>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
 
         {/* Face Lost Filter */}
-        <Select.Root
-          value={filters.hadFaceLost === null ? "null" : filters.hadFaceLost.toString()}
-          onValueChange={updateFaceLost}
-        >
-          <Select.Trigger className={styles.filterPill} data-active={filters.hadFaceLost !== null}>
-            <Flex align="center" gap="1">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <Badge
+              size="2"
+              variant="soft"
+              color={isInterruptionsActive ? "indigo" : "gray"}
+              className={styles.filterBadge}
+            >
               <EyeNoneIcon />
-              <span>
-                {filters.hadFaceLost === null
-                  ? "Interruptions"
-                  : filters.hadFaceLost
-                    ? "Had interruptions"
-                    : "No interruptions"}
-              </span>
-            </Flex>
-          </Select.Trigger>
-          <Select.Content>
+              {filters.hadFaceLost === null
+                ? "Interruptions"
+                : filters.hadFaceLost
+                  ? "Had interruptions"
+                  : "No interruptions"}
+              <ChevronDownIcon />
+            </Badge>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
             {FACE_LOST_OPTIONS.map((option) => (
-              <Select.Item
-                key={option.value === null ? "null" : option.value.toString()}
-                value={option.value === null ? "null" : option.value.toString()}
+              <DropdownMenu.Item
+                key={option.value === null ? "null" : String(option.value)}
+                onSelect={() => updateFaceLost(option.value)}
               >
                 {option.label}
-              </Select.Item>
+                {filters.hadFaceLost === option.value && " *"}
+              </DropdownMenu.Item>
             ))}
-          </Select.Content>
-        </Select.Root>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
 
         {/* Clear All */}
         {hasActiveFilters && (
@@ -248,7 +262,6 @@ export function SessionFilterBar({
             size="1"
             color="gray"
             onClick={clearAllFilters}
-            className={styles.clearButton}
           >
             <Cross2Icon />
             Clear all
