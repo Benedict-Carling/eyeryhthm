@@ -26,7 +26,6 @@ import {
   ClockIcon,
   CheckCircledIcon,
   CrossCircledIcon,
-  CameraIcon,
   ExclamationTriangleIcon,
   GearIcon,
 } from "@radix-ui/react-icons";
@@ -48,7 +47,6 @@ export default function SettingsPage() {
     isElectron,
     updateStatus,
     hasUpdate,
-    downloadUpdate,
     installUpdate,
   } = useUpdateStatus();
 
@@ -65,7 +63,6 @@ export default function SettingsPage() {
   const {
     supportsNativePermission,
     isLoading: isCameraLoading,
-    status: cameraStatus,
     needsAttention: cameraNeedsAttention,
     openCameraSettings,
   } = useCameraPermission();
@@ -148,7 +145,7 @@ export default function SettingsPage() {
 
     if (updateStatus?.status === "downloading" && updateStatus.progress) {
       return (
-        <Callout.Root color="blue">
+        <Callout.Root color="blue" mb="3">
           <Callout.Icon>
             <DownloadIcon />
           </Callout.Icon>
@@ -167,19 +164,15 @@ export default function SettingsPage() {
 
     if (updateStatus?.status === "available") {
       return (
-        <Callout.Root color="orange">
+        <Callout.Root color="orange" mb="3">
           <Callout.Icon>
             <UpdateIcon />
           </Callout.Icon>
           <Callout.Text>
             <Flex justify="between" align="center" style={{ width: "100%" }}>
               <Text>
-                Update v{updateStatus.info?.version} is available.
+                Update v{updateStatus.info?.version} is available. Downloading automatically...
               </Text>
-              <Button size="1" variant="soft" onClick={downloadUpdate}>
-                <DownloadIcon />
-                Download
-              </Button>
             </Flex>
           </Callout.Text>
         </Callout.Root>
@@ -188,7 +181,7 @@ export default function SettingsPage() {
 
     if (updateStatus?.status === "downloaded") {
       return (
-        <Callout.Root color="green">
+        <Callout.Root color="green" mb="3">
           <Callout.Icon>
             <RocketIcon />
           </Callout.Icon>
@@ -223,7 +216,6 @@ export default function SettingsPage() {
         </Box>
 
         {renderCameraPermissionCallout()}
-        {renderUpdateCallout()}
 
         <Flex direction="column" gap="4">
           <Box>
@@ -465,6 +457,7 @@ export default function SettingsPage() {
             <Heading size="5" mb="4">
               About
             </Heading>
+            {renderUpdateCallout()}
             <VersionInfo />
           </Box>
         </Flex>
