@@ -66,6 +66,7 @@ const generateMockSessions = (): SessionData[] => {
       duration: 5400, // 1h 30m
       totalBlinks: 630, // ~90 minutes * 7 blinks/min
       isExample: true,
+      calibrationId: "default", // Factory Default calibration
     },
     {
       id: "session-2",
@@ -79,6 +80,7 @@ const generateMockSessions = (): SessionData[] => {
       duration: 5400, // 1h 30m
       totalBlinks: 990, // ~90 minutes * 11 blinks/min
       isExample: true,
+      calibrationId: "default", // Factory Default calibration
     },
   ];
 };
