@@ -28,6 +28,7 @@ export function SessionsView() {
     filteredSessions,
     totalCount,
     filteredCount,
+    earliestSessionDate,
   } = useSessionFilters(sessions);
 
   return (
@@ -96,6 +97,7 @@ export function SessionsView() {
           onFiltersChange={setFilters}
           totalCount={totalCount}
           filteredCount={filteredCount}
+          earliestSessionDate={earliestSessionDate}
         />
 
         <Flex direction="column" gap="4">

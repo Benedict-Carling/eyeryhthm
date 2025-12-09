@@ -66,6 +66,20 @@ export function useSessionFilters(sessions: SessionData[]) {
     [sessions]
   );
 
+  const earliestSessionDate = useMemo(() => {
+    const nonActiveSessions = sessions.filter((s) => !s.isActive);
+    if (nonActiveSessions.length === 0) return undefined;
+
+    const earliest = nonActiveSessions.reduce((min, session) => {
+      return session.startTime < min ? session.startTime : min;
+    }, nonActiveSessions[0]!.startTime);
+
+    // Return start of day for the earliest session
+    const startOfDay = new Date(earliest);
+    startOfDay.setHours(0, 0, 0, 0);
+    return startOfDay;
+  }, [sessions]);
+
   const resetFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
   }, [setFilters]);
@@ -77,5 +91,6 @@ export function useSessionFilters(sessions: SessionData[]) {
     filteredSessions,
     totalCount,
     filteredCount: filteredSessions.length,
+    earliestSessionDate,
   };
 }

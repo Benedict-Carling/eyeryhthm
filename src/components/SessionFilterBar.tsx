@@ -27,6 +27,7 @@ interface SessionFilterBarProps {
   onFiltersChange: (filters: SessionFilters) => void;
   totalCount: number;
   filteredCount: number;
+  earliestSessionDate?: Date;
 }
 
 export function SessionFilterBar({
@@ -34,6 +35,7 @@ export function SessionFilterBar({
   onFiltersChange,
   totalCount,
   filteredCount,
+  earliestSessionDate,
 }: SessionFilterBarProps) {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
@@ -160,7 +162,10 @@ export function SessionFilterBar({
                   selected={selectedRange}
                   onSelect={handleDateRangeSelect}
                   numberOfMonths={1}
-                  disabled={{ after: new Date() }}
+                  disabled={{
+                    before: earliestSessionDate,
+                    after: new Date(),
+                  }}
                   defaultMonth={filters.dateRange.end ?? filters.dateRange.start ?? new Date()}
                 />
               </Box>
