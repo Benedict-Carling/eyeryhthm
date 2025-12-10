@@ -4,6 +4,8 @@ const ALLOWED_ORIGINS = [
   'https://docs.eyerhythm.app',
   'https://eyerhythm.app',
   'https://www.eyerhythm.app',
+  'https://eyerhythm.com',
+  'https://www.eyerhythm.com',
   'http://localhost:3000',
   'http://localhost:3001',
 ];
