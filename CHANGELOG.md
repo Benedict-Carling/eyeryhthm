@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.15.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.14.0...v1.15.0) (2025-12-10)
+
+
+### Features
+
+* **sessions:** store individual blink events instead of pre-aggregated rates ([2a598a8](https://github.com/Benedict-Carling/eyeryhthm/commit/2a598a8d19faebf8f9f419ca9ab5dda3addf39df))
+
+
+### Bug Fixes
+
+* address PR review issues for blink events feature ([1f355c1](https://github.com/Benedict-Carling/eyeryhthm/commit/1f355c17fdb61e10b3ce215c33bc5c35252f6b43))
+* **api:** add eyerhythm.com to CORS allowed origins ([27fba58](https://github.com/Benedict-Carling/eyeryhthm/commit/27fba58081f303761659c998540b4e8ded2dc95d))
+* **docs:** correct vercel URL typo in email signup ([fa158ef](https://github.com/Benedict-Carling/eyeryhthm/commit/fa158ef8a114f8b9cda8b3b93c7ad264425ccafe))
+* **docs:** update email signup endpoint to vercel backend ([e5c34b9](https://github.com/Benedict-Carling/eyeryhthm/commit/e5c34b947525d493c5d4ade09a8b02691a5fc3f4))
+* **docs:** update email signup success message ([53a19f2](https://github.com/Benedict-Carling/eyeryhthm/commit/53a19f211e552ff0cd5b61dd81b39f73e39108d6))
+* **sessions:** delete legacy sessions without blinkEvents on read ([#85](https://github.com/Benedict-Carling/eyeryhthm/issues/85)) ([d3304b9](https://github.com/Benedict-Carling/eyeryhthm/commit/d3304b92ed8b370640014133563b32069f9a457b))
+
 ## [1.14.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.13.0...v1.14.0) (2025-12-09)
 
 
