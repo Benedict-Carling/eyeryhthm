@@ -1,4 +1,4 @@
-import { SessionData, BlinkRatePoint, BlinkEvent, FaceLostPeriod } from "./sessions/types";
+import { SessionData, BlinkEvent, FaceLostPeriod } from "./sessions/types";
 import { getElectronAPI } from "./electron";
 
 export interface AlertServiceConfig {
@@ -34,29 +34,9 @@ export class AlertService {
 
   /**
    * Calculate the average blink rate over the rolling window (last 3 minutes).
-   * First tries blinkEvents (new sessions), then falls back to blinkRateHistory (legacy).
    */
-  private getWindowBlinkRate(blinkEvents: BlinkEvent[], blinkRateHistory: BlinkRatePoint[]): number | null {
-    // Try blinkEvents first (new sessions store individual events)
-    if (blinkEvents.length > 0) {
-      return this.getWindowBlinkRateFromEvents(blinkEvents);
-    }
-
-    // Fall back to legacy blinkRateHistory
-    if (blinkRateHistory.length === 0) return null;
-
-    const now = Date.now();
-    const windowStart = now - ROLLING_WINDOW_MS;
-
-    const recentPoints = blinkRateHistory.filter(point => point.timestamp >= windowStart);
-
-    if (recentPoints.length === 0) {
-      const lastPoint = blinkRateHistory[blinkRateHistory.length - 1];
-      return lastPoint ? lastPoint.rate : null;
-    }
-
-    const sum = recentPoints.reduce((acc, point) => acc + point.rate, 0);
-    return sum / recentPoints.length;
+  private getWindowBlinkRate(blinkEvents: BlinkEvent[]): number | null {
+    return this.getWindowBlinkRateFromEvents(blinkEvents);
   }
 
   /**
@@ -206,7 +186,7 @@ export class AlertService {
     }
 
     // Check 3: Get blink rate in the rolling window
-    const windowBlinkRate = this.getWindowBlinkRate(session.blinkEvents ?? [], session.blinkRateHistory ?? []);
+    const windowBlinkRate = this.getWindowBlinkRate(session.blinkEvents);
     if (windowBlinkRate === null) {
       return false;
     }

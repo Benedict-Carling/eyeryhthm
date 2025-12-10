@@ -27,8 +27,7 @@ const createMockSession = (overrides: Partial<SessionData> = {}): SessionData =>
   endTime: new Date(),
   isActive: false,
   averageBlinkRate: 12,
-  blinkEvents: [], // Individual blink events
-  blinkRateHistory: [],
+  blinkEvents: [{ timestamp: Date.now() }],
   quality: 'good',
   fatigueAlertCount: 0,
   duration: 120, // 2 minutes - above minimum
@@ -178,6 +177,86 @@ describe('SessionStorageService', () => {
 
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('eyerhythm_sessions');
       expect(SessionStorageService.getAllSessions()).toEqual([]);
+    });
+  });
+
+  describe('legacy session filtering', () => {
+    it('filters out sessions without blinkEvents', () => {
+      // Manually set legacy sessions in storage (no blinkEvents)
+      const legacySession = {
+        id: 'legacy-session',
+        startTime: new Date().toISOString(),
+        endTime: new Date().toISOString(),
+        isActive: false,
+        averageBlinkRate: 12,
+        // No blinkEvents field
+        quality: 'good',
+        fatigueAlertCount: 0,
+        duration: 120,
+        totalBlinks: 24,
+      };
+      localStorageMock.setItem('eyerhythm_sessions', JSON.stringify([legacySession]));
+
+      const sessions = SessionStorageService.getAllSessions();
+
+      expect(sessions).toHaveLength(0);
+    });
+
+    it('returns sessions with blinkEvents', () => {
+      const newSession = {
+        id: 'new-session',
+        startTime: new Date().toISOString(),
+        endTime: new Date().toISOString(),
+        isActive: false,
+        averageBlinkRate: 12,
+        blinkEvents: [{ timestamp: Date.now() }],
+        quality: 'good',
+        fatigueAlertCount: 0,
+        duration: 120,
+        totalBlinks: 24,
+      };
+      localStorageMock.setItem('eyerhythm_sessions', JSON.stringify([newSession]));
+
+      const sessions = SessionStorageService.getAllSessions();
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]?.id).toBe('new-session');
+    });
+
+    it('filters out only legacy sessions when mixed with new sessions', () => {
+      const legacySession = {
+        id: 'legacy-session',
+        startTime: new Date().toISOString(),
+        endTime: new Date().toISOString(),
+        isActive: false,
+        averageBlinkRate: 12,
+        // No blinkEvents field - legacy format
+        quality: 'good',
+        fatigueAlertCount: 0,
+        duration: 120,
+        totalBlinks: 24,
+      };
+      const newSession = {
+        id: 'new-session',
+        startTime: new Date().toISOString(),
+        endTime: new Date().toISOString(),
+        isActive: false,
+        averageBlinkRate: 12,
+        blinkEvents: [{ timestamp: Date.now() }],
+        quality: 'good',
+        fatigueAlertCount: 0,
+        duration: 120,
+        totalBlinks: 24,
+      };
+      localStorageMock.setItem(
+        'eyerhythm_sessions',
+        JSON.stringify([legacySession, newSession])
+      );
+
+      const sessions = SessionStorageService.getAllSessions();
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]?.id).toBe('new-session');
     });
   });
 });

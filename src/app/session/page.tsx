@@ -42,7 +42,6 @@ function useDebouncedBlinkEvents(session: SessionData | null): BlinkEvent[] {
 
 /**
  * Hook to get chart data from blink events with configurable smoothing.
- * Falls back to legacy blinkRateHistory for old sessions.
  */
 function useChartData(
   session: SessionData | null,
@@ -50,24 +49,14 @@ function useChartData(
   smoothingWindow: SmoothingWindow
 ): BlinkRatePoint[] {
   return useMemo(() => {
-    if (!session) return [];
+    if (!session || blinkEvents.length === 0) return [];
 
-    // If we have blink events, aggregate them with the selected smoothing window
-    if (blinkEvents.length > 0) {
-      return aggregateBlinkEvents(
-        blinkEvents,
-        smoothingWindow,
-        session.startTime.getTime(),
-        session.endTime ? session.endTime.getTime() : undefined
-      );
-    }
-
-    // Fall back to legacy blinkRateHistory for old sessions
-    if (session.blinkRateHistory && session.blinkRateHistory.length > 0) {
-      return session.blinkRateHistory;
-    }
-
-    return [];
+    return aggregateBlinkEvents(
+      blinkEvents,
+      smoothingWindow,
+      session.startTime.getTime(),
+      session.endTime ? session.endTime.getTime() : undefined
+    );
   }, [session, blinkEvents, smoothingWindow]);
 }
 

@@ -1,4 +1,4 @@
-import { SessionData, BlinkRatePoint, BlinkEvent } from './types';
+import { SessionData, BlinkEvent } from './types';
 
 const SESSIONS_STORAGE_KEY = 'eyerhythm_sessions';
 const MAX_SESSIONS = 100;
@@ -10,10 +10,7 @@ interface StoredSession {
   endTime?: string;
   isActive: boolean;
   averageBlinkRate: number;
-  // New: individual blink events
   blinkEvents?: BlinkEvent[];
-  // Legacy: pre-aggregated rate history (for backwards compatibility)
-  blinkRateHistory?: BlinkRatePoint[];
   quality: 'good' | 'fair' | 'poor';
   fatigueAlertCount: number;
   duration?: number;
@@ -32,14 +29,22 @@ export class SessionStorageService {
       if (!stored) return [];
 
       const parsed: StoredSession[] = JSON.parse(stored);
-      return parsed.map((session) => ({
+
+      // Filter out legacy sessions without blinkEvents
+      const validSessions = parsed.filter(
+        (s) => s.blinkEvents && s.blinkEvents.length > 0
+      );
+
+      // Delete legacy sessions from storage if any were filtered out
+      if (validSessions.length < parsed.length) {
+        localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(validSessions));
+      }
+
+      return validSessions.map((session) => ({
         ...session,
         startTime: new Date(session.startTime),
         endTime: session.endTime ? new Date(session.endTime) : undefined,
-        // Ensure blinkEvents exists (empty array for legacy sessions)
         blinkEvents: session.blinkEvents ?? [],
-        // Keep blinkRateHistory for backwards compatibility
-        blinkRateHistory: session.blinkRateHistory,
       }));
     } catch (error) {
       console.error('Error loading sessions:', error);
@@ -117,8 +122,10 @@ export class SessionStorageService {
       if (!stored) return false;
 
       const parsed: StoredSession[] = JSON.parse(stored);
-      // Only count non-example sessions
-      return parsed.some((s) => !s.isExample);
+      // Only count non-example sessions with blinkEvents
+      return parsed.some(
+        (s) => !s.isExample && s.blinkEvents && s.blinkEvents.length > 0
+      );
     } catch {
       return false;
     }
@@ -147,9 +154,7 @@ export class SessionStorageService {
       ...session,
       startTime: session.startTime.toISOString(),
       endTime: session.endTime?.toISOString(),
-      // Store both blinkEvents and legacy blinkRateHistory
       blinkEvents: session.blinkEvents,
-      blinkRateHistory: session.blinkRateHistory,
     }));
 
     localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(toStore));
