@@ -44,8 +44,6 @@ export interface SessionData {
   averageBlinkRate: number;
   // Individual blink events - aggregated on-the-fly for charts
   blinkEvents: BlinkEvent[];
-  // Legacy field for backwards compatibility with old sessions
-  blinkRateHistory?: BlinkRatePoint[];
   quality: 'good' | 'fair' | 'poor';
   fatigueAlertCount: number;
   duration?: number; // in seconds
@@ -55,7 +53,7 @@ export interface SessionData {
   isExample?: boolean; // Indicates this is a demo/example session
 }
 
-// Legacy type for backwards compatibility with old sessions
+// Used for chart display after aggregating BlinkEvents
 export interface BlinkRatePoint {
   timestamp: number;
   rate: number;
@@ -101,26 +99,22 @@ export function aggregateBlinkEvents(
 }
 
 /**
- * Get chart data from a session, handling both new (blinkEvents) and legacy (blinkRateHistory) formats.
+ * Get chart data from a session by aggregating blinkEvents.
  */
 export function getChartDataFromSession(
   session: SessionData,
   smoothingWindow: SmoothingWindow = DEFAULT_SMOOTHING_WINDOW
 ): BlinkRatePoint[] {
-  if (session.blinkEvents && session.blinkEvents.length > 0) {
-    return aggregateBlinkEvents(
-      session.blinkEvents,
-      smoothingWindow,
-      session.startTime.getTime(),
-      session.endTime ? session.endTime.getTime() : undefined
-    );
+  if (session.blinkEvents.length === 0) {
+    return [];
   }
 
-  if (session.blinkRateHistory && session.blinkRateHistory.length > 0) {
-    return session.blinkRateHistory;
-  }
-
-  return [];
+  return aggregateBlinkEvents(
+    session.blinkEvents,
+    smoothingWindow,
+    session.startTime.getTime(),
+    session.endTime ? session.endTime.getTime() : undefined
+  );
 }
 
 export interface SessionStats {

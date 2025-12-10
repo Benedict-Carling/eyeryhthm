@@ -68,16 +68,18 @@ describe('AlertService', () => {
     alertService.stopMonitoring();
   });
 
-  // Helper to create blink rate history within the 3-minute rolling window
-  const createBlinkRateHistory = (rate: number, now: number = Date.now()) => {
-    // Create points spanning the last 3 minutes (rolling window duration)
-    return [
-      { timestamp: now - 150000, rate }, // 2.5 min ago
-      { timestamp: now - 120000, rate }, // 2 min ago
-      { timestamp: now - 60000, rate },  // 1 min ago
-      { timestamp: now - 30000, rate },  // 30 sec ago
-      { timestamp: now - 5000, rate },   // 5 sec ago
-    ];
+  // Helper to create blink events within the 3-minute rolling window
+  // Rate is blinks per minute, so for a 3-minute window we need rate * 3 events
+  const createBlinkEvents = (rate: number, now: number = Date.now()) => {
+    const events = [];
+    const windowMs = 3 * 60 * 1000; // 3 minutes
+    const totalBlinks = Math.round(rate * 3); // rate per minute * 3 minutes
+    const interval = windowMs / totalBlinks;
+
+    for (let i = 0; i < totalBlinks; i++) {
+      events.push({ timestamp: now - (windowMs - i * interval) });
+    }
+    return events;
   };
 
   const createMockSession = (overrides?: Partial<SessionData>): SessionData => {
@@ -87,8 +89,7 @@ describe('AlertService', () => {
       startTime: new Date(now - 6 * 60 * 1000), // 6 minutes ago (past 5-min grace period)
       isActive: true,
       averageBlinkRate: 7,
-      blinkEvents: [], // Individual blink events
-      blinkRateHistory: createBlinkRateHistory(7, now),
+      blinkEvents: createBlinkEvents(7, now),
       quality: 'poor',
       fatigueAlertCount: 0,
       totalBlinks: 42,
@@ -119,20 +120,20 @@ describe('AlertService', () => {
 
     it('returns false when blink rate is above threshold', () => {
       const now = Date.now();
-      const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(10, now) });
+      const session = createMockSession({ blinkEvents: createBlinkEvents(10, now) });
       const result = alertService.checkForFatigue(session);
       expect(result).toBe(false);
     });
 
-    it('returns false when blinkRateHistory is empty', () => {
-      const session = createMockSession({ blinkRateHistory: [] });
+    it('returns false when blinkEvents is empty', () => {
+      const session = createMockSession({ blinkEvents: [] });
       const result = alertService.checkForFatigue(session);
       expect(result).toBe(false);
     });
 
     it('returns true immediately when all conditions are met', () => {
       const now = Date.now();
-      const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
+      const session = createMockSession({ blinkEvents: createBlinkEvents(6, now) });
       const onAlert = vi.fn();
 
       const result = alertService.checkForFatigue(session, onAlert);
@@ -144,7 +145,7 @@ describe('AlertService', () => {
     it('returns false when face loss in window exceeds 5 seconds', () => {
       const now = Date.now();
       const session = createMockSession({
-        blinkRateHistory: createBlinkRateHistory(6, now),
+        blinkEvents: createBlinkEvents(6, now),
         faceLostPeriods: [
           { start: now - 60000, end: now - 50000 } // 10 seconds of face loss
         ]
@@ -160,7 +161,7 @@ describe('AlertService', () => {
     it('returns true when face loss in window is under 5 seconds', () => {
       const now = Date.now();
       const session = createMockSession({
-        blinkRateHistory: createBlinkRateHistory(6, now),
+        blinkEvents: createBlinkEvents(6, now),
         faceLostPeriods: [
           { start: now - 60000, end: now - 57000 } // 3 seconds of face loss
         ]
@@ -176,7 +177,7 @@ describe('AlertService', () => {
     it('ignores face loss periods outside the rolling window', () => {
       const now = Date.now();
       const session = createMockSession({
-        blinkRateHistory: createBlinkRateHistory(6, now),
+        blinkEvents: createBlinkEvents(6, now),
         faceLostPeriods: [
           { start: now - 300000, end: now - 290000 } // 10 seconds, but 5 mins ago (outside window)
         ]
@@ -192,7 +193,7 @@ describe('AlertService', () => {
     it('respects 3-minute cooldown period between alerts', () => {
       vi.useFakeTimers();
       const now = Date.now();
-      const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
+      const session = createMockSession({ blinkEvents: createBlinkEvents(6, now) });
       const onAlert = vi.fn();
 
       // First alert should trigger
@@ -212,26 +213,28 @@ describe('AlertService', () => {
       vi.useRealTimers();
     });
 
-    it('uses 3-minute rolling window average for blink rate', () => {
+    it('uses 3-minute rolling window for blink rate calculation', () => {
       const now = Date.now();
 
-      // Create a session with high early rates but low recent rates
-      // Points outside the 3-min window should be ignored
-      const mixedHistory = [
-        { timestamp: now - 240000, rate: 15 }, // 4 min ago (outside window)
-        { timestamp: now - 200000, rate: 15 }, // ~3.3 min ago (outside window)
-        { timestamp: now - 150000, rate: 6 },  // 2.5 min ago (inside window)
-        { timestamp: now - 90000, rate: 6 },   // 1.5 min ago (inside window)
-        { timestamp: now - 30000, rate: 6 },   // 30 sec ago (inside window)
+      // Create events with some outside the 3-min window (should be ignored)
+      // and some inside (should trigger alert at rate 6/min)
+      const mixedEvents = [
+        // These are outside the 3-min window (should be ignored)
+        { timestamp: now - 240000 }, // 4 min ago
+        { timestamp: now - 220000 }, // ~3.7 min ago
+        // These are inside the 3-min window - 18 events = 6/min rate
+        ...Array.from({ length: 18 }, (_, i) => ({
+          timestamp: now - 170000 + i * 10000
+        }))
       ];
 
       const session = createMockSession({
         averageBlinkRate: 9.6, // Session average is above threshold
-        blinkRateHistory: mixedHistory,
+        blinkEvents: mixedEvents,
       });
       const onAlert = vi.fn();
 
-      // Should trigger alert based on rolling window (avg 6), not session average
+      // Should trigger alert based on rolling window, not session average
       const result = alertService.checkForFatigue(session, onAlert);
       expect(result).toBe(true);
       expect(onAlert).toHaveBeenCalled();
@@ -239,7 +242,7 @@ describe('AlertService', () => {
 
     it('sends notification with correct content', async () => {
       const now = Date.now();
-      const session = createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) });
+      const session = createMockSession({ blinkEvents: createBlinkEvents(6, now) });
 
       alertService.checkForFatigue(session);
 
@@ -287,7 +290,7 @@ describe('AlertService', () => {
     it('starts checking for fatigue periodically', () => {
       vi.useFakeTimers();
       const now = Date.now();
-      const getActiveSession = vi.fn(() => createMockSession({ blinkRateHistory: createBlinkRateHistory(6, now) }));
+      const getActiveSession = vi.fn(() => createMockSession({ blinkEvents: createBlinkEvents(6, now) }));
       const onAlert = vi.fn();
 
       alertService.startMonitoring(getActiveSession, onAlert);

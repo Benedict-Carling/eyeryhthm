@@ -34,11 +34,6 @@ const mockSessions: SessionData[] = [
       { timestamp: Date.now() - 30000 },
       { timestamp: Date.now() },
     ],
-    blinkRateHistory: [
-      { timestamp: Date.now() - 60000, rate: 8 },
-      { timestamp: Date.now() - 30000, rate: 6 },
-      { timestamp: Date.now(), rate: 7 },
-    ],
     quality: 'poor',
     fatigueAlertCount: 2,
     duration: 5400, // 1h 30m
@@ -50,7 +45,6 @@ const mockSessions: SessionData[] = [
     isActive: true,
     averageBlinkRate: 12,
     blinkEvents: [],
-    blinkRateHistory: [],
     quality: 'good',
     fatigueAlertCount: 0,
     totalBlinks: 0,
