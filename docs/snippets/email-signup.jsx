@@ -19,7 +19,7 @@ export const EmailSignupForm = () => {
     setMessage('');
 
     try {
-      const response = await fetch('https://eyerhythm.vercel.app/api/mailerlite/subscribe', {
+      const response = await fetch('https://eyeryhthm.vercel.app/api/mailerlite/subscribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
