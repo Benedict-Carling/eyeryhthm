@@ -31,7 +31,7 @@ export const EmailSignupForm = () => {
 
       if (response.ok) {
         setStatus('success');
-        setMessage('Thanks for subscribing! Check your email for confirmation.');
+        setMessage('Thanks for subscribing! We\'ll keep you updated.');
         setEmail('');
         setName('');
       } else {
