@@ -230,7 +230,7 @@ export function Navbar() {
                       </Flex>
                     </DropdownMenu.Label>
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item color="red" onClick={signOut}>
+                    <DropdownMenu.Item color="red" onSelect={signOut}>
                       <ExitIcon />
                       Sign out
                     </DropdownMenu.Item>
