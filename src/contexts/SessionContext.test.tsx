@@ -47,6 +47,17 @@ vi.mock('./CalibrationContext', () => ({
   }),
 }));
 
+vi.mock('./AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    session: null,
+    profile: null,
+    loading: false,
+    signOut: vi.fn(),
+    refreshProfile: vi.fn(),
+  }),
+}));
+
 // Mock AlertService
 const mockStartMonitoring = vi.fn();
 const mockStopMonitoring = vi.fn();

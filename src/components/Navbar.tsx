@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
-import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
+import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip, DropdownMenu, Avatar, Button } from "@radix-ui/themes";
+import { SunIcon, MoonIcon, LaptopIcon, PersonIcon, ExitIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSession } from "../contexts/SessionContext";
 import { useCalibration } from "../contexts/CalibrationContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useUpdateStatus } from "../hooks/useUpdateStatus";
 import { useCameraPermission } from "../hooks/useCameraPermission";
 import { usePlatform } from "../hooks/usePlatform";
@@ -25,6 +26,7 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const { isTracking, toggleTracking } = useSession();
   const { hasOnlyFactoryDefault } = useCalibration();
+  const { user, profile, signOut } = useAuth();
   const { hasUpdate } = useUpdateStatus();
   const { needsAttention: cameraPermissionNeedsAttention } = useCameraPermission();
   const { isElectron, capabilities } = usePlatform();
@@ -162,6 +164,36 @@ export function Navbar() {
                   {getThemeIcon()}
                 </span>
               </IconButton>
+
+              {/* User menu */}
+              {user && (
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    <Button variant="ghost" size="2">
+                      <Avatar
+                        size="1"
+                        fallback={profile?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
+                        radius="full"
+                      />
+                    </Button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content align="end">
+                    <DropdownMenu.Label>
+                      <Flex direction="column" gap="1">
+                        {profile?.full_name && (
+                          <Text size="2" weight="medium">{profile.full_name}</Text>
+                        )}
+                        <Text size="1" color="gray">{user.email}</Text>
+                      </Flex>
+                    </DropdownMenu.Label>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item color="red" onClick={signOut}>
+                      <ExitIcon />
+                      Sign out
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+              )}
             </Flex>
           </Flex>
         </Container>
