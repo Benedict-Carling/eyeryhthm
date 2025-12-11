@@ -25,6 +25,18 @@ vi.mock('../contexts/CalibrationContext', () => ({
   }),
 }));
 
+// Mock AuthContext
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    session: null,
+    profile: null,
+    loading: false,
+    signOut: vi.fn(),
+    refreshProfile: vi.fn(),
+  }),
+}));
+
 // Mock useUpdateStatus hook
 vi.mock('../hooks/useUpdateStatus', () => ({
   useUpdateStatus: () => ({
