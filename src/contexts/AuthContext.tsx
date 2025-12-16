@@ -99,13 +99,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router, fetchProfile]);
 
   const signOut = useCallback(async () => {
-    const supabase = getSupabaseClient();
-    await supabase.auth.signOut();
+    // Clear local state immediately for responsive UI
     setUser(null);
     setSession(null);
     setProfile(null);
-    router.push("/login");
-  }, [router]);
+
+    // Call server-side sign out to invalidate the session on the server
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } catch {
+      // Ignore fetch errors - we'll redirect regardless
+    }
+
+    // Force full page reload to /login to ensure clean state
+    window.location.href = "/login";
+  }, []);
 
   return (
     <AuthContext.Provider
