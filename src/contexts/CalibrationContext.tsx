@@ -292,24 +292,12 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
         };
 
         if (user) {
-          // Deactivate all existing calibrations first
-          const existingCalibrations =
-            await SupabaseCalibrationService.getAllCalibrations(user.id);
-          for (const cal of existingCalibrations) {
-            if (cal.isActive) {
-              await SupabaseCalibrationService.setActiveCalibration(
-                cal.id,
-                user.id
-              );
-            }
-          }
-
-          // Save the new active calibration
+          // Save the new calibration first
           await SupabaseCalibrationService.saveCalibration(
             newCalibration,
             user.id
           );
-          // Set it as active
+          // Set it as active (this automatically deactivates all other calibrations)
           await SupabaseCalibrationService.setActiveCalibration(
             newCalibration.id,
             user.id
