@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Box, Button, Card, Flex, Heading, Text, TextField, Separator } from "@radix-ui/themes";
+import Image from "next/image";
+import { Box, Button, Card, Flex, Heading, Text, TextField, Separator, Container } from "@radix-ui/themes";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
 function GoogleIcon() {
@@ -18,7 +18,6 @@ function GoogleIcon() {
 }
 
 export default function SignupPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -91,20 +90,29 @@ export default function SignupPage() {
           padding: "var(--space-4)",
         }}
       >
-        <Card size="4" style={{ width: "100%", maxWidth: "400px" }}>
-          <Flex direction="column" align="center" gap="4">
-            <Heading size="6">Check your email</Heading>
-            <Text color="gray" size="2" align="center">
-              We&apos;ve sent you a confirmation email at <strong>{email}</strong>.
-              Click the link to verify your account.
-            </Text>
-            <Link href="/login">
-              <Button variant="soft" size="3">
-                Back to login
-              </Button>
-            </Link>
-          </Flex>
-        </Card>
+        <Container size="1">
+          <Card size="4">
+            <Flex direction="column" align="center" gap="4">
+              <Image
+                src="/icons/logo-png.png"
+                alt="EyeRhythm"
+                width={72}
+                height={72}
+                priority
+              />
+              <Heading size="6">Check your email</Heading>
+              <Text color="gray" size="2" align="center">
+                We&apos;ve sent you a confirmation email at <strong>{email}</strong>.
+                Click the link to verify your account.
+              </Text>
+              <Link href="/login">
+                <Button variant="soft" size="3">
+                  Back to login
+                </Button>
+              </Link>
+            </Flex>
+          </Card>
+        </Container>
       </Box>
     );
   }
@@ -119,102 +127,118 @@ export default function SignupPage() {
         padding: "var(--space-4)",
       }}
     >
-      <Card size="4" style={{ width: "100%", maxWidth: "400px" }}>
-        <Flex direction="column" gap="5">
-          <Flex direction="column" align="center" gap="2">
-            <Heading size="6">Create an account</Heading>
-            <Text color="gray" size="2">
-              Start tracking your eye health with EyeRhythm
-            </Text>
-          </Flex>
-
-          <form onSubmit={handleSignup}>
-            <Flex direction="column" gap="4">
-              <Box>
-                <Text as="label" size="2" weight="medium" mb="1">
-                  Full name
-                </Text>
-                <TextField.Root
-                  type="text"
-                  placeholder="Your name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  size="3"
-                />
-              </Box>
-
-              <Box>
-                <Text as="label" size="2" weight="medium" mb="1">
-                  Email
-                </Text>
-                <TextField.Root
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  size="3"
-                />
-              </Box>
-
-              <Box>
-                <Text as="label" size="2" weight="medium" mb="1">
-                  Password
-                </Text>
-                <TextField.Root
-                  type="password"
-                  placeholder="At least 6 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  size="3"
-                />
-              </Box>
-
-              {error && (
-                <Text color="red" size="2">
-                  {error}
-                </Text>
-              )}
-
-              <Button type="submit" size="3" disabled={loading}>
-                {loading ? "Creating account..." : "Create account"}
-              </Button>
-            </Flex>
-          </form>
-
-          <Flex justify="center" align="baseline" gap="1">
-            <Text size="2" color="gray">
-              Already have an account?
-            </Text>
-            <Link href="/login" style={{ textDecoration: "none" }}>
-              <Text size="2" color="indigo" weight="medium">
-                Sign in
+      <Container size="1">
+        <Card size="4">
+          <Flex direction="column" gap="5">
+            <Flex direction="column" align="center" gap="3">
+              <Image
+                src="/icons/logo-png.png"
+                alt="EyeRhythm"
+                width={72}
+                height={72}
+                priority
+              />
+              <Heading size="6">Create an account</Heading>
+              <Text color="gray" size="2">
+                Start tracking your eye health with EyeRhythm
               </Text>
-            </Link>
-          </Flex>
+            </Flex>
 
-          <Flex align="center" gap="3">
-            <Separator size="4" />
-            <Text size="2" color="gray" style={{ whiteSpace: "nowrap" }}>
-              or
+            <form onSubmit={handleSignup}>
+              <Flex direction="column" gap="4">
+                <Box>
+                  <Text as="label" size="2" weight="medium" mb="1">
+                    Full name
+                  </Text>
+                  <TextField.Root
+                    type="text"
+                    placeholder="Your name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    size="3"
+                  />
+                </Box>
+
+                <Box>
+                  <Text as="label" size="2" weight="medium" mb="1">
+                    Email
+                  </Text>
+                  <TextField.Root
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    size="3"
+                  />
+                </Box>
+
+                <Box>
+                  <Text as="label" size="2" weight="medium" mb="1">
+                    Password
+                  </Text>
+                  <TextField.Root
+                    type="password"
+                    placeholder="At least 6 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    size="3"
+                  />
+                </Box>
+
+                {error && (
+                  <Text color="red" size="2">
+                    {error}
+                  </Text>
+                )}
+
+                <Button type="submit" size="3" disabled={loading}>
+                  {loading ? "Creating account..." : "Create account"}
+                </Button>
+              </Flex>
+            </form>
+
+            <Flex justify="center" align="baseline" gap="1">
+              <Text size="2" color="gray">
+                Already have an account?
+              </Text>
+              <Link href="/login" style={{ textDecoration: "none" }}>
+                <Text size="2" color="blue" weight="medium">
+                  Sign in
+                </Text>
+              </Link>
+            </Flex>
+
+            <Flex align="center" gap="3">
+              <Separator size="4" />
+              <Text size="2" color="gray" style={{ whiteSpace: "nowrap" }}>
+                or
+              </Text>
+              <Separator size="4" />
+            </Flex>
+
+            <Button
+              variant="outline"
+              size="3"
+              onClick={() => handleSocialLogin("google")}
+              disabled={socialLoading !== null}
+              style={{ width: "100%" }}
+            >
+              <GoogleIcon />
+              {socialLoading === "google" ? "Connecting..." : "Continue with Google"}
+            </Button>
+
+            <Text size="1" color="gray" align="center">
+              By creating an account, you agree to our{" "}
+              <Link href="/privacy" style={{ color: "var(--gray-11)" }}>
+                Privacy Policy
+              </Link>
             </Text>
-            <Separator size="4" />
           </Flex>
-
-          <Button
-            variant="outline"
-            size="3"
-            onClick={() => handleSocialLogin("google")}
-            disabled={socialLoading !== null}
-            style={{ width: "100%" }}
-          >
-            <GoogleIcon />
-            {socialLoading === "google" ? "Connecting..." : "Continue with Google"}
-          </Button>
-        </Flex>
-      </Card>
+        </Card>
+      </Container>
     </Box>
   );
 }

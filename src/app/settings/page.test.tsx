@@ -1,12 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { Theme } from '@radix-ui/themes';
 import SettingsPage from './page';
 
+// Mock useAuth hook
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    session: null,
+    profile: null,
+    loading: false,
+    signOut: vi.fn(),
+    refreshProfile: vi.fn(),
+  }),
+}));
+
 // Helper to render with Theme provider
-const renderWithTheme = (ui: React.ReactElement) => {
-  return render(<Theme>{ui}</Theme>);
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(
+    <Theme>{ui}</Theme>
+  );
 };
 
 // Mock useUpdateStatus hook
@@ -102,7 +115,7 @@ describe('SettingsPage', () => {
   });
 
   it('renders settings page', () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Configure your fatigue detection preferences')).toBeInTheDocument();
@@ -116,7 +129,7 @@ describe('SettingsPage', () => {
       return null;
     });
 
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     // Check that slider has the correct value
     const slider = screen.getByRole('slider');
@@ -126,7 +139,7 @@ describe('SettingsPage', () => {
   it('shows notification switches when in Electron mode', () => {
     mockNotificationSettings.isElectron = true;
 
-    renderWithTheme(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     // In Electron mode, notification switches should be visible
     const switches = screen.getAllByRole('switch');
@@ -136,13 +149,13 @@ describe('SettingsPage', () => {
   it('shows message about desktop app when not in Electron', () => {
     mockNotificationSettings.isElectron = false;
 
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     expect(screen.getByText('Desktop notifications are only available in the EyeRhythm desktop app')).toBeInTheDocument();
   });
 
   it('updates fatigue threshold and saves to localStorage', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     const slider = screen.getByRole('slider');
 
@@ -158,7 +171,7 @@ describe('SettingsPage', () => {
   it('notification switches are enabled in Electron mode', () => {
     mockNotificationSettings.isElectron = true;
 
-    renderWithTheme(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     const switches = screen.getAllByRole('switch');
     const notificationSwitch = switches[0]!;
@@ -168,7 +181,7 @@ describe('SettingsPage', () => {
   });
 
   it('shows threshold slider with correct min/max attributes', () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     const slider = screen.getByRole('slider');
     expect(slider).toHaveAttribute('aria-valuemin', '8');
@@ -176,7 +189,7 @@ describe('SettingsPage', () => {
   });
 
   it('shows informational note about fatigue alerts', () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
     expect(screen.getByText(/Note: Fatigue alerts trigger after 5 minutes of session time/)).toBeInTheDocument();
   });

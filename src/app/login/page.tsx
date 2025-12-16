@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Box, Button, Card, Flex, Heading, Text, TextField, Separator } from "@radix-ui/themes";
+import Image from "next/image";
+import { Box, Button, Card, Flex, Heading, Text, TextField, Separator, Container } from "@radix-ui/themes";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
 function GoogleIcon() {
@@ -84,88 +85,104 @@ export default function LoginPage() {
         padding: "var(--space-4)",
       }}
     >
-      <Card size="4" style={{ width: "100%", maxWidth: "400px" }}>
-        <Flex direction="column" gap="5">
-          <Flex direction="column" align="center" gap="2">
-            <Heading size="6">Welcome back</Heading>
-            <Text color="gray" size="2">
-              Sign in to continue to EyeRhythm
-            </Text>
-          </Flex>
-
-          <form onSubmit={handleLogin}>
-            <Flex direction="column" gap="4">
-              <Box>
-                <Text as="label" size="2" weight="medium" mb="1">
-                  Email
-                </Text>
-                <TextField.Root
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  size="3"
-                />
-              </Box>
-
-              <Box>
-                <Text as="label" size="2" weight="medium" mb="1">
-                  Password
-                </Text>
-                <TextField.Root
-                  type="password"
-                  placeholder="Your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  size="3"
-                />
-              </Box>
-
-              {error && (
-                <Text color="red" size="2">
-                  {error}
-                </Text>
-              )}
-
-              <Button type="submit" size="3" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
-              </Button>
-            </Flex>
-          </form>
-
-          <Flex justify="center" align="baseline" gap="1">
-            <Text size="2" color="gray">
-              Don&apos;t have an account?
-            </Text>
-            <Link href="/signup" style={{ textDecoration: "none" }}>
-              <Text size="2" color="indigo" weight="medium">
-                Sign up
+      <Container size="1">
+        <Card size="4">
+          <Flex direction="column" gap="5">
+            <Flex direction="column" align="center" gap="3">
+              <Image
+                src="/icons/logo-png.png"
+                alt="EyeRhythm"
+                width={72}
+                height={72}
+                priority
+              />
+              <Heading size="6">Welcome back</Heading>
+              <Text color="gray" size="2">
+                Sign in to continue to EyeRhythm
               </Text>
-            </Link>
-          </Flex>
+            </Flex>
 
-          <Flex align="center" gap="3">
-            <Separator size="4" />
-            <Text size="2" color="gray" style={{ whiteSpace: "nowrap" }}>
-              or
+            <form onSubmit={handleLogin}>
+              <Flex direction="column" gap="4">
+                <Box>
+                  <Text as="label" size="2" weight="medium" mb="1">
+                    Email
+                  </Text>
+                  <TextField.Root
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    size="3"
+                  />
+                </Box>
+
+                <Box>
+                  <Text as="label" size="2" weight="medium" mb="1">
+                    Password
+                  </Text>
+                  <TextField.Root
+                    type="password"
+                    placeholder="Your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    size="3"
+                  />
+                </Box>
+
+                {error && (
+                  <Text color="red" size="2">
+                    {error}
+                  </Text>
+                )}
+
+                <Button type="submit" size="3" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign in"}
+                </Button>
+              </Flex>
+            </form>
+
+            <Flex justify="center" align="baseline" gap="1">
+              <Text size="2" color="gray">
+                Don&apos;t have an account?
+              </Text>
+              <Link href="/signup" style={{ textDecoration: "none" }}>
+                <Text size="2" color="blue" weight="medium">
+                  Sign up
+                </Text>
+              </Link>
+            </Flex>
+
+            <Flex align="center" gap="3">
+              <Separator size="4" />
+              <Text size="2" color="gray" style={{ whiteSpace: "nowrap" }}>
+                or
+              </Text>
+              <Separator size="4" />
+            </Flex>
+
+            <Button
+              variant="outline"
+              size="3"
+              onClick={() => handleSocialLogin("google")}
+              disabled={socialLoading !== null}
+              style={{ width: "100%" }}
+            >
+              <GoogleIcon />
+              {socialLoading === "google" ? "Connecting..." : "Continue with Google"}
+            </Button>
+
+            <Text size="1" color="gray" align="center">
+              By signing in, you agree to our{" "}
+              <Link href="/privacy" style={{ color: "var(--gray-11)" }}>
+                Privacy Policy
+              </Link>
             </Text>
-            <Separator size="4" />
           </Flex>
-
-          <Button
-            variant="outline"
-            size="3"
-            onClick={() => handleSocialLogin("google")}
-            disabled={socialLoading !== null}
-            style={{ width: "100%" }}
-          >
-            <GoogleIcon />
-            {socialLoading === "google" ? "Connecting..." : "Continue with Google"}
-          </Button>
-        </Flex>
-      </Card>
+        </Card>
+      </Container>
     </Box>
   );
 }
