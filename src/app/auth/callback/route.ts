@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+// Allow static export for Electron builds (this route is only used in web mode)
+export const dynamic = "force-static";
+
 export async function GET(request: Request) {
+  // In static export mode (Electron), this route generates a static placeholder
+  // The actual OAuth flow in Electron uses deep links instead
+  const isStaticExport = process.env.ELECTRON_BUILD === "true";
+  if (isStaticExport) {
+    return new Response("OAuth callback - use deep links in Electron", {
+      status: 200,
+    });
+  }
+
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";

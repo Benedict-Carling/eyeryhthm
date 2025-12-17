@@ -38,6 +38,11 @@ export default function LoginPage() {
       if (result.success && result.code) {
         // Exchange the code for a session
         const supabase = getSupabaseClient();
+        if (!supabase) {
+          setError("Authentication is not configured");
+          setSocialLoading(null);
+          return;
+        }
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.code);
 
         if (exchangeError) {
@@ -63,6 +68,10 @@ export default function LoginPage() {
 
     try {
       const supabase = getSupabaseClient();
+      if (!supabase) {
+        setError("Authentication is not configured");
+        return;
+      }
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -94,6 +103,11 @@ export default function LoginPage() {
 
     try {
       const supabase = getSupabaseClient();
+      if (!supabase) {
+        setError("Authentication is not configured");
+        setSocialLoading(null);
+        return;
+      }
 
       // Use custom deep link URL for Electron production, localhost for dev
       let redirectTo = `${window.location.origin}/auth/callback`;

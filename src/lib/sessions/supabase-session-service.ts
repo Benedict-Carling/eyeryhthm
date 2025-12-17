@@ -59,6 +59,9 @@ function dbToSession(
 export class SupabaseSessionService {
   static async getAllSessions(userId: string): Promise<SessionData[]> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return [];
+    }
 
     // Fetch sessions
     const { data: sessions, error: sessionsError } = await supabase
@@ -130,6 +133,9 @@ export class SupabaseSessionService {
     }
 
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return false;
+    }
 
     // Prepare session data for insert
     const sessionData: TablesInsert<"screen_sessions"> = {
@@ -188,6 +194,9 @@ export class SupabaseSessionService {
 
   static async deleteSession(id: string): Promise<boolean> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return false;
+    }
 
     // Delete blink patterns first (foreign key constraint)
     const { error: blinksError } = await supabase
@@ -216,6 +225,9 @@ export class SupabaseSessionService {
 
   static async hasPersistedSessions(userId: string): Promise<boolean> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return false;
+    }
 
     const { count, error } = await supabase
       .from("screen_sessions")

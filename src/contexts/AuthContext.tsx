@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import type { User, Session } from "@supabase/supabase-js";
-import { getSupabaseClient } from "@/lib/supabase/client";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/types";
 
 type UserProfile = Tables<"users">;
@@ -35,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string) => {
     const supabase = getSupabaseClient();
+    if (!supabase) return null;
+
     const { data, error } = await supabase
       .from("users")
       .select("*")
@@ -58,7 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, fetchProfile]);
 
   useEffect(() => {
+    // If Supabase is not configured, skip auth initialization
+    if (!isSupabaseConfigured()) {
+      setLoading(false);
+      return;
+    }
+
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
 
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {

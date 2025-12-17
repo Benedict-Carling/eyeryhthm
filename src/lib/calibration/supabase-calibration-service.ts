@@ -75,6 +75,9 @@ function calibrationToDb(
 export class SupabaseCalibrationService {
   static async getAllCalibrations(userId: string): Promise<Calibration[]> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return [];
+    }
 
     const { data, error } = await supabase
       .from("calibrations")
@@ -95,6 +98,9 @@ export class SupabaseCalibrationService {
     userId: string
   ): Promise<Calibration | null> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return null;
+    }
 
     const dbCalibration = calibrationToDb(calibration, userId);
 
@@ -114,6 +120,9 @@ export class SupabaseCalibrationService {
 
   static async deleteCalibration(id: string): Promise<boolean> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return false;
+    }
 
     const { error } = await supabase.from("calibrations").delete().eq("id", id);
 
@@ -127,6 +136,9 @@ export class SupabaseCalibrationService {
 
   static async getActiveCalibration(userId: string): Promise<Calibration | null> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return null;
+    }
 
     const { data, error } = await supabase
       .from("calibrations")
@@ -149,6 +161,9 @@ export class SupabaseCalibrationService {
 
   static async setActiveCalibration(id: string, userId: string): Promise<boolean> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return false;
+    }
 
     // First, deactivate all calibrations for this user
     const { error: deactivateError } = await supabase
@@ -177,6 +192,9 @@ export class SupabaseCalibrationService {
 
   static async updateCalibrationName(id: string, name: string): Promise<boolean> {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return false;
+    }
 
     const { error } = await supabase
       .from("calibrations")
