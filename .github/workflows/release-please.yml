@@ -81,6 +81,8 @@ jobs:
         run: npm run build
         env:
           ELECTRON_BUILD: "true"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Compile Electron TypeScript
         run: npx tsc -p electron/tsconfig.json
