@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.17.0...v1.17.1) (2025-12-17)
+
+
+### Bug Fixes
+
+* trigger release ([c63751c](https://github.com/Benedict-Carling/eyeryhthm/commit/c63751c25264d922497d806d8caf75813a816bd5))
+
 ## [1.17.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.16.0...v1.17.0) (2025-12-17)
 
 
