@@ -85,6 +85,8 @@ export interface ElectronAPI {
   // OAuth deep link callback handler
   onOAuthCallback: (callback: (result: OAuthCallbackResult) => void) => () => void;
   getOAuthRedirectUrl: () => string;
+  // Open external URLs in default browser
+  openExternal: (url: string) => Promise<boolean>;
 }
 
 declare global {

@@ -34,6 +34,7 @@ function createMockElectronAPI(overrides: Partial<ElectronAPI> = {}): ElectronAP
     openCameraSettings: vi.fn(),
     onOAuthCallback: vi.fn(() => () => {}),
     getOAuthRedirectUrl: vi.fn(() => "eyerhythm://auth/callback"),
+    openExternal: vi.fn(),
     ...overrides,
   };
 }

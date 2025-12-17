@@ -17,6 +17,7 @@ import {
   Select,
   AlertDialog,
   TextField,
+  Badge,
 } from "@radix-ui/themes";
 import {
   BellIcon,
@@ -31,11 +32,15 @@ import {
   ExclamationTriangleIcon,
   GearIcon,
   TrashIcon,
+  StarFilledIcon,
+  CalendarIcon,
+  LightningBoltIcon,
 } from "@radix-ui/react-icons";
 import { VersionInfo } from "@/components/VersionInfo";
 import { useUpdateStatus } from "@/hooks/useUpdateStatus";
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useCameraPermission } from "@/hooks/useCameraPermission";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
 
 function getInitialFatigueThreshold(): number {
@@ -74,6 +79,18 @@ export default function SettingsPage() {
     needsAttention: cameraNeedsAttention,
     openCameraSettings,
   } = useCameraPermission();
+
+  const {
+    tier: subscriptionTier,
+    isPremium,
+    subscriptionEndDate,
+    dataRetentionDays,
+    isLoading: isSubscriptionLoading,
+    error: subscriptionError,
+    openCheckout,
+    openBillingPortal,
+    PRICING,
+  } = useSubscription();
 
   const handleThresholdChange = (value: number[]) => {
     const threshold = value[0];
@@ -484,6 +501,133 @@ export default function SettingsPage() {
               Alerts are limited to once every 3 minutes.
             </Text>
           </Box>
+
+          {user && (
+            <Box>
+              <Heading size="5" mb="4">
+                Subscription
+              </Heading>
+
+              <Card size="2">
+                <Flex direction="column">
+                  <Flex
+                    justify="between"
+                    align="center"
+                    style={{ padding: "14px 16px" }}
+                  >
+                    <Box style={{ flex: 1, marginRight: "40px" }}>
+                      <Flex align="center" gap="2" mb="1">
+                        <StarFilledIcon />
+                        <Text size="3" weight="medium">
+                          Current Plan
+                        </Text>
+                      </Flex>
+                      <Text size="2" color="gray">
+                        {isPremium ? (
+                          <>
+                            You are on the <Text weight="bold" color="gold">Premium</Text> plan.
+                            {subscriptionEndDate && (
+                              <> Renews on {subscriptionEndDate.toLocaleDateString()}.</>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            You are on the <Text weight="bold">Free</Text> plan with {dataRetentionDays}-day data history.
+                          </>
+                        )}
+                      </Text>
+                    </Box>
+                    {isPremium ? (
+                      <Button
+                        size="2"
+                        variant="soft"
+                        onClick={openBillingPortal}
+                        disabled={isSubscriptionLoading}
+                      >
+                        <GearIcon />
+                        Manage Subscription
+                      </Button>
+                    ) : (
+                      <Flex gap="2">
+                        <Button
+                          size="2"
+                          variant="soft"
+                          color="gold"
+                          onClick={() => openCheckout("yearly")}
+                          disabled={isSubscriptionLoading}
+                        >
+                          <LightningBoltIcon />
+                          Upgrade to Premium
+                        </Button>
+                      </Flex>
+                    )}
+                  </Flex>
+
+                  {!isPremium && (
+                    <>
+                      <Box style={{ padding: "0 16px" }}>
+                        <Separator size="4" />
+                      </Box>
+
+                      <Box style={{ padding: "14px 16px" }}>
+                        <Flex direction="column" gap="3">
+                          <Text size="2" weight="medium">Premium Benefits:</Text>
+                          <Flex gap="4" wrap="wrap">
+                            <Flex align="center" gap="2">
+                              <CalendarIcon />
+                              <Text size="2">365-day data history</Text>
+                            </Flex>
+                            <Flex align="center" gap="2">
+                              <CheckCircledIcon />
+                              <Text size="2">Advanced analytics</Text>
+                            </Flex>
+                            <Flex align="center" gap="2">
+                              <DownloadIcon />
+                              <Text size="2">Data export</Text>
+                            </Flex>
+                          </Flex>
+                          <Flex gap="3" mt="2">
+                            <Card style={{ flex: 1, cursor: "pointer" }} onClick={() => openCheckout("monthly")}>
+                              <Box p="2">
+                                <Text size="2" weight="bold">Monthly</Text>
+                                <Text size="4" weight="bold" style={{ display: "block" }}>
+                                  {"\u00A3"}{PRICING.monthly.displayPrice}
+                                </Text>
+                                <Text size="1" color="gray">/month</Text>
+                              </Box>
+                            </Card>
+                            <Card style={{ flex: 1, cursor: "pointer", border: "2px solid var(--gold-9)" }} onClick={() => openCheckout("yearly")}>
+                              <Box p="2">
+                                <Flex justify="between" align="center">
+                                  <Text size="2" weight="bold">Yearly</Text>
+                                  <Badge size="1" color="gold">Save 33%</Badge>
+                                </Flex>
+                                <Text size="4" weight="bold" style={{ display: "block" }}>
+                                  {"\u00A3"}{PRICING.yearly.displayPrice}
+                                </Text>
+                                <Text size="1" color="gray">/year ({"\u00A3"}{PRICING.yearly.monthlyEquivalent}/mo)</Text>
+                              </Box>
+                            </Card>
+                          </Flex>
+                        </Flex>
+                      </Box>
+                    </>
+                  )}
+
+                  {subscriptionError && (
+                    <Box style={{ padding: "0 16px 14px" }}>
+                      <Callout.Root color="red" size="1">
+                        <Callout.Icon>
+                          <CrossCircledIcon />
+                        </Callout.Icon>
+                        <Callout.Text>{subscriptionError}</Callout.Text>
+                      </Callout.Root>
+                    </Box>
+                  )}
+                </Flex>
+              </Card>
+            </Box>
+          )}
 
           {isElectron && (
             <Box>

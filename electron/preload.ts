@@ -100,6 +100,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // Get the OAuth redirect URL for this platform
   getOAuthRedirectUrl: () => "eyerhythm://auth/callback",
+
+  // Open external URLs in default browser
+  openExternal: (url: string) => ipcRenderer.invoke("open-external", url),
 });
 
 // OAuth callback result type
