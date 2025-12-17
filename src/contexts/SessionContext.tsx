@@ -15,7 +15,6 @@ import {
   getSessionQuality,
   MAX_BLINK_RATE,
 } from "../lib/sessions/types";
-import { SessionStorageService } from "../lib/sessions/session-storage-service";
 import { SupabaseSessionService } from "../lib/sessions/supabase-session-service";
 import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
@@ -211,14 +210,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
           setSessions(generateMockSessions());
         }
       } else {
-        // Fallback to localStorage for unauthenticated users
-        if (SessionStorageService.hasPersistedSessions()) {
-          const persistedSessions = SessionStorageService.getAllSessions();
-          setSessions(persistedSessions);
-        } else {
-          // No persisted sessions - show example sessions for new users
-          setSessions(generateMockSessions());
-        }
+        // Unauthenticated users see example sessions only (no persistence)
+        setSessions(generateMockSessions());
       }
     };
 
@@ -735,15 +728,12 @@ export function SessionProvider({ children }: SessionProviderProps) {
       )
     );
 
-    // Persist session (service handles min duration check)
+    // Persist session to Supabase (service handles min duration check)
     const userId = userIdRef.current;
     if (userId) {
-      // Save to Supabase for authenticated users
       await SupabaseSessionService.saveSession(updatedSession, userId);
-    } else {
-      // Fallback to localStorage for unauthenticated users
-      SessionStorageService.saveSession(updatedSession);
     }
+    // If no user, session is not persisted (middleware should prevent this case)
   }, [activeSession]); // blinkCount read from ref, userId read from ref
 
   // Internal function to set tracking state (used by both toggle and Electron IPC)
@@ -804,6 +794,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
   ]);
 
   const toggleTracking = useCallback(async () => {
+    // Require authentication to start tracking (defensive check - middleware should handle this)
+    if (!userIdRef.current && !isTracking) {
+      console.warn('[SessionContext] Cannot start tracking without authentication');
+      return;
+    }
     await setTrackingState(!isTracking);
   }, [isTracking, setTrackingState]);
 
