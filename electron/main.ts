@@ -1020,3 +1020,19 @@ ipcMain.handle("open-camera-settings", async () => {
     return false;
   }
 });
+
+// Open external URLs in default browser
+ipcMain.handle("open-external", async (_event, url: string) => {
+  try {
+    // Only allow http/https URLs for security
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      error('[Shell] Blocked non-http URL:', url);
+      return false;
+    }
+    await shell.openExternal(url);
+    return true;
+  } catch (err) {
+    error('[Shell] Failed to open external URL:', err);
+    return false;
+  }
+});

@@ -118,6 +118,17 @@ export function Navbar() {
                   <Badge size="1" color="indigo" variant="solid">
                     Beta
                   </Badge>
+                  {user && (
+                    profile?.subscription_tier === "premium" ? (
+                      <Badge size="1" color="gold" variant="solid">
+                        Premium
+                      </Badge>
+                    ) : (
+                      <Badge size="1" color="gray" variant="outline">
+                        Free
+                      </Badge>
+                    )
+                  )}
                 </Flex>
               </Link>
 
