@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.16.0...v1.17.0) (2025-12-17)
+
+
+### Features
+
+* **auth:** add client-side route protection for Electron ([ee9e950](https://github.com/Benedict-Carling/eyeryhthm/commit/ee9e950f43981d671904b4536256bc07972f9c8d))
+
 ## [1.16.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.15.0...v1.16.0) (2025-12-17)
 
 
