@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Box, Button, Card, Flex, Heading, Text, TextField, Separator, Container } from "@radix-ui/themes";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { isElectron, getElectronAPI } from "@/lib/electron";
 
 function GoogleIcon() {
   return (
@@ -18,6 +20,7 @@ function GoogleIcon() {
 }
 
 export default function SignupPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -25,6 +28,35 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+
+  // Handle OAuth callback from Electron deep link
+  useEffect(() => {
+    if (!isElectron()) return;
+
+    const api = getElectronAPI();
+    if (!api) return;
+
+    const cleanup = api.onOAuthCallback(async (result) => {
+      if (result.success && result.code) {
+        // Exchange the code for a session
+        const supabase = getSupabaseClient();
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.code);
+
+        if (exchangeError) {
+          setError(exchangeError.message);
+          setSocialLoading(null);
+        } else {
+          // Use window.location for reliable navigation in Electron
+          window.location.href = "/";
+        }
+      } else if (result.error) {
+        setError(result.error);
+        setSocialLoading(null);
+      }
+    });
+
+    return cleanup;
+  }, [router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +94,26 @@ export default function SignupPage() {
 
     try {
       const supabase = getSupabaseClient();
+
+      // Use custom deep link URL for Electron production, localhost for dev
+      let redirectTo = `${window.location.origin}/auth/callback`;
+      if (isElectron()) {
+        // In Electron dev mode (localhost), use localhost callback
+        // In Electron production (app:// protocol), use custom deep link
+        const isElectronDev = window.location.protocol === 'http:';
+        if (!isElectronDev) {
+          const api = getElectronAPI();
+          if (api) {
+            redirectTo = api.getOAuthRedirectUrl();
+          }
+        }
+        // In dev mode, redirectTo stays as localhost:3000/auth/callback
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo,
         },
       });
 

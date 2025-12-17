@@ -65,6 +65,14 @@ const config = {
     },
   ],
 
+  // Deep link protocol configuration (for OAuth callbacks)
+  protocols: [
+    {
+      name: "EyeRhythm",
+      schemes: ["eyerhythm"],
+    },
+  ],
+
   // macOS configuration
   mac: {
     artifactName: "${productName}-mac.${ext}", // Used for zip (dmg has its own artifactName)

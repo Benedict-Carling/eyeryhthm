@@ -28,6 +28,74 @@ const isDev = process.env.NODE_ENV !== "production" && !app.isPackaged;
 // So we need to go up two levels to reach the out/ directory
 const outDir = path.resolve(__dirname, "../../out");
 
+// Deep link protocol scheme
+const PROTOCOL_SCHEME = "eyerhythm";
+
+// Register as the default protocol client for eyerhythm:// URLs
+// This must be done before app.ready on Windows/Linux
+if (process.defaultApp) {
+  // In development, we need to register with the path to electron
+  const scriptPath = process.argv[1];
+  if (scriptPath) {
+    app.setAsDefaultProtocolClient(PROTOCOL_SCHEME, process.execPath, [path.resolve(scriptPath)]);
+  }
+} else {
+  // In production
+  app.setAsDefaultProtocolClient(PROTOCOL_SCHEME);
+}
+
+// Handle deep link URLs (OAuth callbacks)
+function handleDeepLink(url: string) {
+  log('[DeepLink] Received URL:', url);
+
+  // Parse the URL to extract auth callback parameters
+  if (url.startsWith(`${PROTOCOL_SCHEME}://auth/callback`)) {
+    try {
+      const urlObj = new URL(url);
+      const code = urlObj.searchParams.get('code');
+      const errorParam = urlObj.searchParams.get('error');
+      const errorDescription = urlObj.searchParams.get('error_description');
+
+      if (errorParam) {
+        warn('[DeepLink] OAuth error:', errorParam, errorDescription);
+        // Send error to renderer
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('oauth-callback', {
+            success: false,
+            error: errorDescription || errorParam,
+          });
+        }
+        return;
+      }
+
+      if (code) {
+        log('[DeepLink] OAuth code received, sending to renderer');
+        // Send the auth code to the renderer process
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('oauth-callback', {
+            success: true,
+            code,
+          });
+        }
+      }
+    } catch (err) {
+      error('[DeepLink] Failed to parse URL:', err);
+    }
+  }
+
+  // Focus the window when receiving a deep link
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+      platform.showDock();
+    }
+    mainWindow.focus();
+  }
+}
+
 // Single instance lock - ensures only one instance of the app runs at a time
 // This must be checked early, before any other initialization
 const gotTheLock = app.requestSingleInstanceLock();
@@ -38,7 +106,15 @@ if (!gotTheLock) {
   app.quit();
 } else {
   // We are the primary instance - handle attempts to launch second instances
-  app.on('second-instance', (_event, _commandLine, _workingDirectory) => {
+  // On Windows/Linux, the deep link URL comes in the command line of the second instance
+  app.on('second-instance', (_event, commandLine, _workingDirectory) => {
+    // Look for deep link URL in command line arguments
+    const deepLinkUrl = commandLine.find(arg => arg.startsWith(`${PROTOCOL_SCHEME}://`));
+    if (deepLinkUrl) {
+      handleDeepLink(deepLinkUrl);
+      return;
+    }
+
     // When a second instance is launched, focus/show our existing window
     if (mainWindow) {
       // Restore if minimized
@@ -53,6 +129,13 @@ if (!gotTheLock) {
       // Focus the window
       mainWindow.focus();
     }
+  });
+
+  // macOS: Handle deep links via open-url event
+  // This is called when the app is already running and receives a URL
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    handleDeepLink(url);
   });
 }
 
@@ -584,7 +667,7 @@ app.whenReady().then(async () => {
             "style-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Radix UI themes
             "img-src 'self' data: app:",
             "font-src 'self' app:",
-            "connect-src 'self' https://*.ingest.de.sentry.io", // Sentry error reporting
+            "connect-src 'self' https://*.supabase.co https://*.ingest.de.sentry.io", // Supabase auth + Sentry error reporting
             "worker-src 'self' app: blob:", // Frame capture worker + Sentry web worker
             "media-src 'self' mediastream:", // Camera access
           ].join("; "),
