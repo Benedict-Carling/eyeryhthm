@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.16.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.15.0...v1.16.0) (2025-12-17)
+
+
+### Features
+
+* **auth:** add account deletion and improve auth page UI ([70d3cf0](https://github.com/Benedict-Carling/eyeryhthm/commit/70d3cf0cd43a1f1c5696f027133ca1af552e1d5d))
+* **auth:** add OAuth deep link support for Electron ([8213d0d](https://github.com/Benedict-Carling/eyeryhthm/commit/8213d0d3b5c8c6cfd8c6e80367baa7f5b8061a7b))
+* **auth:** add Supabase authentication with Google OAuth ([32f890d](https://github.com/Benedict-Carling/eyeryhthm/commit/32f890dfe7a6dce15c763918d9c21795a0bde17e))
+* **auth:** add Supabase authentication with Google OAuth ([2b1feb4](https://github.com/Benedict-Carling/eyeryhthm/commit/2b1feb4dd76b5aa638d7c7d490c0df3713511f29))
+
+
+### Bug Fixes
+
+* **auth:** address security and performance issues in auth implementation ([9b6beb8](https://github.com/Benedict-Carling/eyeryhthm/commit/9b6beb83421787b489cd2e80f31eb559e5dcdb49))
+* **auth:** implement server-side sign out for proper session invalidation ([2832e3d](https://github.com/Benedict-Carling/eyeryhthm/commit/2832e3dd5f78b0428658b24e2ca2e122c2a6eb8f))
+* **auth:** set cookies on response for proper sign-out in production ([7921575](https://github.com/Benedict-Carling/eyeryhthm/commit/7921575cf4253c2f2f26dcb38e6f1f298c3a18db))
+* **auth:** use onSelect instead of onClick for sign out menu item ([060b712](https://github.com/Benedict-Carling/eyeryhthm/commit/060b7124b2c251520614a0aa993cc90740bd24c2))
+* **ci:** handle missing Supabase credentials in CI environment ([d7127b6](https://github.com/Benedict-Carling/eyeryhthm/commit/d7127b695183431f1419e6c51a3cd0a3f342e69c))
+* **navbar:** improve spacing between user menu and theme toggle ([909b384](https://github.com/Benedict-Carling/eyeryhthm/commit/909b384e05732d9f1b022d143ab3e5764a01fb81))
+
 ## [1.15.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.14.0...v1.15.0) (2025-12-10)
 
 
