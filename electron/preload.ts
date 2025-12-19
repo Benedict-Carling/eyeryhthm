@@ -85,6 +85,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getCameraPermissionStatus: () => ipcRenderer.invoke("get-camera-permission-status"),
   requestCameraPermission: () => ipcRenderer.invoke("request-camera-permission"),
   openCameraSettings: () => ipcRenderer.invoke("open-camera-settings"),
+
+  // Secure storage APIs (for auth tokens)
+  secureStorage: {
+    get: (key: string) => ipcRenderer.invoke("secure-storage-get", key),
+    set: (key: string, value: string) => ipcRenderer.invoke("secure-storage-set", key, value),
+    delete: (key: string) => ipcRenderer.invoke("secure-storage-delete", key),
+  },
 });
 
 // Update status type (mirrors the one in updater.ts)

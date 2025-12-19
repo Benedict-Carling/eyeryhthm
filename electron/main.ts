@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification, session } from "electron";
+import { app, BrowserWindow, ipcMain, shell, protocol, net, Tray, Menu, nativeImage, powerSaveBlocker, powerMonitor, Notification, session, safeStorage } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
 import { setupAutoUpdater } from "./updater";
@@ -584,7 +584,7 @@ app.whenReady().then(async () => {
             "style-src 'self' 'unsafe-inline' app:", // unsafe-inline needed for Radix UI themes
             "img-src 'self' data: app:",
             "font-src 'self' app:",
-            "connect-src 'self' https://*.ingest.de.sentry.io", // Sentry error reporting
+            "connect-src 'self' https://*.ingest.de.sentry.io https://*.supabase.co", // Sentry error reporting + Supabase auth
             "worker-src 'self' app: blob:", // Frame capture worker + Sentry web worker
             "media-src 'self' mediastream:", // Camera access
           ].join("; "),
@@ -935,5 +935,67 @@ ipcMain.handle("open-camera-settings", async () => {
   } catch (err) {
     error('[Settings] Failed to open camera settings:', err);
     return false;
+  }
+});
+
+// =============================================================================
+// Secure Storage IPC Handlers (for auth tokens)
+// =============================================================================
+
+/**
+ * In-memory cache for secure storage
+ * Maps key to encrypted buffer
+ */
+const secureStorageCache = new Map<string, Buffer>();
+
+ipcMain.handle("secure-storage-get", async (_event, key: string): Promise<string | null> => {
+  try {
+    // Check if safeStorage is available
+    if (!safeStorage.isEncryptionAvailable()) {
+      warn('[SecureStorage] Encryption not available, falling back to cache');
+      const cached = secureStorageCache.get(key);
+      if (!cached) return null;
+      // In this fallback case, data is not encrypted
+      return cached.toString('utf-8');
+    }
+
+    const encrypted = secureStorageCache.get(key);
+    if (!encrypted) {
+      return null;
+    }
+
+    const decrypted = safeStorage.decryptString(encrypted);
+    return decrypted;
+  } catch (err) {
+    error(`[SecureStorage] Failed to get key "${key}":`, err);
+    return null;
+  }
+});
+
+ipcMain.handle("secure-storage-set", async (_event, key: string, value: string): Promise<void> => {
+  try {
+    // Check if safeStorage is available
+    if (!safeStorage.isEncryptionAvailable()) {
+      warn('[SecureStorage] Encryption not available, storing in plain cache');
+      secureStorageCache.set(key, Buffer.from(value, 'utf-8'));
+      return;
+    }
+
+    const encrypted = safeStorage.encryptString(value);
+    secureStorageCache.set(key, encrypted);
+    log(`[SecureStorage] Stored key "${key}" securely`);
+  } catch (err) {
+    error(`[SecureStorage] Failed to set key "${key}":`, err);
+    throw err;
+  }
+});
+
+ipcMain.handle("secure-storage-delete", async (_event, key: string): Promise<void> => {
+  try {
+    secureStorageCache.delete(key);
+    log(`[SecureStorage] Deleted key "${key}"`);
+  } catch (err) {
+    error(`[SecureStorage] Failed to delete key "${key}":`, err);
+    throw err;
   }
 });

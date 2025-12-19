@@ -295,12 +295,13 @@ a {
 }
 
 /* ----- Focus Ring Animation ----- */
-*:focus-visible {
+/* Apply to all elements except Radix components that handle their own focus */
+*:focus-visible:not(.rt-TextFieldInput):not(.rt-TextAreaInput):not([data-radix-collection-item]) {
   outline: 2px solid var(--accent-8);
   outline-offset: 2px;
   transition: outline-offset 0.15s ease;
 }
 
-*:focus-visible:active {
+*:focus-visible:active:not(.rt-TextFieldInput):not(.rt-TextAreaInput) {
   outline-offset: 1px;
 }
