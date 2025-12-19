@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.18.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.17.1...v1.18.0) (2025-12-19)
+
+
+### Features
+
+* add Supabase authentication with secure token storage ([e21d943](https://github.com/Benedict-Carling/eyeryhthm/commit/e21d94343da4f055a4696a493507c1aa668522f9))
+* integrate working authentication implementation ([b6e7c67](https://github.com/Benedict-Carling/eyeryhthm/commit/b6e7c6791e391f4da0bdd7c4d3a8c922fd366580))
+
+
+### Bug Fixes
+
+* **auth:** improve authentication UI and update privacy messaging ([bfda55f](https://github.com/Benedict-Carling/eyeryhthm/commit/bfda55ff0f25e3ff2b60c75a5577a967644407d7))
+
+
+### Reverts
+
+* restore codebase to v1.15.0 state to replace failed auth implementation ([9c1e58d](https://github.com/Benedict-Carling/eyeryhthm/commit/9c1e58dddc2ac1c0e5e0d9184b95a0042ab1e42a))
+
 ## [1.17.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.17.0...v1.17.1) (2025-12-17)
 
 
