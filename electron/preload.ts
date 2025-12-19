@@ -85,29 +85,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getCameraPermissionStatus: () => ipcRenderer.invoke("get-camera-permission-status"),
   requestCameraPermission: () => ipcRenderer.invoke("request-camera-permission"),
   openCameraSettings: () => ipcRenderer.invoke("open-camera-settings"),
-
-  // OAuth deep link callback handler
-  onOAuthCallback: (callback: (result: OAuthCallbackResult) => void) => {
-    const listener = (_event: IpcRendererEvent, result: OAuthCallbackResult) => {
-      callback(result);
-    };
-    ipcRenderer.on("oauth-callback", listener);
-    // Return cleanup function
-    return () => {
-      ipcRenderer.removeListener("oauth-callback", listener);
-    };
-  },
-
-  // Get the OAuth redirect URL for this platform
-  getOAuthRedirectUrl: () => "eyerhythm://auth/callback",
 });
-
-// OAuth callback result type
-export interface OAuthCallbackResult {
-  success: boolean;
-  code?: string;
-  error?: string;
-}
 
 // Update status type (mirrors the one in updater.ts)
 export interface UpdateStatus {

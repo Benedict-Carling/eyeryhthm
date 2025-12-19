@@ -15,8 +15,6 @@ import {
   Button,
   Progress,
   Select,
-  AlertDialog,
-  TextField,
 } from "@radix-ui/themes";
 import {
   BellIcon,
@@ -30,13 +28,11 @@ import {
   CrossCircledIcon,
   ExclamationTriangleIcon,
   GearIcon,
-  TrashIcon,
 } from "@radix-ui/react-icons";
 import { VersionInfo } from "@/components/VersionInfo";
 import { useUpdateStatus } from "@/hooks/useUpdateStatus";
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useCameraPermission } from "@/hooks/useCameraPermission";
-import { useAuth } from "@/contexts/AuthContext";
 
 function getInitialFatigueThreshold(): number {
   if (typeof window === "undefined") return 8;
@@ -47,10 +43,6 @@ function getInitialFatigueThreshold(): number {
 export default function SettingsPage() {
   const [fatigueThreshold, setFatigueThreshold] = useState(getInitialFatigueThreshold);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const { user } = useAuth();
   const {
     isElectron,
     updateStatus,
@@ -109,30 +101,6 @@ export default function SettingsPage() {
     setTestStatus(result.success ? "success" : "error");
     // Reset status after 3 seconds
     setTimeout(() => setTestStatus("idle"), 3000);
-  };
-
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== "DELETE") return;
-
-    setIsDeleting(true);
-    setDeleteError(null);
-
-    try {
-      const response = await fetch("/api/auth/delete-account", {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete account");
-      }
-
-      // Redirect to login page after successful deletion
-      window.location.href = "/login";
-    } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : "An error occurred");
-      setIsDeleting(false);
-    }
   };
 
   // Generate hour options for quiet hours selects
@@ -485,101 +453,13 @@ export default function SettingsPage() {
             </Text>
           </Box>
 
-          {isElectron && (
-            <Box>
-              <Heading size="5" mb="4">
-                About
-              </Heading>
-              {renderUpdateCallout()}
-              <VersionInfo />
-            </Box>
-          )}
-
-          {user && (
-            <Box>
-              <Heading size="5" mb="4" color="red">
-                Danger Zone
-              </Heading>
-
-              <Card size="2">
-                <Flex
-                  justify="between"
-                  align="center"
-                  style={{ padding: "14px 16px" }}
-                >
-                  <Box style={{ flex: 1, marginRight: "40px" }}>
-                    <Flex align="center" gap="2" mb="1">
-                      <TrashIcon />
-                      <Text size="3" weight="medium">
-                        Delete Account
-                      </Text>
-                    </Flex>
-                    <Text size="2" color="gray">
-                      Permanently delete your account and all associated data. This action cannot be undone.
-                    </Text>
-                  </Box>
-
-                  <AlertDialog.Root>
-                    <AlertDialog.Trigger>
-                      <Button color="red" variant="soft">
-                        Delete Account
-                      </Button>
-                    </AlertDialog.Trigger>
-                    <AlertDialog.Content maxWidth="450px">
-                      <AlertDialog.Title>Delete Account</AlertDialog.Title>
-                      <AlertDialog.Description size="2">
-                        <Flex direction="column" gap="3">
-                          <Text>
-                            Are you sure you want to delete your account? This will permanently remove:
-                          </Text>
-                          <Box pl="4">
-                            <Text as="p" size="2" color="gray">- Your profile and settings</Text>
-                            <Text as="p" size="2" color="gray">- All session history and data</Text>
-                            <Text as="p" size="2" color="gray">- Your calibration preferences</Text>
-                          </Box>
-                          <Text weight="medium" color="red">
-                            This action cannot be undone.
-                          </Text>
-                          <Box>
-                            <Text size="2" mb="2">
-                              Type <strong>DELETE</strong> to confirm:
-                            </Text>
-                            <TextField.Root
-                              placeholder="DELETE"
-                              value={deleteConfirmText}
-                              onChange={(e) => setDeleteConfirmText(e.target.value)}
-                            />
-                          </Box>
-                          {deleteError && (
-                            <Text color="red" size="2">
-                              {deleteError}
-                            </Text>
-                          )}
-                        </Flex>
-                      </AlertDialog.Description>
-
-                      <Flex gap="3" mt="4" justify="end">
-                        <AlertDialog.Cancel>
-                          <Button variant="soft" color="gray">
-                            Cancel
-                          </Button>
-                        </AlertDialog.Cancel>
-                        <AlertDialog.Action>
-                          <Button
-                            color="red"
-                            onClick={handleDeleteAccount}
-                            disabled={deleteConfirmText !== "DELETE" || isDeleting}
-                          >
-                            {isDeleting ? "Deleting..." : "Delete Account"}
-                          </Button>
-                        </AlertDialog.Action>
-                      </Flex>
-                    </AlertDialog.Content>
-                  </AlertDialog.Root>
-                </Flex>
-              </Card>
-            </Box>
-          )}
+          <Box>
+            <Heading size="5" mb="4">
+              About
+            </Heading>
+            {renderUpdateCallout()}
+            <VersionInfo />
+          </Box>
         </Flex>
       </Flex>
     </Container>

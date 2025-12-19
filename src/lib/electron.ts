@@ -38,12 +38,6 @@ export interface UpdateStatus {
 
 export type CameraPermissionStatus = 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown';
 
-export interface OAuthCallbackResult {
-  success: boolean;
-  code?: string;
-  error?: string;
-}
-
 export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   getPlatform: () => Promise<{
@@ -82,9 +76,6 @@ export interface ElectronAPI {
   getCameraPermissionStatus: () => Promise<CameraPermissionStatus>;
   requestCameraPermission: () => Promise<boolean>;
   openCameraSettings: () => Promise<boolean>;
-  // OAuth deep link callback handler
-  onOAuthCallback: (callback: (result: OAuthCallbackResult) => void) => () => void;
-  getOAuthRedirectUrl: () => string;
 }
 
 declare global {

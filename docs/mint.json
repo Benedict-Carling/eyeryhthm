@@ -46,7 +46,7 @@
   "navigation": [
     {
       "group": "",
-      "pages": ["index", "download", "feedback", "privacy"]
+      "pages": ["index", "download", "feedback"]
     },
     {
       "group": "",

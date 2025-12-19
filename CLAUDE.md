@@ -223,18 +223,6 @@ Automatically runs before each commit:
   - Updates CHANGELOG.md and version
   - Builds and uploads Electron packages to GitHub releases
 
-## Style Guide
-
-This project uses **Radix Themes** as the primary UI component library. When building UI:
-
-1. **Always prefer Radix Theme components** - Use components from `@radix-ui/themes` wherever possible (Button, Card, Dialog, TextField, Select, etc.)
-2. **Follow Radix conventions** - The theme has been configured to match the application's design system
-3. **Reference the official documentation** - For component APIs, variants, and best practices, see: https://www.radix-ui.com/themes/docs/overview/getting-started
-4. **Use theme tokens** - Leverage Radix's built-in color scales, spacing, and typography tokens rather than custom CSS values
-5. **Avoid custom styling when possible** - Radix Theme components come with sensible defaults that match our design
-
-**Component Reference:** https://www.radix-ui.com/themes/docs/components
-
 ## Development Notes
 
 1. **Camera Testing in Browser**: Use Chrome with `--use-fake-device-for-media-stream` flag

@@ -15,11 +15,10 @@ import {
   getSessionQuality,
   MAX_BLINK_RATE,
 } from "../lib/sessions/types";
-import { SupabaseSessionService } from "../lib/sessions/supabase-session-service";
+import { SessionStorageService } from "../lib/sessions/session-storage-service";
 import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
 import { useCalibration } from "./CalibrationContext";
-import { useAuth } from "./AuthContext";
 import { AlertService } from "../lib/alert-service";
 import { getElectronAPI } from "../lib/electron";
 
@@ -127,7 +126,6 @@ function generateMockBlinkEvents(
 }
 
 export function SessionProvider({ children }: SessionProviderProps) {
-  const { user, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [activeSession, setActiveSession] = useState<SessionData | null>(null);
   const [isTracking, setIsTracking] = useState(false);
@@ -136,12 +134,6 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [sessionBaselineBlinkCount, setSessionBaselineBlinkCount] = useState(0);
   const [sessionStartTime, setSessionStartTime] = useState(0);
-  const userIdRef = useRef<string | null>(null);
-
-  // Keep user ID in ref for use in callbacks
-  useEffect(() => {
-    userIdRef.current = user?.id ?? null;
-  }, [user]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlinkUpdateRef = useRef<number>(Date.now());
@@ -192,30 +184,14 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
   // Load persisted sessions on mount (or mock data if none exist) and cleanup on unmount
   useEffect(() => {
-    const loadSessions = async () => {
-      if (authLoading) return; // Wait for auth to initialize
-
-      if (user) {
-        // Load from Supabase for authenticated users
-        const hasSessions = await SupabaseSessionService.hasPersistedSessions(
-          user.id
-        );
-        if (hasSessions) {
-          const persistedSessions = await SupabaseSessionService.getAllSessions(
-            user.id
-          );
-          setSessions(persistedSessions);
-        } else {
-          // No persisted sessions - show example sessions for new users
-          setSessions(generateMockSessions());
-        }
-      } else {
-        // Unauthenticated users see example sessions only (no persistence)
-        setSessions(generateMockSessions());
-      }
-    };
-
-    loadSessions();
+    // Check if there are persisted sessions in localStorage
+    if (SessionStorageService.hasPersistedSessions()) {
+      const persistedSessions = SessionStorageService.getAllSessions();
+      setSessions(persistedSessions);
+    } else {
+      // No persisted sessions - show example sessions for new users
+      setSessions(generateMockSessions());
+    }
 
     const alertService = alertServiceRef.current;
 
@@ -223,7 +199,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return () => {
       alertService.stopMonitoring();
     };
-  }, [user, authLoading]);
+  }, []);
 
   /**
    * MediaStreamTrackProcessor for reliable frame capture
@@ -665,13 +641,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const startSession = useCallback(() => {
     if (!isTracking || activeSession || !isFaceDetected) return;
 
-    // Use UUID for authenticated users (Supabase compatible), timestamp for local
-    const sessionId = userIdRef.current
-      ? SupabaseSessionService.generateSessionId()
-      : `session-${Date.now()}`;
-
     const newSession: SessionData = {
-      id: sessionId,
+      id: `session-${Date.now()}`,
       startTime: new Date(),
       isActive: true,
       averageBlinkRate: 0,
@@ -695,7 +666,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     setSessionStartTime(Date.now());
   }, [isTracking, activeSession, isFaceDetected, blinkCount, activeCalibration]);
 
-  const stopSession = useCallback(async () => {
+  const stopSession = useCallback(() => {
     if (!activeSession) return;
 
     // Close any open face lost period
@@ -728,13 +699,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
       )
     );
 
-    // Persist session to Supabase (service handles min duration check)
-    const userId = userIdRef.current;
-    if (userId) {
-      await SupabaseSessionService.saveSession(updatedSession, userId);
-    }
-    // If no user, session is not persisted (middleware should prevent this case)
-  }, [activeSession]); // blinkCount read from ref, userId read from ref
+    // Persist session to localStorage (service handles min duration check)
+    SessionStorageService.saveSession(updatedSession);
+  }, [activeSession]); // blinkCount read from ref
 
   // Internal function to set tracking state (used by both toggle and Electron IPC)
   const setTrackingState = useCallback(async (enabled: boolean) => {
@@ -794,11 +761,6 @@ export function SessionProvider({ children }: SessionProviderProps) {
   ]);
 
   const toggleTracking = useCallback(async () => {
-    // Require authentication to start tracking (defensive check - middleware should handle this)
-    if (!userIdRef.current && !isTracking) {
-      console.warn('[SessionContext] Cannot start tracking without authentication');
-      return;
-    }
     await setTrackingState(!isTracking);
   }, [isTracking, setTrackingState]);
 

@@ -1,23 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Container,
-  Flex,
-  Text,
-  IconButton,
-  Badge,
-  Switch,
-  Tooltip,
-  DropdownMenu,
-  Avatar,
-} from "@radix-ui/themes";
-import { SunIcon, MoonIcon, LaptopIcon, ExitIcon } from "@radix-ui/react-icons";
+import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
+import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSession } from "../contexts/SessionContext";
 import { useCalibration } from "../contexts/CalibrationContext";
-import { useAuth } from "../contexts/AuthContext";
 import { useUpdateStatus } from "../hooks/useUpdateStatus";
 import { useCameraPermission } from "../hooks/useCameraPermission";
 import { usePlatform } from "../hooks/usePlatform";
@@ -36,10 +25,8 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const { isTracking, toggleTracking } = useSession();
   const { hasOnlyFactoryDefault } = useCalibration();
-  const { user, profile, signOut } = useAuth();
   const { hasUpdate } = useUpdateStatus();
-  const { needsAttention: cameraPermissionNeedsAttention } =
-    useCameraPermission();
+  const { needsAttention: cameraPermissionNeedsAttention } = useCameraPermission();
   const { isElectron, capabilities } = usePlatform();
   const pathname = usePathname();
 
@@ -59,16 +46,12 @@ export function Navbar() {
   };
 
   const handleThemeCycle = () => {
-    const themes: Array<"light" | "dark" | "system"> = [
-      "light",
-      "dark",
-      "system",
-    ];
+    const themes: Array<"light" | "dark" | "system"> = ["light", "dark", "system"];
     const currentIndex = themes.indexOf(theme);
     const nextIndex = (currentIndex + 1) % themes.length;
     const nextTheme = themes[nextIndex];
     if (nextTheme) {
-      setThemeAnimKey((k) => k + 1);
+      setThemeAnimKey(k => k + 1);
       setTheme(nextTheme);
     }
   };
@@ -83,9 +66,7 @@ export function Navbar() {
   const trackingBadgeClasses = [
     styles.trackingBadge,
     isTracking ? styles.trackingBadgeActive : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].filter(Boolean).join(" ");
 
   return (
     <>
@@ -93,23 +74,17 @@ export function Navbar() {
       {showTitleBar && <TitleBar />}
 
       {/* Main navbar */}
-      <div
-        className={
-          showTitleBar
-            ? `${styles.navbar} ${styles.navbarWithTitleBar}`
-            : styles.navbar
-        }
-      >
+      <div className={showTitleBar ? `${styles.navbar} ${styles.navbarWithTitleBar}` : styles.navbar}>
         <Container size="3">
-          <Flex align="center" justify="between" py="3">
+          <Flex
+            align="center"
+            justify="between"
+            py="3"
+          >
             <Flex align="center" gap="6" wrap="wrap" style={{ minWidth: 0 }}>
               <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
                 <Flex align="center" gap="2">
-                  <Text
-                    size="5"
-                    weight="bold"
-                    style={{ color: "var(--mauve-12)" }}
-                  >
+                  <Text size="5" weight="bold" style={{ color: "var(--mauve-12)" }}>
                     EyeRhythm
                   </Text>
                   <Badge size="1" color="gray" variant="soft">
@@ -135,35 +110,25 @@ export function Navbar() {
                     }}
                   >
                     <span
-                      className={`${styles.navLink} ${
-                        pathname === link.href ? styles.navLinkActive : ""
-                      }`}
+                      className={`${styles.navLink} ${pathname === link.href ? styles.navLinkActive : ""}`}
                       style={{ position: "relative", display: "inline-block" }}
                     >
                       <Text size="3">{link.label}</Text>
-                      {link.href === "/calibration" &&
-                        showCalibrationNotification && (
-                          <span className={styles.notificationDot} />
-                        )}
-                      {link.href === "/settings" &&
-                        showSettingsNotification && (
-                          <span className={styles.notificationDot} />
-                        )}
+                      {link.href === "/calibration" && showCalibrationNotification && (
+                        <span className={styles.notificationDot} />
+                      )}
+                      {link.href === "/settings" && showSettingsNotification && (
+                        <span className={styles.notificationDot} />
+                      )}
                     </span>
                   </Link>
                 ))}
               </Flex>
             </Flex>
 
-            <Flex align="center" gap="4" flexShrink="0">
+            <Flex align="center" gap="3">
               {/* Tracking toggle */}
-              <Tooltip
-                content={
-                  isTracking
-                    ? "Click to pause session tracking"
-                    : "Click to enable session tracking"
-                }
-              >
+              <Tooltip content={isTracking ? "Click to pause session tracking" : "Click to enable session tracking"}>
                 <Badge
                   size="2"
                   color={isTracking ? "green" : "gray"}
@@ -171,10 +136,7 @@ export function Navbar() {
                   className={trackingBadgeClasses}
                   onClick={toggleTracking}
                 >
-                  <span
-                    key={String(isTracking)}
-                    className={styles.trackingIconEnter}
-                  >
+                  <span key={String(isTracking)} className={styles.trackingIconEnter}>
                     {isTracking ? <Eye size={14} /> : <EyeOff size={14} />}
                   </span>
                   <span className={styles.trackingText}>
@@ -200,43 +162,6 @@ export function Navbar() {
                   {getThemeIcon()}
                 </span>
               </IconButton>
-
-              {/* User menu */}
-              {user && (
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger>
-                    <IconButton variant="ghost" size="2">
-                      <Avatar
-                        size="1"
-                        fallback={
-                          profile?.full_name?.[0]?.toUpperCase() ||
-                          user.email?.[0]?.toUpperCase() ||
-                          "U"
-                        }
-                      />
-                    </IconButton>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="end">
-                    <DropdownMenu.Label>
-                      <Flex direction="column" gap="1">
-                        {profile?.full_name && (
-                          <Text size="2" weight="medium">
-                            {profile.full_name}
-                          </Text>
-                        )}
-                        <Text size="1" color="gray">
-                          {user.email}
-                        </Text>
-                      </Flex>
-                    </DropdownMenu.Label>
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item color="red" onSelect={signOut}>
-                      <ExitIcon />
-                      Sign out
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              )}
             </Flex>
           </Flex>
         </Container>
