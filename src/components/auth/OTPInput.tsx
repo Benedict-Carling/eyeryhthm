@@ -102,17 +102,17 @@ export function OTPInput({ email, onVerify, onBack, onResend }: OTPInputProps) {
   return (
     <form onSubmit={handleVerify}>
       <Flex direction="column" gap="4">
-        <Flex direction="column" gap="2" align="center">
-          <IconButton
-            variant="ghost"
-            size="2"
-            onClick={onBack}
-            style={{ alignSelf: "flex-start" }}
-            type="button"
-          >
-            <ArrowLeftIcon />
-          </IconButton>
+        <IconButton
+          variant="ghost"
+          size="2"
+          onClick={onBack}
+          type="button"
+          style={{ alignSelf: "flex-start", marginLeft: "-8px" }}
+        >
+          <ArrowLeftIcon />
+        </IconButton>
 
+        <Flex direction="column" gap="2" align="center">
           <Heading size="6">Enter verification code</Heading>
           <Text size="2" color="gray" style={{ textAlign: "center" }}>
             We sent an 8-digit code to

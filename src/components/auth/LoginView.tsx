@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import { Flex, Card, Box, Text, Badge } from "@radix-ui/themes";
+import { Flex, Card, Box, Text, Badge, Link } from "@radix-ui/themes";
 import { EmailInput } from "./EmailInput";
 import { OTPInput } from "./OTPInput";
 import { useAuth } from "../../contexts/AuthContext";
@@ -95,8 +95,11 @@ export function LoginView() {
 
         {/* Footer text */}
         <Text size="1" color="gray" style={{ textAlign: "center", maxWidth: "320px" }}>
-          By signing in, you agree to the privacy-focused tracking of your blink patterns for fatigue detection.
-          Your data stays local and is never shared.
+          By signing in, you agree to our{" "}
+          <Link href="https://eyerhythm.com/privacy" target="_blank" rel="noopener noreferrer">
+            privacy policy
+          </Link>
+          .
         </Text>
       </Flex>
     </Flex>
