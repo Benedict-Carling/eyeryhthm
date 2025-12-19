@@ -63,3 +63,6 @@ next-env.d.ts
 # Icon source exports
 eyerhythm-iOS-*.png
 eyerhythm Exports/
+
+# Supabase
+supabase/

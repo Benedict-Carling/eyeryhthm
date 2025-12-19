@@ -76,6 +76,12 @@ export interface ElectronAPI {
   getCameraPermissionStatus: () => Promise<CameraPermissionStatus>;
   requestCameraPermission: () => Promise<boolean>;
   openCameraSettings: () => Promise<boolean>;
+  // Secure storage APIs (for auth tokens)
+  secureStorage?: {
+    get: (key: string) => Promise<string | null>;
+    set: (key: string, value: string) => Promise<void>;
+    delete: (key: string) => Promise<void>;
+  };
 }
 
 declare global {

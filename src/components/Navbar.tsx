@@ -10,6 +10,7 @@ import { useCalibration } from "../contexts/CalibrationContext";
 import { useUpdateStatus } from "../hooks/useUpdateStatus";
 import { useCameraPermission } from "../hooks/useCameraPermission";
 import { usePlatform } from "../hooks/usePlatform";
+import { UserMenu } from "./auth/UserMenu";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import packageJson from "../../package.json";
@@ -150,6 +151,9 @@ export function Navbar() {
                   />
                 </Badge>
               </Tooltip>
+
+              {/* User menu */}
+              <UserMenu />
 
               <IconButton
                 size="2"

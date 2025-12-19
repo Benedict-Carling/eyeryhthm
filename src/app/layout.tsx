@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "../contexts/AuthContext";
 import { CalibrationProvider } from "../contexts/CalibrationContext";
 import { SessionProvider } from "../contexts/SessionContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
@@ -45,11 +46,13 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
-          <CalibrationProvider>
-            <SessionProvider>
-              <ClientLayout>{children}</ClientLayout>
-            </SessionProvider>
-          </CalibrationProvider>
+          <AuthProvider>
+            <CalibrationProvider>
+              <SessionProvider>
+                <ClientLayout>{children}</ClientLayout>
+              </SessionProvider>
+            </CalibrationProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
