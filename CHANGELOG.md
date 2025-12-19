@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.18.0...v1.18.1) (2025-12-19)
+
+
+### Bug Fixes
+
+* add Supabase env vars to build workflows ([42d0dc6](https://github.com/Benedict-Carling/eyeryhthm/commit/42d0dc671d7a29810f279e6b0ac94e6219000103))
+
 ## [1.18.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.17.1...v1.18.0) (2025-12-19)
 
 
