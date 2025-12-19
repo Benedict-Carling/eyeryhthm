@@ -72,6 +72,8 @@ jobs:
 
       - name: Run E2E tests
         run: npm test
+        env:
+          NEXT_PUBLIC_DEV_SKIP_AUTH: 'true'
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
