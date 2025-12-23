@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.19.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.18.1...v1.19.0) (2025-12-23)
+
+
+### Features
+
+* Add Supabase cloud sync with offline-first architecture ([#94](https://github.com/Benedict-Carling/eyeryhthm/issues/94)) ([4cec90e](https://github.com/Benedict-Carling/eyeryhthm/commit/4cec90edf1c484b20f9d1d513b19443f49506205))
+
+
+### Bug Fixes
+
+* enable auth bypass for e2e tests in CI ([8f7fde6](https://github.com/Benedict-Carling/eyeryhthm/commit/8f7fde6c2d26369cf4135228f0a9b5a0ae713eea))
+
 ## [1.18.1](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.18.0...v1.18.1) (2025-12-19)
 
 
