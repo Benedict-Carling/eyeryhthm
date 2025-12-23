@@ -1,4 +1,5 @@
 import { SessionData, BlinkEvent } from './types';
+import { SupabaseSyncService } from '../sync';
 
 const SESSIONS_STORAGE_KEY = 'eyerhythm_sessions';
 const MAX_SESSIONS = 100;
@@ -52,7 +53,7 @@ export class SessionStorageService {
     }
   }
 
-  static saveSession(session: SessionData): boolean {
+  static async saveSession(session: SessionData, userId?: string): Promise<boolean> {
     if (typeof window === 'undefined') return false;
 
     // Don't save active sessions
@@ -90,6 +91,27 @@ export class SessionStorageService {
       const trimmedSessions = this.enforceMaxSessions(sessions);
 
       this.persistSessions(trimmedSessions);
+
+      // Sync to Supabase if user is authenticated
+      if (userId) {
+        await SupabaseSyncService.syncSession(session, userId).catch(err => {
+          console.error('Failed to sync session to Supabase:', err);
+          // Don't fail - localStorage succeeded
+        });
+
+        // Sync blink events if session has blinks
+        if (session.blinkEvents.length > 0) {
+          await SupabaseSyncService.syncBlinkEvents(
+            session.id,
+            session.blinkEvents,
+            userId
+          ).catch(err => {
+            console.error('Failed to sync blink events to Supabase:', err);
+            // Don't fail - localStorage succeeded
+          });
+        }
+      }
+
       return true;
     } catch (error) {
       console.error('Error saving session:', error);
@@ -97,15 +119,31 @@ export class SessionStorageService {
     }
   }
 
-  static deleteSession(id: string): void {
+  static async deleteSession(id: string, userId?: string): Promise<void> {
     if (typeof window === 'undefined') return;
 
     try {
       const sessions = this.getAllSessions();
       const filtered = sessions.filter((s) => s.id !== id);
+
+      // Save backup for rollback
+      const backup = sessions;
+
       this.persistSessions(filtered);
+
+      // Delete from Supabase if authenticated
+      if (userId) {
+        const result = await SupabaseSyncService.deleteSession(id, userId);
+        if (!result.success) {
+          // Rollback localStorage on Supabase failure
+          console.error('Failed to delete session from Supabase, rolling back:', result.error);
+          this.persistSessions(backup);
+          throw new Error('Failed to delete session from server');
+        }
+      }
     } catch (error) {
       console.error('Error deleting session:', error);
+      throw error instanceof Error ? error : new Error('Failed to delete session');
     }
   }
 

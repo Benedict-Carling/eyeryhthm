@@ -1,8 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { Calibration, CalibrationProgress } from '../lib/blink-detection/types';
 import { CalibrationService } from '../lib/calibration/calibration-service';
+import { SupabaseSyncService } from '../lib/sync';
+import { useAuth } from './AuthContext';
 
 interface CalibrationContextType {
   // Calibration data
@@ -38,10 +40,12 @@ interface CalibrationProviderProps {
 }
 
 export function CalibrationProvider({ children }: CalibrationProviderProps) {
+  const { user } = useAuth();
   const [calibrations, setCalibrations] = useState<Calibration[]>([]);
   const [activeCalibration, setActiveCalibrationState] = useState<Calibration | null>(null);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [calibrationProgress, setCalibrationProgress] = useState<CalibrationProgress | null>(null);
+  const isLoadingRef = useRef(false);
 
   // Load calibrations on mount
   useEffect(() => {
@@ -52,19 +56,42 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
     loadCalibrations();
   }, []);
 
-  const loadCalibrations = () => {
+  const loadCalibrations = useCallback(async () => {
+    // Prevent re-execution while loading
+    if (isLoadingRef.current) {
+      return;
+    }
+
+    isLoadingRef.current = true;
+
     try {
-      const loadedCalibrations = CalibrationService.getAllCalibrations();
-      setCalibrations(loadedCalibrations);
-      
+      // Load from localStorage first (instant)
+      const localCalibrations = CalibrationService.getAllCalibrations();
+      setCalibrations(localCalibrations);
+
+      // If authenticated, merge with Supabase data
+      if (user?.id) {
+        const supabaseCalibrations = await SupabaseSyncService.loadCalibrations(user.id);
+        const merged = SupabaseSyncService.mergeCalibrations(localCalibrations, supabaseCalibrations);
+
+        // Update localStorage with merged data
+        for (const cal of merged) {
+          await CalibrationService.saveCalibration(cal, user.id);
+        }
+
+        setCalibrations(merged);
+      }
+
       const active = CalibrationService.getActiveCalibration();
       setActiveCalibrationState(active);
     } catch (error) {
       console.error('Error loading calibrations:', error);
+    } finally {
+      isLoadingRef.current = false;
     }
-  };
+  }, [user]);
 
-  const createCalibration = (calibrationData: Omit<Calibration, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createCalibration = useCallback(async (calibrationData: Omit<Calibration, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const newCalibration: Calibration = {
         ...calibrationData,
@@ -83,15 +110,15 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
         localStorage.setItem('eyerhythm_calibrations', JSON.stringify(allCalibrations));
       }
 
-      CalibrationService.saveCalibration(newCalibration);
-      loadCalibrations();
+      await CalibrationService.saveCalibration(newCalibration, user?.id);
+      await loadCalibrations();
     } catch (error) {
       console.error('Error creating calibration:', error);
       throw error;
     }
-  };
+  }, [user, loadCalibrations]);
 
-  const deleteCalibration = (id: string) => {
+  const deleteCalibration = useCallback(async (id: string) => {
     try {
       // Prevent deletion if this is the only calibration
       if (calibrations.length <= 1) {
@@ -102,7 +129,7 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
       const calibrationToDelete = calibrations.find(cal => cal.id === id);
       const wasActive = calibrationToDelete?.isActive;
 
-      CalibrationService.deleteCalibration(id);
+      await CalibrationService.deleteCalibration(id, user?.id);
 
       // If we deleted the active calibration and there are others, make the most recent one active
       if (wasActive) {
@@ -115,37 +142,37 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
           // Set the most recent as active
           const mostRecent = remainingCalibrations[0];
           if (mostRecent) {
-            CalibrationService.setActiveCalibration(mostRecent.id);
+            await CalibrationService.setActiveCalibration(mostRecent.id, user?.id);
           }
         }
       }
 
-      loadCalibrations();
+      await loadCalibrations();
     } catch (error) {
       console.error('Error deleting calibration:', error);
       throw error;
     }
-  };
+  }, [calibrations, user, loadCalibrations]);
 
-  const setActiveCalibration = (id: string) => {
+  const setActiveCalibration = useCallback(async (id: string) => {
     try {
-      CalibrationService.setActiveCalibration(id);
-      loadCalibrations();
+      await CalibrationService.setActiveCalibration(id, user?.id);
+      await loadCalibrations();
     } catch (error) {
       console.error('Error setting active calibration:', error);
       throw error;
     }
-  };
+  }, [user, loadCalibrations]);
 
-  const updateCalibrationName = (id: string, name: string) => {
+  const updateCalibrationName = useCallback(async (id: string, name: string) => {
     try {
-      CalibrationService.updateCalibrationName(id, name);
-      loadCalibrations();
+      await CalibrationService.updateCalibrationName(id, name, user?.id);
+      await loadCalibrations();
     } catch (error) {
       console.error('Error updating calibration name:', error);
       throw error;
     }
-  };
+  }, [user, loadCalibrations]);
 
   const startCalibration = () => {
     setIsCalibrating(true);
@@ -167,7 +194,7 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
     setCalibrationProgress(prev => prev ? { ...prev, ...progress } : null);
   };
 
-  const completeCalibration = (calibrationData: Omit<Calibration, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const completeCalibration = useCallback(async (calibrationData: Omit<Calibration, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       // New calibrations should always be active by default
       const newCalibration: Calibration = {
@@ -186,20 +213,20 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
           cal.isActive = false;
           cal.updatedAt = new Date();
         });
-        
+
         // Save the deactivated calibrations
         localStorage.setItem('eyerhythm_calibrations', JSON.stringify(allCalibrations));
       }
 
       // Save the new active calibration
-      CalibrationService.saveCalibration(newCalibration);
-      loadCalibrations();
+      await CalibrationService.saveCalibration(newCalibration, user?.id);
+      await loadCalibrations();
       stopCalibration();
     } catch (error) {
       console.error('Error completing calibration:', error);
       throw error;
     }
-  };
+  }, [calibrations, user, loadCalibrations]);
 
   const hasActiveCalibration = (): boolean => {
     return activeCalibration !== null;
