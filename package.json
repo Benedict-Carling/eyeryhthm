@@ -67,6 +67,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.0.7",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "fake-indexeddb": "^6.2.5",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lucide-react": "^0.525.0",
