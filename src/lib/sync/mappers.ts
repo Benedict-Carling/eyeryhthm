@@ -27,6 +27,7 @@ const NAMESPACE_OID = '6ba7b812-9dad-11d1-80b4-00c04fd430c8';
 export class SessionMapper {
   /**
    * Convert localStorage session to database format
+   * Note: total_blinks and average_blink_rate are computed from blink_patterns table
    */
   static toDatabase(local: SessionData, userId: string): DBSession {
     return {
@@ -35,8 +36,6 @@ export class SessionMapper {
       calibration_id: local.calibrationId ? this.normalizeUUID(local.calibrationId) : null,
       start_timestamp: local.startTime.toISOString(),
       end_timestamp: local.endTime?.toISOString() || null,
-      total_blinks: local.totalBlinks,
-      average_blink_rate: local.averageBlinkRate,
       session_type: local.isActive ? 'active' : 'completed',
       quality_assessment: this.mapQuality(local.quality),
       device_type: this.detectDeviceType(),
@@ -49,24 +48,30 @@ export class SessionMapper {
 
   /**
    * Convert database session to localStorage format
+   * Note: totalBlinks computed from blinkEvents count, averageBlinkRate computed from duration
    */
   static fromDatabase(db: DBSession, blinkEvents: BlinkEvent[] = []): SessionData {
+    const totalBlinks = blinkEvents.length;
+    const durationSeconds = db.end_timestamp
+      ? Math.floor(
+          (new Date(db.end_timestamp).getTime() - new Date(db.start_timestamp).getTime()) / 1000
+        )
+      : undefined;
+    const durationMinutes = durationSeconds ? durationSeconds / 60 : 0;
+    const averageBlinkRate = durationMinutes > 0 ? totalBlinks / durationMinutes : 0;
+
     return {
       id: db.id,
       startTime: new Date(db.start_timestamp),
       endTime: db.end_timestamp ? new Date(db.end_timestamp) : undefined,
       isActive: db.session_type === 'active',
-      averageBlinkRate: db.average_blink_rate || 0,
+      averageBlinkRate,
       blinkEvents,
       quality: this.mapQualityFromDB(db.quality_assessment),
       fatigueAlertCount: 0, // Not stored in DB, would need separate table
-      duration: db.end_timestamp
-        ? Math.floor(
-            (new Date(db.end_timestamp).getTime() - new Date(db.start_timestamp).getTime()) / 1000
-          )
-        : undefined,
+      duration: durationSeconds,
       calibrationId: db.calibration_id || undefined,
-      totalBlinks: db.total_blinks,
+      totalBlinks,
       faceLostPeriods: db.face_lost_periods,
     };
   }
@@ -165,8 +170,6 @@ export class CalibrationMapper {
       user_id: userId,
       name: local.name,
       ear_threshold: local.earThreshold,
-      baseline_ear_open: null, // Not currently tracked in localStorage
-      baseline_ear_closed: null, // Not currently tracked in localStorage
       is_active: local.isActive,
       is_default: local.isDefault || false,
       device_type: SessionMapper.detectDeviceType(),
@@ -231,8 +234,6 @@ export class BlinkEventMapper {
       user_id: userId,
       screen_session_id: sessionId,
       timestamp: new Date(event.timestamp).toISOString(),
-      blink_duration_ms: event.duration || null,
-      ear_value: null, // Reserved for future use
       created_at: new Date().toISOString(),
     }));
   }
@@ -243,7 +244,6 @@ export class BlinkEventMapper {
   static batchFromDatabase(patterns: DBBlinkPattern[]): BlinkEvent[] {
     return patterns.map((pattern) => ({
       timestamp: new Date(pattern.timestamp).getTime(),
-      duration: pattern.blink_duration_ms || undefined,
     }));
   }
 }

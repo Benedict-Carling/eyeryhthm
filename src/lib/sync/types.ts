@@ -44,6 +44,7 @@ export type SyncResult<T = void> =
 
 /**
  * Database format for screen_sessions table
+ * Note: total_blinks and average_blink_rate are computed from blink_patterns table
  */
 export interface DBSession {
   id: string;                          // UUID
@@ -51,8 +52,6 @@ export interface DBSession {
   calibration_id: string | null;       // UUID
   start_timestamp: string;             // ISO 8601 timestamp
   end_timestamp: string | null;        // ISO 8601 timestamp
-  total_blinks: number;
-  average_blink_rate: number | null;
   session_type: 'active' | 'completed' | 'interrupted';
   quality_assessment: 'excellent' | 'good' | 'fair' | 'poor' | null;
   device_type: 'web' | 'desktop' | 'mobile' | null;
@@ -70,8 +69,6 @@ export interface DBCalibration {
   user_id: string;                     // UUID
   name: string;
   ear_threshold: number;               // NUMERIC type
-  baseline_ear_open: number | null;
-  baseline_ear_closed: number | null;
   is_active: boolean;
   is_default: boolean;
   device_type: 'web' | 'desktop' | 'mobile' | null;
@@ -90,8 +87,6 @@ export interface DBBlinkPattern {
   user_id: string;                     // UUID
   screen_session_id: string;           // UUID
   timestamp: string;                   // ISO 8601 timestamp
-  blink_duration_ms: number | null;
-  ear_value: number | null;
   created_at: string;                  // ISO 8601 timestamp
 }
 

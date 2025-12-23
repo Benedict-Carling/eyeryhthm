@@ -69,7 +69,7 @@ export interface OTPSendResult {
  * Development mode user for bypass
  */
 export interface DevUser extends User {
-  id: 'dev-user';
+  id: string;
   email: string;
   created_at: string;
 }

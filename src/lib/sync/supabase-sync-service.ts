@@ -210,7 +210,6 @@ export class SupabaseSyncService {
           }
           blinksBySession.get(sessionId)!.push({
             timestamp: new Date(pattern.timestamp).getTime(),
-            duration: pattern.blink_duration_ms || undefined,
           });
         });
       }
