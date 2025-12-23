@@ -19,8 +19,10 @@ import { SessionStorageService } from "../lib/sessions/session-storage-service";
 import { useCamera } from "../hooks/useCamera";
 import { useBlinkDetection } from "../hooks/useBlinkDetection";
 import { useCalibration } from "./CalibrationContext";
+import { useAuth } from "./AuthContext";
 import { AlertService } from "../lib/alert-service";
 import { getElectronAPI } from "../lib/electron";
+import { SupabaseSyncService } from "../lib/sync";
 
 interface SessionContextType {
   sessions: SessionData[];
@@ -126,6 +128,7 @@ function generateMockBlinkEvents(
 }
 
 export function SessionProvider({ children }: SessionProviderProps) {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [activeSession, setActiveSession] = useState<SessionData | null>(null);
   const [isTracking, setIsTracking] = useState(false);
@@ -150,6 +153,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
   // History of blink count snapshots for windowed rate calculation
   // Each entry is { timestamp, blinkCount } - we keep entries within the window duration
   const blinkSnapshotsRef = useRef<Array<{ timestamp: number; blinkCount: number }>>([]);
+  // Track last batch sync time for active sessions
+  const lastBatchSyncRef = useRef<number>(Date.now());
 
   const { activeCalibration } = useCalibration();
 
@@ -184,14 +189,36 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
   // Load persisted sessions on mount (or mock data if none exist) and cleanup on unmount
   useEffect(() => {
-    // Check if there are persisted sessions in localStorage
-    if (SessionStorageService.hasPersistedSessions()) {
-      const persistedSessions = SessionStorageService.getAllSessions();
-      setSessions(persistedSessions);
-    } else {
-      // No persisted sessions - show example sessions for new users
-      setSessions(generateMockSessions());
-    }
+    const loadSessions = async () => {
+      // Load from localStorage first (instant)
+      if (SessionStorageService.hasPersistedSessions()) {
+        const persistedSessions = SessionStorageService.getAllSessions();
+        setSessions(persistedSessions);
+      } else {
+        // No persisted sessions - show example sessions for new users
+        setSessions(generateMockSessions());
+      }
+
+      // If authenticated, merge with Supabase data
+      if (user?.id) {
+        try {
+          const supabaseSessions = await SupabaseSyncService.loadSessions(user.id);
+          const localSessions = SessionStorageService.getAllSessions();
+          const merged = SupabaseSyncService.mergeSessions(localSessions, supabaseSessions);
+
+          // Update localStorage with merged data
+          for (const session of merged) {
+            await SessionStorageService.saveSession(session, user.id);
+          }
+
+          setSessions(merged);
+        } catch (error) {
+          console.error('Failed to load sessions from Supabase:', error);
+        }
+      }
+    };
+
+    loadSessions();
 
     const alertService = alertServiceRef.current;
 
@@ -199,7 +226,34 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return () => {
       alertService.stopMonitoring();
     };
-  }, []);
+  }, [user]);
+
+  // Batch sync for active sessions (every 5 minutes)
+  useEffect(() => {
+    if (!activeSession || !user?.id) return;
+
+    const BATCH_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+    const interval = setInterval(async () => {
+      const now = Date.now();
+      if (now - lastBatchSyncRef.current >= BATCH_SYNC_INTERVAL_MS) {
+        // Sync current blink events
+        if (activeSession.blinkEvents.length > 0) {
+          console.log('[SessionContext] Batch syncing active session blinks...');
+          await SupabaseSyncService.syncBlinkEvents(
+            activeSession.id,
+            activeSession.blinkEvents,
+            user.id
+          ).catch(err => {
+            console.error('Batch sync failed:', err);
+          });
+          lastBatchSyncRef.current = now;
+        }
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [activeSession, user]);
 
   /**
    * MediaStreamTrackProcessor for reliable frame capture
@@ -666,7 +720,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     setSessionStartTime(Date.now());
   }, [isTracking, activeSession, isFaceDetected, blinkCount, activeCalibration]);
 
-  const stopSession = useCallback(() => {
+  const stopSession = useCallback(async () => {
     if (!activeSession) return;
 
     // Close any open face lost period
@@ -699,9 +753,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
       )
     );
 
-    // Persist session to localStorage (service handles min duration check)
-    SessionStorageService.saveSession(updatedSession);
-  }, [activeSession]); // blinkCount read from ref
+    // Persist session to localStorage AND Supabase (service handles min duration check)
+    await SessionStorageService.saveSession(updatedSession, user?.id);
+  }, [activeSession, user]); // blinkCount read from ref
 
   // Internal function to set tracking state (used by both toggle and Electron IPC)
   const setTrackingState = useCallback(async (enabled: boolean) => {

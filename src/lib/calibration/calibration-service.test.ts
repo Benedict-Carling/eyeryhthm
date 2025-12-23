@@ -71,7 +71,7 @@ describe('CalibrationService', () => {
       expect(calibrations[0]?.earThreshold).toBe(0.2);
     });
 
-    it('should not create default calibration when calibrations already exist', () => {
+    it('should not create default calibration when calibrations already exist', async () => {
       const existingCalibration: Calibration = {
         id: 'test-123',
         name: 'Test Calibration',
@@ -95,7 +95,7 @@ describe('CalibrationService', () => {
         },
       };
 
-      CalibrationService.saveCalibration(existingCalibration);
+      await CalibrationService.saveCalibration(existingCalibration);
       expect(CalibrationService.getAllCalibrations()).toHaveLength(1);
 
       CalibrationService.ensureDefaultCalibrationExists();
@@ -119,11 +119,11 @@ describe('CalibrationService', () => {
   });
 
   describe('getAllCalibrations', () => {
-    it('should return empty array when no calibrations exist', () => {
+    it('should return empty array when no calibrations exist', async () => {
       expect(CalibrationService.getAllCalibrations()).toEqual([]);
     });
 
-    it('should retrieve all stored calibrations', () => {
+    it('should retrieve all stored calibrations', async () => {
       const calibration1: Calibration = {
         id: 'cal-1',
         name: 'Calibration 1',
@@ -168,8 +168,8 @@ describe('CalibrationService', () => {
         },
       };
 
-      CalibrationService.saveCalibration(calibration1);
-      CalibrationService.saveCalibration(calibration2);
+      await CalibrationService.saveCalibration(calibration1);
+      await CalibrationService.saveCalibration(calibration2);
 
       const calibrations = CalibrationService.getAllCalibrations();
       expect(calibrations).toHaveLength(2);
@@ -183,7 +183,7 @@ describe('CalibrationService', () => {
       expect(CalibrationService.getActiveCalibration()).toBeNull();
     });
 
-    it('should return the active calibration', () => {
+    it('should return the active calibration', async () => {
       const activeCalibration: Calibration = {
         id: 'active-cal',
         name: 'Active Calibration',
@@ -213,8 +213,8 @@ describe('CalibrationService', () => {
         isActive: false,
       };
 
-      CalibrationService.saveCalibration(inactiveCalibration);
-      CalibrationService.saveCalibration(activeCalibration);
+      await CalibrationService.saveCalibration(inactiveCalibration);
+      await CalibrationService.saveCalibration(activeCalibration);
 
       const active = CalibrationService.getActiveCalibration();
       expect(active).not.toBeNull();
@@ -234,7 +234,7 @@ describe('CalibrationService', () => {
   });
 
   describe('deleteCalibration', () => {
-    it('should delete a calibration by id', () => {
+    it('should delete a calibration by id', async () => {
       const calibration: Calibration = {
         id: 'cal-to-delete',
         name: 'Calibration To Delete',
@@ -257,14 +257,14 @@ describe('CalibrationService', () => {
         },
       };
 
-      CalibrationService.saveCalibration(calibration);
+      await CalibrationService.saveCalibration(calibration);
       expect(CalibrationService.getAllCalibrations()).toHaveLength(1);
 
-      CalibrationService.deleteCalibration('cal-to-delete');
+      await CalibrationService.deleteCalibration('cal-to-delete');
       expect(CalibrationService.getAllCalibrations()).toHaveLength(0);
     });
 
-    it('should not affect other calibrations when deleting one', () => {
+    it('should not affect other calibrations when deleting one', async () => {
       const calibration1: Calibration = {
         id: 'cal-1',
         name: 'Calibration 1',
@@ -294,11 +294,11 @@ describe('CalibrationService', () => {
         isActive: false,
       };
 
-      CalibrationService.saveCalibration(calibration1);
-      CalibrationService.saveCalibration(calibration2);
+      await CalibrationService.saveCalibration(calibration1);
+      await CalibrationService.saveCalibration(calibration2);
       expect(CalibrationService.getAllCalibrations()).toHaveLength(2);
 
-      CalibrationService.deleteCalibration('cal-2');
+      await CalibrationService.deleteCalibration('cal-2');
 
       const remaining = CalibrationService.getAllCalibrations();
       expect(remaining).toHaveLength(1);
@@ -473,7 +473,7 @@ describe('CalibrationService', () => {
   });
 
   describe('setActiveCalibration', () => {
-    it('should set a calibration as active and deactivate others', () => {
+    it('should set a calibration as active and deactivate others', async () => {
       const calibration1: Calibration = {
         id: 'cal-1',
         name: 'Calibration 1',
@@ -503,10 +503,10 @@ describe('CalibrationService', () => {
         isActive: false,
       };
 
-      CalibrationService.saveCalibration(calibration1);
-      CalibrationService.saveCalibration(calibration2);
+      await CalibrationService.saveCalibration(calibration1);
+      await CalibrationService.saveCalibration(calibration2);
 
-      CalibrationService.setActiveCalibration('cal-2');
+      await CalibrationService.setActiveCalibration('cal-2');
 
       const calibrations = CalibrationService.getAllCalibrations();
       const cal1 = calibrations.find(c => c.id === 'cal-1');

@@ -42,57 +42,57 @@ describe('SessionStorageService', () => {
   });
 
   describe('saveSession', () => {
-    it('saves a completed session to localStorage', () => {
+    it('saves a completed session to localStorage', async () => {
       const session = createMockSession();
-      const result = SessionStorageService.saveSession(session);
+      const result = await SessionStorageService.saveSession(session);
 
       expect(result).toBe(true);
       expect(localStorageMock.setItem).toHaveBeenCalled();
     });
 
-    it('does not save active sessions', () => {
+    it('does not save active sessions', async () => {
       const session = createMockSession({ isActive: true });
-      const result = SessionStorageService.saveSession(session);
+      const result = await SessionStorageService.saveSession(session);
 
       expect(result).toBe(false);
     });
 
-    it('does not save sessions shorter than 60 seconds', () => {
+    it('does not save sessions shorter than 60 seconds', async () => {
       const session = createMockSession({ duration: 30 });
-      const result = SessionStorageService.saveSession(session);
+      const result = await SessionStorageService.saveSession(session);
 
       expect(result).toBe(false);
     });
 
-    it('does not save example sessions', () => {
+    it('does not save example sessions', async () => {
       const session = createMockSession({ isExample: true });
-      const result = SessionStorageService.saveSession(session);
+      const result = await SessionStorageService.saveSession(session);
 
       expect(result).toBe(false);
     });
 
-    it('enforces max 100 sessions limit', () => {
+    it('enforces max 100 sessions limit', async () => {
       // Save 101 sessions
       for (let i = 0; i < 101; i++) {
         const session = createMockSession({
           id: `session-${i}`,
           startTime: new Date(Date.now() - i * 1000), // Older sessions have earlier times
         });
-        SessionStorageService.saveSession(session);
+        await SessionStorageService.saveSession(session);
       }
 
       const sessions = SessionStorageService.getAllSessions();
       expect(sessions.length).toBe(100);
     });
 
-    it('keeps most recent sessions when enforcing limit', () => {
+    it('keeps most recent sessions when enforcing limit', async () => {
       // Save 101 sessions with distinct times
       for (let i = 100; i >= 0; i--) {
         const session = createMockSession({
           id: `session-${i}`,
           startTime: new Date(Date.now() - i * 60000), // session-0 is most recent
         });
-        SessionStorageService.saveSession(session);
+        await SessionStorageService.saveSession(session);
       }
 
       const sessions = SessionStorageService.getAllSessions();
@@ -109,13 +109,13 @@ describe('SessionStorageService', () => {
       expect(sessions).toEqual([]);
     });
 
-    it('parses dates correctly from stored sessions', () => {
+    it('parses dates correctly from stored sessions', async () => {
       const now = new Date();
       const session = createMockSession({
         startTime: now,
         endTime: now,
       });
-      SessionStorageService.saveSession(session);
+      await SessionStorageService.saveSession(session);
 
       const sessions = SessionStorageService.getAllSessions();
       expect(sessions).toHaveLength(1);
@@ -125,14 +125,14 @@ describe('SessionStorageService', () => {
   });
 
   describe('deleteSession', () => {
-    it('removes a session by id', () => {
+    it('removes a session by id', async () => {
       const session1 = createMockSession({ id: 'session-1' });
       const session2 = createMockSession({ id: 'session-2' });
 
-      SessionStorageService.saveSession(session1);
-      SessionStorageService.saveSession(session2);
+      await SessionStorageService.saveSession(session1);
+      await SessionStorageService.saveSession(session2);
 
-      SessionStorageService.deleteSession('session-1');
+      await SessionStorageService.deleteSession('session-1');
 
       const sessions = SessionStorageService.getAllSessions();
       expect(sessions).toHaveLength(1);
@@ -145,9 +145,9 @@ describe('SessionStorageService', () => {
       expect(SessionStorageService.hasPersistedSessions()).toBe(false);
     });
 
-    it('returns true when non-example sessions exist', () => {
+    it('returns true when non-example sessions exist', async () => {
       const session = createMockSession();
-      SessionStorageService.saveSession(session);
+      await SessionStorageService.saveSession(session);
 
       expect(SessionStorageService.hasPersistedSessions()).toBe(true);
     });
@@ -169,9 +169,9 @@ describe('SessionStorageService', () => {
   });
 
   describe('clearAllSessions', () => {
-    it('removes all sessions from localStorage', () => {
+    it('removes all sessions from localStorage', async () => {
       const session = createMockSession();
-      SessionStorageService.saveSession(session);
+      await SessionStorageService.saveSession(session);
 
       SessionStorageService.clearAllSessions();
 

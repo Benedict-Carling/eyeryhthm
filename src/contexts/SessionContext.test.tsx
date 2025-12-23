@@ -47,6 +47,13 @@ vi.mock('./CalibrationContext', () => ({
   }),
 }));
 
+vi.mock('./AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    isAuthenticated: false,
+  }),
+}));
+
 // Mock AlertService
 const mockStartMonitoring = vi.fn();
 const mockStopMonitoring = vi.fn();

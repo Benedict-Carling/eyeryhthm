@@ -11,6 +11,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import type { User, Session, AuthError } from "../lib/auth/auth-types";
 import { AuthService } from "../lib/auth/auth-service";
 import { getUserErrorMessage } from "../lib/auth/auth-errors";
+import { SupabaseSyncService } from "../lib/sync";
+import { SessionStorageService } from "../lib/sessions/session-storage-service";
+import { CalibrationService } from "../lib/calibration/calibration-service";
 
 /**
  * Auth state type
@@ -82,6 +85,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(result.data);
           setUser(result.data.user);
           setAuthState('authenticated');
+
+          // Trigger initial data migration on first auth load
+          const hasMigrated = localStorage.getItem('eyerhythm_data_migrated');
+          if (!hasMigrated) {
+            console.log('[AuthContext] Starting initial data migration to Supabase...');
+            const localSessions = SessionStorageService.getAllSessions();
+            const localCalibrations = CalibrationService.getAllCalibrations();
+
+            const migrationResult = await SupabaseSyncService.migrateLocalData(
+              result.data.user.id,
+              localSessions,
+              localCalibrations
+            ).catch(err => {
+              console.error('[AuthContext] Migration failed:', err);
+              return { success: false, error: err };
+            });
+
+            // Only set migration flag if successful
+            if (migrationResult.success) {
+              localStorage.setItem('eyerhythm_data_migrated', 'true');
+              console.log('[AuthContext] Migration complete');
+            }
+          }
         } else {
           setSession(null);
           setUser(null);
@@ -133,6 +159,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribe();
     };
   }, [isDevelopmentMode]);
+
+  /**
+   * Background queue processor
+   * Retries failed sync operations every minute
+   */
+  useEffect(() => {
+    // Only run when authenticated
+    if (!user?.id) return;
+
+    // Process queue immediately on mount
+    SupabaseSyncService.processRetryQueue().catch(err => {
+      console.error('[AuthContext] Queue processing error:', err);
+    });
+
+    // Then process every minute
+    const interval = setInterval(() => {
+      SupabaseSyncService.processRetryQueue().catch(err => {
+        console.error('[AuthContext] Queue processing error:', err);
+      });
+    }, 60000); // Every 60 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   /**
    * Send OTP to email

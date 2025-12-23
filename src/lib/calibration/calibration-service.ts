@@ -1,4 +1,5 @@
 import { Calibration, CalibrationRawData } from '../blink-detection/types';
+import { SupabaseSyncService } from '../sync';
 
 const CALIBRATIONS_STORAGE_KEY = 'eyerhythm_calibrations';
 
@@ -22,36 +23,59 @@ export class CalibrationService {
     }
   }
 
-  static saveCalibration(calibration: Calibration): void {
+  static async saveCalibration(calibration: Calibration, userId?: string): Promise<void> {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const calibrations = this.getAllCalibrations();
       const existingIndex = calibrations.findIndex(cal => cal.id === calibration.id);
-      
+
       if (existingIndex >= 0) {
         calibrations[existingIndex] = calibration;
       } else {
         calibrations.push(calibration);
       }
-      
+
       localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(calibrations));
+
+      // Sync to Supabase if user is authenticated
+      if (userId) {
+        await SupabaseSyncService.syncCalibration(calibration, userId).catch(err => {
+          console.error('Failed to sync calibration to Supabase:', err);
+          // Don't throw - localStorage write succeeded
+        });
+      }
     } catch (error) {
       console.error('Error saving calibration:', error);
       throw new Error('Failed to save calibration');
     }
   }
 
-  static deleteCalibration(id: string): void {
+  static async deleteCalibration(id: string, userId?: string): Promise<void> {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const calibrations = this.getAllCalibrations();
       const filtered = calibrations.filter(cal => cal.id !== id);
+
+      // Save backup for rollback
+      const backup = calibrations;
+
       localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(filtered));
+
+      // Delete from Supabase if authenticated
+      if (userId) {
+        const result = await SupabaseSyncService.deleteCalibration(id, userId);
+        if (!result.success) {
+          // Rollback localStorage on Supabase failure
+          console.error('Failed to delete calibration from Supabase, rolling back:', result.error);
+          localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(backup));
+          throw new Error('Failed to delete calibration from server');
+        }
+      }
     } catch (error) {
       console.error('Error deleting calibration:', error);
-      throw new Error('Failed to delete calibration');
+      throw error instanceof Error ? error : new Error('Failed to delete calibration');
     }
   }
 
@@ -60,43 +84,59 @@ export class CalibrationService {
     return calibrations.find(cal => cal.isActive) || null;
   }
 
-  static setActiveCalibration(id: string): void {
+  static async setActiveCalibration(id: string, userId?: string): Promise<void> {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const calibrations = this.getAllCalibrations();
-      
+
       // Set all to inactive first
       calibrations.forEach(cal => {
         cal.isActive = false;
         cal.updatedAt = new Date();
       });
-      
+
       // Set the selected one to active
       const targetCalibration = calibrations.find(cal => cal.id === id);
       if (targetCalibration) {
         targetCalibration.isActive = true;
         targetCalibration.updatedAt = new Date();
       }
-      
+
       localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(calibrations));
+
+      // Sync active calibration globally if authenticated
+      if (userId && targetCalibration) {
+        await SupabaseSyncService.setActiveCalibration(id, userId).catch(err => {
+          console.error('Failed to sync active calibration to Supabase:', err);
+          // Don't throw - localStorage succeeded
+        });
+      }
     } catch (error) {
       console.error('Error setting active calibration:', error);
       throw new Error('Failed to set active calibration');
     }
   }
 
-  static updateCalibrationName(id: string, name: string): void {
+  static async updateCalibrationName(id: string, name: string, userId?: string): Promise<void> {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const calibrations = this.getAllCalibrations();
       const calibration = calibrations.find(cal => cal.id === id);
-      
+
       if (calibration) {
         calibration.name = name;
         calibration.updatedAt = new Date();
         localStorage.setItem(CALIBRATIONS_STORAGE_KEY, JSON.stringify(calibrations));
+
+        // Sync to Supabase if authenticated
+        if (userId) {
+          await SupabaseSyncService.syncCalibration(calibration, userId).catch(err => {
+            console.error('Failed to sync calibration name update to Supabase:', err);
+            // Don't throw - localStorage succeeded
+          });
+        }
       }
     } catch (error) {
       console.error('Error updating calibration name:', error);

@@ -29,8 +29,9 @@ export class AuthService {
    */
   static getDevelopmentUser(): DevUser {
     const email = process.env.NEXT_PUBLIC_DEV_AUTH_EMAIL || 'dev@eyerhythm.local';
+    const id = process.env.NEXT_PUBLIC_DEV_AUTH_USER_ID || 'dev-user';
     return {
-      id: 'dev-user',
+      id,
       email,
       created_at: new Date().toISOString(),
     };
