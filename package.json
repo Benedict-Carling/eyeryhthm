@@ -28,15 +28,18 @@
     "electron:build": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --config electron-builder.config.js",
     "electron:build:mac": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --mac --config electron-builder.config.js",
     "electron:build:win": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --win --config electron-builder.config.js",
-    "electron:build:linux": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --linux --config electron-builder.config.js"
+    "electron:build:linux": "npm run verify && ELECTRON_BUILD=true npm run build && tsc -p electron/tsconfig.json && electron-builder --linux --config electron-builder.config.js",
+    "email:dev": "email dev"
   },
   "dependencies": {
     "@aptabase/electron": "^0.3.1",
+    "@react-email/components": "^0.0.25",
     "@supabase/supabase-js": "^2.89.0",
     "date-fns": "^4.1.0",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.6.2",
     "react-day-picker": "^9.12.0",
+    "resend": "^4.0.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

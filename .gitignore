@@ -66,3 +66,9 @@ eyerhythm Exports/
 
 # Supabase
 supabase/
+
+# Test and configuration scripts
+test-*.sh
+test-*.js
+configure-supabase-webhook.js
+firebase-debug.log
