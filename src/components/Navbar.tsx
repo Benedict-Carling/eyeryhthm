@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Container, Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
+import { Flex, Text, IconButton, Badge, Switch, Tooltip } from "@radix-ui/themes";
 import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
 import { Eye, EyeOff } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
@@ -17,11 +17,6 @@ import packageJson from "../../package.json";
 
 import styles from "./Navbar.module.css";
 
-// Draggable title bar for Electron with traffic lights (macOS)
-function TitleBar() {
-  return <div className={styles.titleBar} />;
-}
-
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const { isTracking, toggleTracking } = useSession();
@@ -35,8 +30,8 @@ export function Navbar() {
   // Using the actual state value as key ensures animation replays on change
   const [themeAnimKey, setThemeAnimKey] = useState(0);
 
-  // Show title bar with traffic light accommodation on macOS Electron
-  const showTitleBar = isElectron && capabilities.hasTrafficLights;
+  // Adjust position for macOS traffic lights in Electron
+  const hasTrafficLights = isElectron && capabilities.hasTrafficLights;
   const showCalibrationNotification = hasOnlyFactoryDefault();
   const showSettingsNotification = hasUpdate || cameraPermissionNeedsAttention;
 
@@ -69,106 +64,116 @@ export function Navbar() {
     isTracking ? styles.trackingBadgeActive : "",
   ].filter(Boolean).join(" ");
 
+  // Build wrapper class names
+  const wrapperClasses = [
+    styles.navbarWrapper,
+    hasTrafficLights ? styles.navbarWrapperElectron : "",
+  ].filter(Boolean).join(" ");
+
+  // Build spacer class names
+  const spacerClasses = [
+    styles.navbarSpacer,
+    hasTrafficLights ? styles.navbarSpacerElectron : "",
+  ].filter(Boolean).join(" ");
+
   return (
     <>
-      {/* Separate title bar for Electron with traffic lights (macOS) */}
-      {showTitleBar && <TitleBar />}
+      {/* Spacer to push content below floating navbar */}
+      <div className={spacerClasses} />
 
-      {/* Main navbar */}
-      <div className={showTitleBar ? `${styles.navbar} ${styles.navbarWithTitleBar}` : styles.navbar}>
-        <Container size="3">
-          <Flex
-            align="center"
-            justify="between"
-            py="3"
-          >
-            <Flex align="center" gap="6" wrap="wrap" style={{ minWidth: 0 }}>
-              <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-                <Flex align="center" gap="2">
-                  <Text size="5" weight="bold" style={{ color: "var(--mauve-12)" }}>
-                    EyeRhythm
-                  </Text>
-                  <Badge size="1" color="gray" variant="soft">
-                    v{packageJson.version}
-                  </Badge>
-                  <Badge size="1" color="indigo" variant="solid">
-                    Beta
-                  </Badge>
-                </Flex>
-              </Link>
+      {/* Floating glassmorphism navbar */}
+      <div className={wrapperClasses}>
+        <nav className={styles.navbar}>
+          <div className={styles.navbarContent}>
+            <Flex align="center" justify="between">
+              <Flex align="center" gap="6" wrap="wrap" style={{ minWidth: 0 }}>
+                <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
+                  <Flex align="center" gap="2">
+                    <Text size="5" weight="bold" style={{ color: "var(--mauve-12)" }}>
+                      EyeRhythm
+                    </Text>
+                    <Badge size="1" color="gray" variant="soft">
+                      v{packageJson.version}
+                    </Badge>
+                    <Badge size="1" color="indigo" variant="solid">
+                      Beta
+                    </Badge>
+                  </Flex>
+                </Link>
 
-              <Flex gap="4" style={{ flexShrink: 0 }}>
-                {navigationLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    style={{
-                      textDecoration: "none",
-                      color:
-                        pathname === link.href
-                          ? "var(--accent-11)"
-                          : "var(--mauve-11)",
-                    }}
-                  >
-                    <span
-                      className={`${styles.navLink} ${pathname === link.href ? styles.navLinkActive : ""}`}
-                      style={{ position: "relative", display: "inline-block" }}
+                <Flex gap="4" style={{ flexShrink: 0 }}>
+                  {navigationLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      style={{
+                        textDecoration: "none",
+                        color:
+                          pathname === link.href
+                            ? "var(--accent-11)"
+                            : "var(--mauve-11)",
+                      }}
                     >
-                      <Text size="3">{link.label}</Text>
-                      {link.href === "/calibration" && showCalibrationNotification && (
-                        <span className={styles.notificationDot} />
-                      )}
-                      {link.href === "/settings" && showSettingsNotification && (
-                        <span className={styles.notificationDot} />
-                      )}
+                      <span
+                        className={`${styles.navLink} ${pathname === link.href ? styles.navLinkActive : ""}`}
+                        style={{ position: "relative", display: "inline-block" }}
+                      >
+                        <Text size="3">{link.label}</Text>
+                        {link.href === "/calibration" && showCalibrationNotification && (
+                          <span className={styles.notificationDot} />
+                        )}
+                        {link.href === "/settings" && showSettingsNotification && (
+                          <span className={styles.notificationDot} />
+                        )}
+                      </span>
+                    </Link>
+                  ))}
+                </Flex>
+              </Flex>
+
+              <Flex align="center" gap="3">
+                {/* Tracking toggle */}
+                <Tooltip content={isTracking ? "Click to pause session tracking" : "Click to enable session tracking"}>
+                  <Badge
+                    size="2"
+                    color={isTracking ? "green" : "gray"}
+                    variant="soft"
+                    className={trackingBadgeClasses}
+                    onClick={toggleTracking}
+                  >
+                    <span key={String(isTracking)} className={styles.trackingIconEnter}>
+                      {isTracking ? <Eye size={14} /> : <EyeOff size={14} />}
                     </span>
-                  </Link>
-                ))}
+                    <span className={styles.trackingText}>
+                      {isTracking ? "Tracking" : "Paused"}
+                    </span>
+                    <Switch
+                      size="1"
+                      checked={isTracking}
+                      onCheckedChange={toggleTracking}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </Badge>
+                </Tooltip>
+
+                {/* User menu */}
+                <UserMenu />
+
+                <IconButton
+                  size="2"
+                  variant="ghost"
+                  onClick={handleThemeCycle}
+                  title={`Theme: ${theme} (click to cycle)`}
+                  className={styles.themeToggle}
+                >
+                  <span key={themeAnimKey} className={styles.themeIconRotate}>
+                    {getThemeIcon()}
+                  </span>
+                </IconButton>
               </Flex>
             </Flex>
-
-            <Flex align="center" gap="3">
-              {/* Tracking toggle */}
-              <Tooltip content={isTracking ? "Click to pause session tracking" : "Click to enable session tracking"}>
-                <Badge
-                  size="2"
-                  color={isTracking ? "green" : "gray"}
-                  variant="soft"
-                  className={trackingBadgeClasses}
-                  onClick={toggleTracking}
-                >
-                  <span key={String(isTracking)} className={styles.trackingIconEnter}>
-                    {isTracking ? <Eye size={14} /> : <EyeOff size={14} />}
-                  </span>
-                  <span className={styles.trackingText}>
-                    {isTracking ? "Tracking" : "Paused"}
-                  </span>
-                  <Switch
-                    size="1"
-                    checked={isTracking}
-                    onCheckedChange={toggleTracking}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Badge>
-              </Tooltip>
-
-              {/* User menu */}
-              <UserMenu />
-
-              <IconButton
-                size="2"
-                variant="ghost"
-                onClick={handleThemeCycle}
-                title={`Theme: ${theme} (click to cycle)`}
-                className={styles.themeToggle}
-              >
-                <span key={themeAnimKey} className={styles.themeIconRotate}>
-                  {getThemeIcon()}
-                </span>
-              </IconButton>
-            </Flex>
-          </Flex>
-        </Container>
+          </div>
+        </nav>
       </div>
     </>
   );

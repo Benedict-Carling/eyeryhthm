@@ -51,6 +51,13 @@ We collect personal information that you voluntarily provide to us when you expr
 - Device information (device type, operating system platform, timezone)
 - Fatigue alerts and session quality metrics
 
+**Subscription Data.** If you subscribe to EyeRhythm Premium, we store:
+
+- Subscription status (active, cancelled, expired)
+- Subscription tier (free or premium)
+- Subscription start and end dates
+- Stripe customer ID (a unique identifier, not your payment details)
+
 **Video and Camera Data.** We do not collect, store, or transmit any video or camera data. All camera processing for blink detection happens entirely on your device using on-device machine learning. Your video stream never leaves your device.
 
 **Sensitive Information.** We do not process sensitive personal information.
@@ -99,6 +106,7 @@ The General Data Protection Regulation (GDPR) and UK GDPR require us to explain 
 
 - **Supabase:** We use Supabase to securely store your account information, session data, and calibration data. Supabase acts as a data processor on our behalf and is contractually bound to protect your data.
 - **Authentication Providers:** If you choose to sign in with Google, GitHub, or Apple, we receive basic profile information (name, email) from these providers to create your account.
+- **Stripe (Payment Processing):** If you subscribe to EyeRhythm Premium, we use Stripe to process payments. Stripe collects and processes your payment information (card number, expiration date, CVC) directly. We never see or store your full payment card details. We only receive from Stripe: a customer ID, subscription status, payment confirmation, and the last 4 digits of your card for display purposes. Stripe is PCI-DSS Level 1 certified, the highest level of payment security certification. For more information, see [Stripe's Privacy Policy](https://stripe.com/privacy).
 
 We may also need to share your personal information in the following situations:
 

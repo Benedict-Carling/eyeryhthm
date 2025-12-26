@@ -46,7 +46,11 @@
   "navigation": [
     {
       "group": "",
-      "pages": ["index", "download", "feedback"]
+      "pages": ["index", "download", "pricing", "feedback"]
+    },
+    {
+      "group": "Legal",
+      "pages": ["terms", "privacy"]
     },
     {
       "group": "",
