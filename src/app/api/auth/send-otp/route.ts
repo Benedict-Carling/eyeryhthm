@@ -1,35 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { render } from '@react-email/components';
+import { Webhook } from 'standardwebhooks';
 import OtpEmail from '@/emails/OtpEmail';
 
 interface SupabaseWebhookPayload {
-  event: string;
-  email: string;
-  token_hash?: string;
-  // Supabase sends OTP in email_data for custom SMTP
-  email_data?: {
+  user: {
+    email: string;
+  };
+  email_data: {
     token: string;
     token_hash: string;
     redirect_to?: string;
-    email_action_type: 'signup' | 'magiclink' | 'recovery' | 'invite';
+    email_action_type: 'signup' | 'magiclink' | 'recovery' | 'invite' | 'email_change';
+    site_url?: string;
   };
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Verify webhook signature (basic auth with shared secret)
-    const authHeader = request.headers.get('authorization');
-    const expectedAuth = `Bearer ${process.env.SUPABASE_WEBHOOK_SECRET}`;
+    // 1. Verify webhook signature using standardwebhooks
+    const payload = await request.text();
+    const headers = Object.fromEntries(request.headers);
 
-    if (authHeader !== expectedAuth) {
-      console.error('[send-otp] Unauthorized webhook attempt');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Remove the 'v1,whsec_' prefix from the secret
+    const hookSecret = process.env.SUPABASE_WEBHOOK_SECRET?.replace('v1,whsec_', '') || '';
+
+    if (!hookSecret) {
+      console.error('[send-otp] Missing SUPABASE_WEBHOOK_SECRET');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    // 2. Parse payload
-    const payload: SupabaseWebhookPayload = await request.json();
-    const { email, email_data } = payload;
+    let verifiedPayload: SupabaseWebhookPayload;
+    try {
+      const wh = new Webhook(hookSecret);
+      verifiedPayload = wh.verify(payload, headers) as SupabaseWebhookPayload;
+    } catch (verifyError) {
+      console.error('[send-otp] Webhook signature verification failed:', verifyError);
+      return NextResponse.json({ error: 'Hook requires authorization token' }, { status: 401 });
+    }
+
+    // 2. Extract data from verified payload
+    const email = verifiedPayload.user?.email;
+    const email_data = verifiedPayload.email_data;
 
     if (!email || !email_data?.token) {
       console.error('[send-otp] Missing required fields', { email, hasEmailData: !!email_data });
