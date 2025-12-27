@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
   try {
     // 1. Verify webhook signature using standardwebhooks
     const payload = await request.text();
-    const headers = Object.fromEntries(request.headers);
+
+    // Convert Next.js Headers to plain object (headers must be lowercase)
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
 
     // Remove the 'v1,whsec_' prefix from the secret
     const hookSecret = process.env.SUPABASE_WEBHOOK_SECRET?.replace('v1,whsec_', '') || '';
@@ -31,12 +36,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
+    // Log for debugging (remove in production)
+    console.log('[send-otp] Webhook headers:', {
+      'webhook-id': headers['webhook-id'],
+      'webhook-timestamp': headers['webhook-timestamp'],
+      'webhook-signature': headers['webhook-signature'] ? 'present' : 'missing',
+    });
+
     let verifiedPayload: SupabaseWebhookPayload;
     try {
       const wh = new Webhook(hookSecret);
       verifiedPayload = wh.verify(payload, headers) as SupabaseWebhookPayload;
     } catch (verifyError) {
       console.error('[send-otp] Webhook signature verification failed:', verifyError);
+      console.error('[send-otp] Secret length:', hookSecret.length);
       return NextResponse.json({ error: 'Hook requires authorization token' }, { status: 401 });
     }
 
