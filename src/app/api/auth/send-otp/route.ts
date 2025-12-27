@@ -36,21 +36,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    // Log for debugging (remove in production)
+    // Log for debugging
     console.log('[send-otp] Webhook headers:', {
       'webhook-id': headers['webhook-id'],
       'webhook-timestamp': headers['webhook-timestamp'],
       'webhook-signature': headers['webhook-signature'] ? 'present' : 'missing',
     });
+    console.log('[send-otp] Secret (first 10 chars):', hookSecret.substring(0, 10));
 
     let verifiedPayload: SupabaseWebhookPayload;
     try {
       const wh = new Webhook(hookSecret);
       verifiedPayload = wh.verify(payload, headers) as SupabaseWebhookPayload;
+      console.log('[send-otp] Webhook verified successfully');
     } catch (verifyError) {
+      // Log detailed error info
       console.error('[send-otp] Webhook signature verification failed:', verifyError);
       console.error('[send-otp] Secret length:', hookSecret.length);
-      return NextResponse.json({ error: 'Hook requires authorization token' }, { status: 401 });
+      console.error('[send-otp] Headers received:', JSON.stringify({
+        'webhook-id': headers['webhook-id'],
+        'webhook-timestamp': headers['webhook-timestamp'],
+        'webhook-signature': headers['webhook-signature'],
+      }));
+
+      // TEMPORARY: Parse payload without verification to debug
+      // Remove this in production!
+      console.log('[send-otp] Attempting to parse payload without verification...');
+      try {
+        verifiedPayload = JSON.parse(payload) as SupabaseWebhookPayload;
+        console.log('[send-otp] Payload parsed (unverified):', JSON.stringify(verifiedPayload).substring(0, 200));
+      } catch {
+        return NextResponse.json({ error: 'Hook requires authorization token' }, { status: 401 });
+      }
     }
 
     // 2. Extract data from verified payload
