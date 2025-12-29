@@ -97,17 +97,23 @@ export class SupabaseSyncService {
     events: BlinkEvent[],
     userId: string
   ): Promise<SyncResult> {
+    console.log(`[SupabaseSyncService] syncBlinkEvents called: sessionId=${sessionId}, events=${events.length}`);
+
     if (events.length === 0) {
+      console.log('[SupabaseSyncService] No blink events to sync');
       return { success: true, data: undefined };
     }
 
     try {
       const normalizedSessionId = SessionMapper.normalizeUUID(sessionId);
+      console.log(`[SupabaseSyncService] Normalized session ID: ${sessionId} -> ${normalizedSessionId}`);
+
       const dbBlinkPatterns = BlinkEventMapper.batchToDatabase(
         events,
         normalizedSessionId,
         userId
       );
+      console.log(`[SupabaseSyncService] Prepared ${dbBlinkPatterns.length} blink patterns for insert`);
 
       // Batch insert with on conflict do nothing (idempotent)
       const { error } = await this.supabase
@@ -172,6 +178,8 @@ export class SupabaseSyncService {
    */
   static async loadSessions(userId: string): Promise<SessionData[]> {
     try {
+      console.log(`[SupabaseSyncService] Loading sessions for user: ${userId}`);
+
       // Fetch sessions
       const { data: sessions, error: sessionsError } = await this.supabase
         .from('screen_sessions')
@@ -185,42 +193,88 @@ export class SupabaseSyncService {
       }
 
       if (!sessions || sessions.length === 0) {
+        console.log('[SupabaseSyncService] No sessions found in Supabase');
         return [];
       }
 
-      // Fetch blink patterns for all sessions
-      const sessionIds = sessions.map((s) => s.id);
-      const { data: blinkPatterns, error: blinksError } = await this.supabase
-        .from('blink_patterns')
-        .select('*')
-        .in('screen_session_id', sessionIds)
-        .order('timestamp', { ascending: true });
+      console.log(`[SupabaseSyncService] Found ${sessions.length} sessions in Supabase`);
 
-      if (blinksError) {
-        console.warn('[SupabaseSyncService] Failed to load blink patterns:', blinksError);
-      }
-
-      // Group blink patterns by session
+      // Fetch blink patterns for each session individually to avoid timeout on large tables
       const blinksBySession = new Map<string, BlinkEvent[]>();
-      if (blinkPatterns) {
-        blinkPatterns.forEach((pattern: DBBlinkPattern) => {
-          const sessionId = pattern.screen_session_id;
-          if (!blinksBySession.has(sessionId)) {
-            blinksBySession.set(sessionId, []);
-          }
-          blinksBySession.get(sessionId)!.push({
-            timestamp: new Date(pattern.timestamp).getTime(),
-          });
-        });
+
+      // Process sessions in parallel batches of 5 to balance speed and reliability
+      const BATCH_SIZE = 5;
+      for (let i = 0; i < sessions.length; i += BATCH_SIZE) {
+        const batch = sessions.slice(i, i + BATCH_SIZE);
+        console.log(`[SupabaseSyncService] Loading blinks for sessions ${i + 1}-${Math.min(i + BATCH_SIZE, sessions.length)} of ${sessions.length}`);
+
+        await Promise.all(
+          batch.map(async (session) => {
+            try {
+              // Fetch all blinks for this session using pagination
+              // Supabase has a server-side limit of 1000 rows, so we must paginate
+              const allBlinks: { screen_session_id: string; timestamp: string }[] = [];
+              const PAGE_SIZE = 1000; // Supabase max rows per request
+              let page = 0;
+              let hasMore = true;
+
+              while (hasMore) {
+                const from = page * PAGE_SIZE;
+                const to = from + PAGE_SIZE - 1;
+
+                const { data: blinks, error: blinkError } = await this.supabase
+                  .from('blink_patterns')
+                  .select('screen_session_id, timestamp')
+                  .eq('screen_session_id', session.id)
+                  .order('timestamp', { ascending: true })
+                  .range(from, to);
+
+                if (blinkError) {
+                  console.warn(`[SupabaseSyncService] Failed to load blinks for session ${session.id}:`, blinkError.message);
+                  break;
+                }
+
+                if (blinks && blinks.length > 0) {
+                  allBlinks.push(...blinks);
+                  page++;
+                  // Continue if we got a full page (might be more)
+                  hasMore = blinks.length === PAGE_SIZE;
+                } else {
+                  hasMore = false;
+                }
+              }
+
+              if (allBlinks.length > 0) {
+                const events: BlinkEvent[] = allBlinks.map((b) => ({
+                  timestamp: new Date(b.timestamp).getTime(),
+                }));
+                blinksBySession.set(session.id, events);
+                console.log(`[SupabaseSyncService] Session ${session.id.substring(0, 8)}...: ${events.length} blinks`);
+              }
+            } catch (err) {
+              console.warn(`[SupabaseSyncService] Error loading blinks for session ${session.id}:`, err);
+            }
+          })
+        );
       }
+
+      console.log(`[SupabaseSyncService] Total sessions with blinks: ${blinksBySession.size}`);
+      const totalBlinksLoaded = Array.from(blinksBySession.values()).reduce((sum, events) => sum + events.length, 0);
+      console.log(`[SupabaseSyncService] Total blinks loaded: ${totalBlinksLoaded}`);
 
       // Map sessions with their blink events
       const mappedSessions = sessions.map((dbSession: DBSession) => {
         const blinkEvents = blinksBySession.get(dbSession.id) || [];
+        if (blinkEvents.length === 0) {
+          console.log(`[SupabaseSyncService] Session ${dbSession.id} has 0 blinks mapped`);
+        }
         return SessionMapper.fromDatabase(dbSession, blinkEvents);
       });
 
       console.log(`[SupabaseSyncService] Loaded ${mappedSessions.length} sessions from Supabase`);
+      const totalBlinks = mappedSessions.reduce((sum, s) => sum + s.blinkEvents.length, 0);
+      console.log(`[SupabaseSyncService] Total blinks across all sessions: ${totalBlinks}`);
+
       return mappedSessions;
     } catch (error) {
       console.error('[SupabaseSyncService] Load sessions exception:', error);
