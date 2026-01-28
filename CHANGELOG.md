@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.20.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.19.0...v1.20.0) (2026-01-28)
+
+
+### Features
+
+* Add Resend integration for faster OTP email delivery ([05f6e1c](https://github.com/Benedict-Carling/eyeryhthm/commit/05f6e1c23a48a4f5c8c1d6b66adb0420604eea90))
+
+
+### Bug Fixes
+
+* Batch blink queries per-session with pagination ([7218a05](https://github.com/Benedict-Carling/eyeryhthm/commit/7218a053eae98d3f7de05a2d5ee9e3ea55b20b22))
+* Improve webhook header conversion for Next.js ([712a28d](https://github.com/Benedict-Carling/eyeryhthm/commit/712a28d6d8e09d5ae2a33c74c4c2997aa521cfad))
+* Use standardwebhooks for Supabase auth hook verification ([5f05a59](https://github.com/Benedict-Carling/eyeryhthm/commit/5f05a59c5197d9eceb5dd31e7cbbe3e2b96e14e2))
+
 ## [1.19.0](https://github.com/Benedict-Carling/eyeryhthm/compare/v1.18.1...v1.19.0) (2025-12-23)
 
 
